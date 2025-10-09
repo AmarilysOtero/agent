@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run news app",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/news_reporter/app.py",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

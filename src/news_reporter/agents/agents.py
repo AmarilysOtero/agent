@@ -73,3 +73,58 @@ class NewsReporterAgent:
         print("NewsReporterAgent: generating script...")  # keep print
         resp = await self._client.get_response(messages=messages, deployment_name=self._deployment)
         return resp.messages[0].text
+
+# ---------------- NEW: Reviewer agent ----------------
+
+REVIEW_SYS = (
+    "You are a critical news editor reviewing a broadcast script. "
+    "You must be strict about: factuality, source clarity, tone (objective), "
+    "time references (use explicit dates), and length (60-90s). "
+    "Return STRICT JSON with keys: "
+    "{\"decision\":\"accept\"|\"revise\",\"reason\":string,"
+    "\"suggested_changes\":string,\"revised_script\":string}. "
+    "No prose outside JSON."
+)
+
+class ReviewAgent:
+    def __init__(self, client: AzureOpenAIChatClient, deployment: str):
+        self._client = client
+        self._deployment = deployment
+
+    async def run(self, topic: str, candidate_script: str) -> dict:
+        """Return a dict with decision, reason, suggested_changes, revised_script."""
+        prompt = (
+            f"Topic: {topic}\n\n"
+            f"Candidate script:\n{candidate_script}\n\n"
+            "If the script is not satisfactory, set decision to 'revise' and provide a revised_script "
+            "that applies your suggested_changes. If the script is acceptable, set decision to 'accept' "
+            "and you may keep revised_script identical or with minimal edits for clarity."
+        )
+        messages = [
+            ChatMessage(role="system", text=REVIEW_SYS),
+            ChatMessage(role="user", text=prompt),
+        ]
+        print("ReviewAgent: reviewing script...")  # keep print
+        resp = await self._client.get_response(messages=messages, deployment_name=self._deployment)
+        raw = resp.messages[0].text.strip()
+        print("Review raw:", raw)  # keep print
+
+        try:
+            data = json.loads(raw)
+            if not isinstance(data, dict) or "decision" not in data:
+                raise ValueError("Invalid review JSON")
+            return {
+                "decision": (data.get("decision") or "revise"),
+                "reason": data.get("reason", ""),
+                "suggested_changes": data.get("suggested_changes", ""),
+                "revised_script": data.get("revised_script", candidate_script),
+            }
+        except Exception as e:
+            logger.error("Review parse error: %s", e)
+            # If reviewer fails, fall back to accept to avoid infinite loops
+            return {
+                "decision": "accept",
+                "reason": "parse_error",
+                "suggested_changes": "",
+                "revised_script": candidate_script,
+            }

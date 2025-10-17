@@ -1,5 +1,7 @@
 from __future__ import annotations
-import asyncio, logging
+import asyncio
+import logging
+
 from .config import Settings
 from .workflows.workflow_factory import run_sequential_goal
 
@@ -8,7 +10,7 @@ async def main() -> None:
     cfg = Settings.load()
 
     goal = "prepare a news script for John on latest news for the world?"
-    print("Goal:", goal)  # keep print
+    print("Goal:", goal)
 
     result = await run_sequential_goal(cfg, goal)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 import logging
 from pydantic import BaseModel, Field, ValidationError
-from ..foundry_runner import run_foundry_agent
+from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class NewsReporterAgent:
         print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
         return run_foundry_agent(self._id, content)
 
-# ---------- REVIEWER (Foundry) ----------
+# ---------- REVIEWER (Foundry, strict JSON) ----------
 
 class ReviewAgent:
     def __init__(self, foundry_agent_id: str):
@@ -64,26 +64,27 @@ class ReviewAgent:
 
     async def run(self, topic: str, candidate_script: str) -> dict:
         """
-        Reviewer must return STRICT JSON:
-        {"decision":"accept"|"revise","reason":string,
-         "suggested_changes":string,"revised_script":string}
+        Foundry system prompt already defines the JSON schema. We still remind at user layer.
+        Returns a dict with keys: decision, reason, suggested_changes, revised_script.
         """
         prompt = (
             f"Topic: {topic}\n\n"
             f"Candidate script:\n{candidate_script}\n\n"
-            "Return STRICT JSON with keys decision (accept|revise), reason, "
-            "suggested_changes, revised_script. Be strict about factuality, "
-            "source clarity, neutral tone, explicit dates, 60-90s length."
+            "Evaluate factual accuracy, clarity, neutral tone, explicit dates, and 60–90s length. "
+            "Return ONLY STRICT JSON (no markdown, no prose) as per your schema."
         )
         print("ReviewAgent: using Foundry agent:", self._id)  # keep print
-        raw = run_foundry_agent(self._id, prompt).strip()
-        print("Review raw:", raw)  # keep print
         try:
-            data = json.loads(raw)
+            data = run_foundry_agent_json(
+                self._id,
+                prompt,
+                system_hint="You are a reviewer that returns STRICT JSON only."
+            )
             if not isinstance(data, dict) or "decision" not in data:
-                raise ValueError("Invalid review JSON")
+                raise ValueError("Invalid JSON shape from reviewer")
+            decision = (data.get("decision") or "revise").lower()
             return {
-                "decision": (data.get("decision") or "revise"),
+                "decision": decision if decision in {"accept", "revise"} else "revise",
                 "reason": data.get("reason", ""),
                 "suggested_changes": data.get("suggested_changes", ""),
                 "revised_script": data.get("revised_script", candidate_script),

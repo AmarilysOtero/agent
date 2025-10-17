@@ -72,4 +72,8 @@ az login --use-device-code
 az account show --output table
 python -m src.news_reporter.foundry_runner
 
+az login --use-device-code
+az account show --output table
+python -m src.news_reporter.app
+
 python -m src.news_reporter.tools.debug_env

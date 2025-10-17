@@ -1,46 +1,47 @@
 from __future__ import annotations
-import os
 from dataclasses import dataclass
+from pathlib import Path
+import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load environment
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env", override=True)
 
-@dataclass(frozen=True)
+def _split_list(val: str | None) -> list[str]:
+    if not val:
+        return []
+    return [p.strip() for p in val.split(",") if p.strip()]
+
+@dataclass
 class Settings:
-    # Foundry
-    ai_project_connection_string: str
-
-    # Agent IDs (from Foundry)
     agent_id_triage: str
     agent_id_websearch: str
     reporter_ids: list[str]
     agent_id_reviewer: str
+    multi_route_always: bool = False
 
-    # Routing
-    multi_route_always: bool
-
-    @staticmethod
-    def load() -> "Settings":
-        def need(name: str) -> str:
-            v = os.getenv(name)
-            if not v:
-                raise RuntimeError(f"Missing required env var: {name}")
-            return v
-
-        def get_bool(name: str, default: bool) -> bool:
-            val = os.getenv(name)
-            if val is None:
-                return default
-            return str(val).strip().lower() in {"1", "true", "yes", "y", "on"}
-
-        reporter_raw = need("AGENT_ID_REPORTER_LIST")
-        reporter_ids = [x.strip() for x in reporter_raw.split(";") if x.strip()]
-
-        return Settings(
-            ai_project_connection_string=need("AI_PROJECT_CONNECTION_STRING"),
-            agent_id_triage=need("AGENT_ID_TRIAGE"),
-            agent_id_websearch=need("AGENT_ID_WEBSEARCH"),
-            reporter_ids=reporter_ids,
-            agent_id_reviewer=need("AGENT_ID_REVIEWER"),
-            multi_route_always=get_bool("MULTI_ROUTE_ALWAYS", False),
+    @classmethod
+    def from_env(cls) -> "Settings":
+        triage = os.getenv("AGENT_ID_TRIAGE") or ""
+        web = os.getenv("AGENT_ID_WEBSEARCH") or ""
+        reviewer = os.getenv("AGENT_ID_REVIEWER") or ""
+        reporters = _split_list(os.getenv("AGENT_ID_REPORTER_LIST"))
+        if not reporters:
+            single = os.getenv("AGENT_ID_REPORTER")
+            if single:
+                reporters = [single]
+        if not (triage and web and reviewer and reporters):
+            raise RuntimeError("Missing one or more agent IDs in .env (TRIAGE/WEBSEARCH/REPORTER(S)/REVIEWER)")
+        multi_flag = (os.getenv("MULTI_ROUTE_ALWAYS", "false").lower() in {"1", "true", "yes"})
+        return cls(
+            agent_id_triage=triage,
+            agent_id_websearch=web,
+            reporter_ids=reporters,
+            agent_id_reviewer=reviewer,
+            multi_route_always=multi_flag,
         )
+
+    # Alias for your app.py compatibility
+    @classmethod
+    def load(cls) -> "Settings":
+        return cls.from_env()

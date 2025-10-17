@@ -1,68 +1,46 @@
-# src/news_reporter/config.py
-from __future__ import annotations   # must be first!
-
-from dataclasses import dataclass, field
-from typing import List
+from __future__ import annotations
 import os
+from dataclasses import dataclass
+from dotenv import load_dotenv
 
-# helper functions -----------------------------
-def _bool_env(name: str, default: bool = False) -> bool:
-    val = os.getenv(name)
-    if val is None:
-        return default
-    return val.strip().lower() in {"1", "true", "yes", "y", "on"}
+load_dotenv()
 
-def _list_env(name: str) -> List[str]:
-    raw = os.getenv(name, "")
-    if not raw.strip():
-        return []
-    parts = [p.strip() for p in raw.replace(";", ",").split(",")]
-    return [p for p in parts if p]
-
-# main settings class --------------------------
-@dataclass
+@dataclass(frozen=True)
 class Settings:
-    endpoint: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_ENDPOINT", ""))
-    api_key: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_API_KEY", ""))
-    api_version: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview"))
-    default_deployment: str = field(default_factory=lambda: os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini"))
+    # Foundry
+    ai_project_connection_string: str
 
-    routing_deployments: List[str] = field(default_factory=lambda: _list_env("ROUTING_DEPLOYMENTS"))
-    multi_route_always: bool = field(default_factory=lambda: _bool_env("MULTI_ROUTE_ALWAYS", False))
+    # Agent IDs (from Foundry)
+    agent_id_triage: str
+    agent_id_websearch: str
+    reporter_ids: list[str]
+    agent_id_reviewer: str
 
-    bing_api_key: str = field(default_factory=lambda: os.getenv("BING_API_KEY", ""))
-    serpapi_key: str = field(default_factory=lambda: os.getenv("SERPAPI_API_KEY", ""))
+    # Routing
+    multi_route_always: bool
 
-    def validate(self) -> None:
-        missing = []
-        if not self.endpoint:
-            missing.append("AZURE_OPENAI_ENDPOINT")
-        if not self.api_key:
-            missing.append("AZURE_OPENAI_API_KEY")
-        if not self.api_version:
-            missing.append("AZURE_OPENAI_API_VERSION")
-        if not self.default_deployment:
-            missing.append("AZURE_OPENAI_CHAT_DEPLOYMENT")
-        if missing:
-            raise ValueError(
-                f"Missing required environment variables: {', '.join(missing)}. "
-                "Ensure .env is loaded before creating Settings()."
-            )
+    @staticmethod
+    def load() -> "Settings":
+        def need(name: str) -> str:
+            v = os.getenv(name)
+            if not v:
+                raise RuntimeError(f"Missing required env var: {name}")
+            return v
 
-    @classmethod
-    def from_env(cls) -> "Settings":
-        cfg = cls()
-        cfg.validate()
-        return cfg
+        def get_bool(name: str, default: bool) -> bool:
+            val = os.getenv(name)
+            if val is None:
+                return default
+            return str(val).strip().lower() in {"1", "true", "yes", "y", "on"}
 
-    def redacted_dict(self) -> dict:
-        return {
-            "endpoint": self.endpoint,
-            "api_version": self.api_version,
-            "default_deployment": self.default_deployment,
-            "routing_deployments": self.routing_deployments,
-            "multi_route_always": self.multi_route_always,
-            "bing_api_key": "***" if self.bing_api_key else "",
-            "serpapi_key": "***" if self.serpapi_key else "",
-            "api_key": "***" if self.api_key else "",
-        }
+        reporter_raw = need("AGENT_ID_REPORTER_LIST")
+        reporter_ids = [x.strip() for x in reporter_raw.split(";") if x.strip()]
+
+        return Settings(
+            ai_project_connection_string=need("AI_PROJECT_CONNECTION_STRING"),
+            agent_id_triage=need("AGENT_ID_TRIAGE"),
+            agent_id_websearch=need("AGENT_ID_WEBSEARCH"),
+            reporter_ids=reporter_ids,
+            agent_id_reviewer=need("AGENT_ID_REVIEWER"),
+            multi_route_always=get_bool("MULTI_ROUTE_ALWAYS", False),
+        )

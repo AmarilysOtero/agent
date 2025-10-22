@@ -5,6 +5,10 @@ import logging
 from .config import Settings
 from .workflows.workflow_factory import run_sequential_goal
 
+logging.getLogger("azure").setLevel(logging.WARNING)
+logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+
+
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
     cfg = Settings.load()

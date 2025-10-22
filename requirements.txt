@@ -18,3 +18,17 @@ pre-commit>=3.8.0
 
 python-dotenv>=1.0.1
 pydantic>=2.8.2
+
+#for upload and vectorized PDF
+fastapi
+uvicorn
+python-dotenv
+pydantic>=2,<3
+azure-ai-projects
+azure-identity
+azure-search-documents
+azure-storage-blob
+azure-cosmos
+pymupdf
+openai
+

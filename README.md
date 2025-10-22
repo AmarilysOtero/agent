@@ -27,8 +27,6 @@ pre-commit install
 python src/news_reporter/app.py
 # or hit F5 in VS Code
 
-python -m src.news_reporter.app
-
 python -m pip install --upgrade --pre agent-framework agent-framework-azure-ai
 python -m src.news_reporter.app
 
@@ -77,3 +75,22 @@ az account show --output table
 python -m src.news_reporter.app
 
 python -m src.news_reporter.tools.debug_env
+
+#for upload and vectorized PDF
+pip install fastapi uvicorn python-dotenv pydantic==2.\* \
+ azure-search-documents azure-storage-blob azure-cosmos \
+ PyMuPDF openai
+
+# If you’ll use Foundry Projects SDK:
+
+pip install azure-ai-projects azure-identity
+
+az login --use-device-code
+az account show --output table
+python -m src.news_reporter.api
+
+pip install azure-search-documents azure-storage-blob requests
+
+# (only for vector querying with your own embedding:)
+
+# pip install azure-ai-projects azure-identity

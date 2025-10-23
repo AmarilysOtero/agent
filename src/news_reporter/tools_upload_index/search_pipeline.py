@@ -1,3 +1,4 @@
+# src/news_reporter/tools_upload_index/search_pipeline.py
 from __future__ import annotations
 import json
 import logging
@@ -128,7 +129,7 @@ def ensure_pipeline() -> None:
     ds_name = _safe_name("raw", "ds")
     ixr_name = _safe_name("raw", "ixr")
 
-    # Data source
+    # ---- Data source ----
     ds_url = f"{base}/datasources/{ds_name}?api-version={API_VERSION}"
     ds_payload = {
         "name": ds_name,
@@ -141,18 +142,52 @@ def ensure_pipeline() -> None:
     if r.status_code >= 300:
         _fail_verbose("Data source", ds_url, ds_payload, r)
 
-    # Index (create-only)
+    # ---- Index (create-only) ----
     idx_url = f"{base}/indexes/{idx}?api-version={API_VERSION}"
     idx_payload = {
         "name": idx,
         "fields": [
             {"name": "id", "type": "Edm.String", "key": True, "searchable": False, "filterable": False, "sortable": False, "facetable": False},
             {"name": "content", "type": "Edm.String", "searchable": True, "filterable": False, "sortable": False, "facetable": False},
+            {
+                "name": "content_vector",
+                "type": "Collection(Edm.Single)",
+                "searchable": True,            # <-- REQUIRED for vector fields
+                "filterable": False,
+                "sortable": False,
+                "facetable": False,
+                "dimensions": 1536,
+                "vectorSearchProfile": "vdb-default"
+            },
             {"name": "file_name", "type": "Edm.String", "searchable": False, "filterable": True, "sortable": True, "facetable": False},
             {"name": "content_type", "type": "Edm.String", "searchable": False, "filterable": True, "sortable": True, "facetable": True},
             {"name": "last_modified", "type": "Edm.DateTimeOffset", "searchable": False, "filterable": True, "sortable": True, "facetable": False},
             {"name": "url", "type": "Edm.String", "searchable": False, "filterable": False, "sortable": False, "facetable": False},
         ],
+        "vectorSearch": {
+            "algorithms": [
+                {
+                    "name": "hnsw-alg",
+                    "kind": "hnsw",
+                    "hnswParameters": {"m": 4, "efConstruction": 400, "metric": "cosine"},
+                }
+            ],
+            "profiles": [
+                {"name": "vdb-default", "algorithm": "hnsw-alg"}
+            ],
+        },
+        "semantic": {
+            "configurations": [
+                {
+                    "name": "sem-default",
+                    "prioritizedFields": {
+                        "titleField": {"fieldName": "file_name"},
+                        "prioritizedContentFields": [{"fieldName": "content"}],
+                        "prioritizedKeywordsFields": []
+                    }
+                }
+            ]
+        },
     }
     r = requests.put(idx_url, headers=_headers(key, {"If-None-Match": "*"}), data=json.dumps(idx_payload))
     if r.status_code >= 300 and r.status_code not in (409, 412):
@@ -160,7 +195,7 @@ def ensure_pipeline() -> None:
     elif r.status_code in (409, 412):
         log.info("[search_pipeline] Index '%s' already exists; leaving as-is.", idx)
 
-    # Indexer (scheduled)
+    # ---- Indexer (no skillset; blob metadata + cracked content) ----
     ixr_url = f"{base}/indexers/{ixr_name}?api-version={API_VERSION}"
     ixr_payload = {
         "name": ixr_name,
@@ -172,7 +207,6 @@ def ensure_pipeline() -> None:
                 "dataToExtract": "contentAndMetadata",
             }
         },
-        # RAW blob fields here (no /document)
         "fieldMappings": [
             {"sourceFieldName": "metadata_storage_path", "targetFieldName": "id", "mappingFunction": {"name": "base64Encode"}},
             {"sourceFieldName": "metadata_storage_name", "targetFieldName": "file_name"},
@@ -180,11 +214,11 @@ def ensure_pipeline() -> None:
             {"sourceFieldName": "metadata_storage_last_modified", "targetFieldName": "last_modified"},
             {"sourceFieldName": "metadata_storage_path", "targetFieldName": "url"},
         ],
-        # Cracked fields here (WITH /document)
         "outputFieldMappings": [
             {"sourceFieldName": "/document/content", "targetFieldName": "content"},
+            # If later you add an embedding skill into a skillset, map it like:
+            # {"sourceFieldName": "/document/content_vector", "targetFieldName": "content_vector"},
         ],
-        # schedule: every 5 minutes
         "schedule": {"interval": "PT5M"},
     }
     r = requests.put(ixr_url, headers=_headers(key), data=json.dumps(ixr_payload))

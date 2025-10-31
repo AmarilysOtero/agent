@@ -16,7 +16,7 @@ def _split_list(val: str | None) -> list[str]:
 class Settings:
     # === Existing agents ===
     agent_id_triage: str
-    agent_id_websearch: str
+    agent_id_aisearch: str
     reporter_ids: list[str]
     agent_id_reviewer: str
     multi_route_always: bool = False
@@ -48,15 +48,15 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
-        web = os.getenv("AGENT_ID_WEBSEARCH") or ""
+        aisearch = os.getenv("AGENT_ID_AISEARCH") or ""
         reviewer = os.getenv("AGENT_ID_REVIEWER") or ""
         reporters = _split_list(os.getenv("AGENT_ID_REPORTER_LIST"))
         if not reporters:
             single = os.getenv("AGENT_ID_REPORTER")
             if single:
                 reporters = [single]
-        if not (triage and web and reviewer and reporters):
-            raise RuntimeError("Missing one or more agent IDs in .env (TRIAGE/WEBSEARCH/REPORTER(S)/REVIEWER)")
+        if not (triage and aisearch and reviewer and reporters):
+            raise RuntimeError("Missing one or more agent IDs in .env (TRIAGE/AISEARCH/REPORTER(S)/REVIEWER)")
 
         # Foundry
         ai_endpoint = os.getenv("AZURE_AI_PROJECT_ENDPOINT")  # can include project path
@@ -88,8 +88,8 @@ class Settings:
             missing.append("Azure AI Project envs (endpoint/subscription/resource_group/account/project)")
         if not (search_endpoint and search_key and search_index):
             missing.append("Azure AI Search (endpoint/api_key/index)")
-        if not (cosmos_endpoint and cosmos_key and cosmos_db and cosmos_container):
-            missing.append("Cosmos (endpoint/key/db/container)")
+        # if not (cosmos_endpoint and cosmos_key and cosmos_db and cosmos_container):
+        #     missing.append("Cosmos (endpoint/key/db/container)")
         if not (blob_cs and blob_raw and blob_chunks):
             missing.append("Blob (conn_str + containers)")
         if missing:
@@ -99,7 +99,7 @@ class Settings:
 
         return cls(
             agent_id_triage=triage,
-            agent_id_websearch=web,
+            agent_id_aisearch=aisearch,
             reporter_ids=reporters,
             agent_id_reviewer=reviewer,
             multi_route_always=multi_flag,
@@ -114,7 +114,7 @@ class Settings:
             azure_search_api_key=search_key,
             azure_search_index=search_index,
             embedding_vector_dim=vec_dim,
-            cosmos_endpoint=cosmos_endpoint,
+            # cosmos_endpoint=cosmos_endpoint,
             cosmos_key=cosmos_key,
             cosmos_db=cosmos_db,
             cosmos_container=cosmos_container,

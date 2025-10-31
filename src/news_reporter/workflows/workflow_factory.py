@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List
 
 from ..config import Settings
-from ..agents.agents import TriageAgent, WebSearchAgent, NewsReporterAgent, ReviewAgent
+from ..agents.agents import TriageAgent, AiSearchAgent, NewsReporterAgent, ReviewAgent
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     Foundry-defined agents + local orchestration (no external AF dependency).
 
     Flow:
-      TRIAGE -> (optional) WEBSEARCH -> REPORTER -> REVIEWER (≤3 passes)
+      TRIAGE -> AISEARCH -> REPORTER -> REVIEWER (≤3 passes)
     """
     # ---- 1) TRIAGE ----
     triage = TriageAgent(cfg.agent_id_triage)
@@ -25,19 +25,19 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     targets: List[str] = cfg.reporter_ids if do_multi else [cfg.reporter_ids[0]]
 
     # Shared agents
-    web = WebSearchAgent(cfg.agent_id_websearch)
+    aisearch = AiSearchAgent(cfg.agent_id_aisearch)
     reviewer = ReviewAgent(cfg.agent_id_reviewer)
 
     # ---- 2) Actual execution logic ----
     async def run_one(reporter_id: str) -> str:
         reporter = NewsReporterAgent(reporter_id)
 
-        # Web step
-        latest = await web.run(goal) if ("web_search" in tri.intents) else ""
+        # AI Search step
+        latest = await aisearch.run(goal) if ("ai_search" in tri.intents) else ""
 
         # Reporter step
         script = (
-            await reporter.run(goal, latest or "No web content")
+            await reporter.run(goal, latest or "No ai-search content")
             if ("news_script" in tri.intents)
             else latest
         )

@@ -3,6 +3,7 @@ import json
 import logging
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
+from ..tools.azure_search import hybrid_search
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +31,32 @@ class TriageAgent:
             logger.error("Triage parse error: %s", e)
             return IntentResult(intents=["unknown"], confidence=0.0, rationale="parse_error")
 
-# ---------- WEB SEARCH (Foundry) ----------
+# ---------- AI SEARCH (Foundry) ----------
 
-class WebSearchAgent:
+class AiSearchAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
     async def run(self, query: str) -> str:
-        print("WebSearchAgent: using Foundry agent:", self._id)  # keep print
-        # Your Foundry WebSearch agent should already be wired with Bing Grounding/tools.
-        return run_foundry_agent(self._id, query)
+        print("AiSearchAgent: using Foundry agent:", self._id)  # keep print
+        results = hybrid_search(
+            search_text=query,
+            top_k=8,
+            select=["file_name", "content", "url", "last_modified"],
+            semantic=False
+        )
+
+        if not results:
+            return "No results found in Azure AI Search."
+
+        findings = []
+        for res in results:
+            content = (res.get("content") or "").replace("\n", " ")
+            findings.append(f"- {res.get('file_name')}: {content[:300]}...")
+
+        # print("AiSearchAgent list of sources/content\n\n" + "\n".join(findings))
+        return "\n".join(findings)
+
 
 # ---------- REPORTER (Foundry) ----------
 
@@ -51,7 +68,8 @@ class NewsReporterAgent:
         content = (
             f"Topic: {topic}\n"
             f"Latest info:\n{latest_news}\n"
-            "Write a 60-90s news broadcast script."
+            # "Write a 60-90s news broadcast script."
+            "Write a description about the information in the tone of a news reporter." 
         )
         print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
         return run_foundry_agent(self._id, content)
@@ -66,11 +84,13 @@ class ReviewAgent:
         """
         Foundry system prompt already defines the JSON schema. We still remind at user layer.
         Returns a dict with keys: decision, reason, suggested_changes, revised_script.
+        Return ONLY STRICT JSON (no markdown, no prose) as per your schema.
         """
         prompt = (
             f"Topic: {topic}\n\n"
             f"Candidate script:\n{candidate_script}\n\n"
-            "Evaluate factual accuracy, clarity, neutral tone, explicit dates, and 60–90s length. "
+            # "Evaluate factual accuracy, clarity, neutral tone, explicit dates, and 60-90s length. "
+            "Evaluate factual accuracy, relevance, and tone of a news reporter. " 
             "Return ONLY STRICT JSON (no markdown, no prose) as per your schema."
         )
         print("ReviewAgent: using Foundry agent:", self._id)  # keep print

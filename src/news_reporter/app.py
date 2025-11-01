@@ -13,7 +13,8 @@ async def main() -> None:
     logging.basicConfig(level=logging.INFO)
     cfg = Settings.load()
 
-    goal = "prepare a news script for John on latest news for the world?"
+    # goal = "prepare a news script for John on latest news for the world?"
+    goal = "What are Alexis's skills and his DXC Email address?"    
     print("Goal:", goal)
 
     result = await run_sequential_goal(cfg, goal)

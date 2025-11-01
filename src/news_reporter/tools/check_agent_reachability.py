@@ -107,7 +107,7 @@ if __name__ == "__main__":
     # Agents defined in .env (like yours)
     known_agents = {
         "TRIAGE": os.getenv("AGENT_ID_TRIAGE"),
-        "WEBSEARCH": os.getenv("AGENT_ID_WEBSEARCH"),
+        "AISEARCH": os.getenv("AGENT_ID_AISEARCH"),
         "REPORTER_LIST": os.getenv("AGENT_ID_REPORTER_LIST"),
         "REVIEWER": os.getenv("AGENT_ID_REVIEWER"),
     }

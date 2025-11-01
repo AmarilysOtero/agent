@@ -136,8 +136,8 @@ def agent_specs(default_model: str) -> Tuple[tuple, ...]:
         ("TriageAgent",       default_model,
          "You classify a user goal and return STRICT JSON only with keys: "
          "intents (string list), confidence (0-1), rationale (string), targets (string list)."),
-        ("WebSearchAgent",    default_model,
-         "You run grounded web searches and return the most relevant, concise findings."),
+        ("AiSearchAgent",    default_model,
+         "You run grounded ai searches and return only relevant and accurate findings."),
         ("NewsReporterAgent", default_model,
          "You write concise 60–90s neutral news scripts with explicit dates and sources."),
         ("ReviewAgent",       default_model,
@@ -154,7 +154,7 @@ def print_manual_instructions(endpoint: str, project: str, model: str):
         print(f"Name: {name}\nInstructions:\n{instructions}\n---")
     print("\nAfter creating, copy the agent IDs into your .env as:")
     print("TRIAGE_AGENT_ID=<id of TriageAgent>")
-    print("WEBSEARCH_AGENT_ID=<id of WebSearchAgent>")
+    print("AISEARCH_AGENT_ID=<id of AiSearchAgent>")
     print("REPORTER_AGENT_IDS=<id of NewsReporterAgent>   # add more if you create multiple")
     print("REVIEWER_AGENT_ID=<id of ReviewAgent>")
 
@@ -197,8 +197,8 @@ def main():
         print("\n[Created — add these to your .env]")
         if "TriageAgent" in created_ids:
             print("TRIAGE_AGENT_ID=", created_ids["TriageAgent"])
-        if "WebSearchAgent" in created_ids:
-            print("WEBSEARCH_AGENT_ID=", created_ids["WebSearchAgent"])
+        if "AiSearchAgent" in created_ids:
+            print("AISEARCH_AGENT_ID=", created_ids["AiSearchAgent"])
         if "NewsReporterAgent" in created_ids:
             print("REPORTER_AGENT_IDS=", created_ids["NewsReporterAgent"])
         if "ReviewAgent" in created_ids:

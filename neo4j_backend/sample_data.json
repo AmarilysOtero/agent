@@ -1,0 +1,38 @@
+{
+  "id": "5dd3bc46-c67b-4c60-86b7-2d8ed53c0ffd",
+  "type": "directory",
+  "name": "RAG",
+  "fullPath": "C:\\Alexis\\DXC\\AI\\RAG",
+  "relativePath": ".",
+  "modifiedTime": "2025-09-22T13:10:38.960Z",
+  "createdAt": "2025-09-06T01:26:57.059Z",
+  "children": [
+    {
+      "id": "f79152c3-9900-45b4-976e-4b8133cd101d",
+      "type": "file",
+      "name": "Enterprise_RAG_Platform_Paper Rev B.docx",
+      "fullPath": "C:\\Alexis\\DXC\\AI\\RAG\\Enterprise_RAG_Platform_Paper Rev B.docx",
+      "relativePath": "Enterprise_RAG_Platform_Paper Rev B.docx",
+      "size": 379952,
+      "extension": ".docx",
+      "modifiedTime": "2025-09-16T14:54:57.249Z",
+      "createdAt": "2025-09-15T19:18:11.086Z",
+      "children": [],
+      "source": "local"
+    },
+    {
+      "id": "da334719-cb59-4308-9273-efb35028d775",
+      "type": "file",
+      "name": "Enterprise_RAG_Platform_Paper Rev C.docx",
+      "fullPath": "C:\\Alexis\\DXC\\AI\\RAG\\Enterprise_RAG_Platform_Paper Rev C.docx",
+      "relativePath": "Enterprise_RAG_Platform_Paper Rev C.docx",
+      "size": 94500,
+      "extension": ".docx",
+      "modifiedTime": "2025-09-22T13:08:33.606Z",
+      "createdAt": "2025-09-15T20:24:57.065Z",
+      "children": [],
+      "source": "local"
+    }
+  ],
+  "source": "local"
+}

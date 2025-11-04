@@ -34,6 +34,8 @@ class TriageAgent:
 # ---------- AI SEARCH (Foundry) ----------
 
 class AiSearchAgent:
+    """Search agent using Azure AI Search"""
+    
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
@@ -55,6 +57,52 @@ class AiSearchAgent:
             findings.append(f"- {res.get('file_name')}: {content[:300]}...")
 
         # print("AiSearchAgent list of sources/content\n\n" + "\n".join(findings))
+        return "\n".join(findings)
+
+
+# ---------- NEO4J GRAPHRAG SEARCH (Foundry) ----------
+
+class Neo4jGraphRAGAgent:
+    """Search agent using Neo4j GraphRAG retrieval"""
+    
+    def __init__(self, foundry_agent_id: str):
+        self._id = foundry_agent_id
+
+    async def run(self, query: str) -> str:
+        print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
+        from ..tools.neo4j_graphrag import graphrag_search
+        
+        results = graphrag_search(
+            query=query,
+            top_k=8,
+            similarity_threshold=0.7
+        )
+
+        if not results:
+            return "No results found in Neo4j GraphRAG."
+
+        findings = []
+        for res in results:
+            text = res.get("text", "").replace("\n", " ")
+            file_name = res.get("file_name", "Unknown")
+            directory = res.get("directory_name", "")
+            
+            # Include GraphRAG metadata for explainability
+            metadata = ""
+            if "hybrid_score" in res:
+                metadata = f" [score: {res['hybrid_score']:.2f}]"
+            if "metadata" in res and res["metadata"].get("hop_count", 0) > 0:
+                hops = res["metadata"]["hop_count"]
+                metadata += f" [hops: {hops}]"
+            
+            # Format source info
+            if directory:
+                source_info = f"{directory}/{file_name}"
+            else:
+                source_info = file_name
+            
+            findings.append(f"- {source_info}: {text[:300]}...{metadata}")
+
         return "\n".join(findings)
 
 

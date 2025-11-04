@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List
 
 from ..config import Settings
-from ..agents.agents import TriageAgent, AiSearchAgent, NewsReporterAgent, ReviewAgent
+from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, NewsReporterAgent, ReviewAgent
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +24,22 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     do_multi = ("multi" in tri.intents) or cfg.multi_route_always
     targets: List[str] = cfg.reporter_ids if do_multi else [cfg.reporter_ids[0]]
 
-    # Shared agents
-    aisearch = AiSearchAgent(cfg.agent_id_aisearch)
+    # Choose search agent based on config
+    if cfg.use_neo4j_search and cfg.agent_id_neo4j_search:
+        print("Using Neo4j GraphRAG Agent (cost-efficient)")
+        search_agent = Neo4jGraphRAGAgent(cfg.agent_id_neo4j_search)
+    else:
+        print("Using Azure Search Agent (production)")
+        search_agent = AiSearchAgent(cfg.agent_id_aisearch)
+    
     reviewer = ReviewAgent(cfg.agent_id_reviewer)
 
     # ---- 2) Actual execution logic ----
     async def run_one(reporter_id: str) -> str:
         reporter = NewsReporterAgent(reporter_id)
 
-        # AI Search step
-        latest = await aisearch.run(goal) if ("ai_search" in tri.intents) else ""
+        # AI Search step (works with either agent)
+        latest = await search_agent.run(goal) if ("ai_search" in tri.intents) else ""
 
         # Reporter step
         script = (

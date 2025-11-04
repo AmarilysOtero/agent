@@ -3,9 +3,27 @@ import os, time, json, random, logging
 from pathlib import Path
 from typing import Any, Callable, Optional
 from dotenv import load_dotenv
-from azure.ai.projects import AIProjectClient
-from azure.identity import AzureCliCredential, DefaultAzureCredential
-from azure.core.exceptions import ResourceNotFoundError, HttpResponseError
+
+# Lazy import for azure-ai-projects (Python 3.8 compatibility)
+# This will be imported when needed
+try:
+    from azure.ai.projects import AIProjectClient
+    from azure.identity import AzureCliCredential, DefaultAzureCredential
+    from azure.core.exceptions import ResourceNotFoundError, HttpResponseError
+    _azure_available = True
+except (ImportError, TypeError) as e:
+    # Python 3.8 compatibility issue - azure-ai-projects requires Python 3.9+
+    if "subscriptable" in str(e) or "ABCMeta" in str(e):
+        logging.warning(
+            "azure-ai-projects requires Python 3.9+. Please upgrade Python or use Python 3.9+ environment. "
+            "Error: %s", e
+        )
+    _azure_available = False
+    AIProjectClient = None
+    AzureCliCredential = None
+    DefaultAzureCredential = None
+    ResourceNotFoundError = Exception
+    HttpResponseError = Exception
 
 # Load .env
 load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env", override=True)
@@ -64,6 +82,12 @@ def _with_retries(fn: Callable[[], Any], *, attempts: int = 3) -> Any:
 
 def get_foundry_client() -> AIProjectClient:
     global _client, _validated
+    if not _azure_available:
+        raise RuntimeError(
+            "Azure AI Projects SDK is not available. "
+            "This is likely due to Python 3.8 compatibility. "
+            "Please upgrade to Python 3.9+ or use a Python 3.9+ environment."
+        )
     if _client:
         return _client
     endpoint = _require_env("AZURE_AI_PROJECT_ENDPOINT").rstrip("/")

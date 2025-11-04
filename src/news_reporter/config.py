@@ -14,12 +14,16 @@ def _split_list(val: str | None) -> list[str]:
 
 @dataclass
 class Settings:
-    # === Existing agents ===
+    # === Existing agents (required fields first) ===
     agent_id_triage: str
     agent_id_aisearch: str
     reporter_ids: list[str]
     agent_id_reviewer: str
+    
+    # === Optional agent settings ===
+    agent_id_neo4j_search: str | None = None  # Optional Neo4j GraphRAG agent
     multi_route_always: bool = False
+    use_neo4j_search: bool = False  # Toggle to use Neo4j instead of Azure Search
 
     # === Foundry (Azure AI Project) — your format ===
     ai_project_endpoint: str | None = None         # may include /api/projects/<name>
@@ -45,18 +49,27 @@ class Settings:
     blob_container_raw: str = "raw"
     blob_container_chunks: str = "chunks"
 
+    # === Neo4j GraphRAG ===
+    neo4j_api_url: str | None = None  # Neo4j backend API URL (e.g., "http://localhost:8000")
+
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
         aisearch = os.getenv("AGENT_ID_AISEARCH") or ""
+        neo4j_search = os.getenv("AGENT_ID_NEO4J_SEARCH")  # Optional
         reviewer = os.getenv("AGENT_ID_REVIEWER") or ""
         reporters = _split_list(os.getenv("AGENT_ID_REPORTER_LIST"))
         if not reporters:
             single = os.getenv("AGENT_ID_REPORTER")
             if single:
                 reporters = [single]
-        if not (triage and aisearch and reviewer and reporters):
-            raise RuntimeError("Missing one or more agent IDs in .env (TRIAGE/AISEARCH/REPORTER(S)/REVIEWER)")
+        use_neo4j = os.getenv("USE_NEO4J_SEARCH", "false").lower() in {"1", "true", "yes"}
+        
+        # Validation: need at least one search agent
+        if not aisearch and not neo4j_search:
+            raise RuntimeError("Missing required search agent ID in .env (AISEARCH or NEO4J_SEARCH)")
+        if not (triage and reviewer and reporters):
+            raise RuntimeError("Missing one or more required agent IDs in .env (TRIAGE/REPORTER(S)/REVIEWER)")
 
         # Foundry
         ai_endpoint = os.getenv("AZURE_AI_PROJECT_ENDPOINT")  # can include project path
@@ -82,12 +95,22 @@ class Settings:
         blob_raw = os.getenv("BLOB_CONTAINER_RAW", "raw")
         blob_chunks = os.getenv("BLOB_CONTAINER_CHUNKS", "chunks")
 
+        # Neo4j GraphRAG
+        neo4j_url = os.getenv("NEO4J_API_URL")  # e.g., "http://localhost:8000"
+
         # minimal validation (you likely already have these set)
         missing = []
         if not (ai_endpoint and ai_sub and ai_rg and ai_account and (ai_project or "/api/projects/" in (ai_endpoint or ""))):
             missing.append("Azure AI Project envs (endpoint/subscription/resource_group/account/project)")
-        if not (search_endpoint and search_key and search_index):
-            missing.append("Azure AI Search (endpoint/api_key/index)")
+        
+        # Only require Azure Search if not using Neo4j
+        if not use_neo4j and not (search_endpoint and search_key and search_index):
+            missing.append("Azure AI Search (endpoint/api_key/index) - required when not using Neo4j")
+        
+        # Require Neo4j URL if using Neo4j search
+        if use_neo4j and not neo4j_url:
+            missing.append("Neo4j API URL (NEO4J_API_URL) - required when using Neo4j search")
+        
         # if not (cosmos_endpoint and cosmos_key and cosmos_db and cosmos_container):
         #     missing.append("Cosmos (endpoint/key/db/container)")
         if not (blob_cs and blob_raw and blob_chunks):
@@ -100,9 +123,11 @@ class Settings:
         return cls(
             agent_id_triage=triage,
             agent_id_aisearch=aisearch,
+            agent_id_neo4j_search=neo4j_search,
             reporter_ids=reporters,
             agent_id_reviewer=reviewer,
             multi_route_always=multi_flag,
+            use_neo4j_search=use_neo4j,
             ai_project_endpoint=ai_endpoint,
             ai_subscription_id=ai_sub,
             ai_resource_group=ai_rg,
@@ -121,6 +146,7 @@ class Settings:
             azure_blob_conn_str=blob_cs,
             blob_container_raw=blob_raw,
             blob_container_chunks=blob_chunks,
+            neo4j_api_url=neo4j_url,
         )
 
     @classmethod

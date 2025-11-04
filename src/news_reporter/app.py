@@ -14,7 +14,10 @@ async def main() -> None:
     cfg = Settings.load()
 
     # goal = "prepare a news script for John on latest news for the world?"
-    goal = "What are Alexis's skills you can find and his DXC Email address?"    
+    goal = "What are Kevin skills you can find and his DXC Email address?"    
+ #   goal = "tell me about Kevin ?"    
+
+
     print("Goal:", goal)
 
     result = await run_sequential_goal(cfg, goal)

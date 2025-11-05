@@ -1,0 +1,34 @@
+# .cursorrules
+
+# 🧩 General Rules
+Do not delete or modify existing working code unless explicitly requested.
+Do not remove comments that document functionality, TODOs, or authorship.
+Preserve formatting and code style consistent with the project.
+Follow established naming conventions and indentation rules.
+
+# ✍️ Documentation & Comments
+Always retain docstrings and inline comments.
+Add comments when adding or refactoring logic to explain purpose.
+Never erase TODO or FIXME markers.
+
+# 🧱 Code Structure
+When editing, modify only the specific section related to the prompt.
+Avoid large-scale rewrites unless instructed.
+Do not change architecture, imports, or dependencies without confirmation.
+
+# 🧰 Framework & Style
+Follow PEP8 for Python code.
+Use existing frameworks and libraries already imported; don’t add new ones unless required.
+Maintain existing linting or formatter preferences (Black, ESLint, Prettier, etc.).
+
+# 🔐 Sensitive Code
+Never expose, modify, or regenerate secrets, API keys, or credentials.
+Keep .env files intact and never display them.
+
+# 🧪 Testing
+When adding new functions, include or update relevant test cases.
+Never delete test files unless instructed.
+
+# 🚫 Forbidden Actions
+Do not rename files or folders.
+Do not change version numbers or configuration paths automatically.

@@ -54,13 +54,18 @@ class Neo4jGraphRAGRetriever:
         max_hops: int = 2,
         similarity_threshold: float = 0.7,
         machine_id: Optional[str] = None,
-        directory_path: Optional[str] = None
+        directory_path: Optional[str] = None,
+        use_keyword_search: bool = True,
+        keywords: Optional[List[str]] = None,
+        keyword_match_type: str = "any",
+        keyword_boost: float = 0.3
     ) -> List[Dict[str, Any]]:
         """
-        Hybrid GraphRAG retrieval:
+        Hybrid GraphRAG retrieval with keyword + semantic search:
         1. Embed query → vector search (top-k chunks)
-        2. Graph expansion (1-2 hops via relationships)
-        3. Re-rank with hybrid scoring
+        2. Keyword search (text matching)
+        3. Graph expansion (1-2 hops via relationships)
+        4. Re-rank with hybrid scoring
         
         Args:
             query: Search query text
@@ -69,6 +74,10 @@ class Neo4jGraphRAGRetriever:
             similarity_threshold: Minimum similarity for relationships
             machine_id: Optional machine ID to scope search
             directory_path: Optional directory path to scope search
+            use_keyword_search: Enable keyword search alongside semantic
+            keywords: Explicit keywords (auto-extracted if None)
+            keyword_match_type: "any" (OR) or "all" (AND) matching
+            keyword_boost: Weight for keyword matches in re-ranking (0.0 to 1.0)
         
         Returns:
             List of chunk dicts with: text, file_name, file_path, similarity, hybrid_score, metadata
@@ -81,6 +90,9 @@ class Neo4jGraphRAGRetriever:
                 "top_k_vector": top_k_vector,
                 "max_hops": max_hops,
                 "similarity_threshold": similarity_threshold,
+                "use_keyword_search": use_keyword_search,
+                "keyword_match_type": keyword_match_type,
+                "keyword_boost": keyword_boost,
             }
             
             # Add optional parameters
@@ -88,6 +100,8 @@ class Neo4jGraphRAGRetriever:
                 payload["machine_id"] = machine_id
             if directory_path:
                 payload["directory_path"] = directory_path
+            if keywords:
+                payload["keywords"] = keywords
             
             logger.info(f"Querying Neo4j GraphRAG: '{query[:100]}...'")
             response = requests.post(url, json=payload, timeout=30.0)
@@ -108,6 +122,7 @@ class Neo4jGraphRAGRetriever:
                     "hybrid_score": chunk.get("hybrid_score", 0.0),
                     "metadata": {
                         "vector_score": chunk.get("metadata", {}).get("vector_score", 0.0),
+                        "keyword_score": chunk.get("metadata", {}).get("keyword_score", 0.0),
                         "path_score": chunk.get("metadata", {}).get("path_score", 0.0),
                         "hop_count": chunk.get("metadata", {}).get("hop_count", 0),
                         "chunk_index": chunk.get("index"),
@@ -134,7 +149,11 @@ def graphrag_search(
     top_k: int = 8,
     similarity_threshold: float = 0.7,
     machine_id: Optional[str] = None,
-    directory_path: Optional[str] = None
+    directory_path: Optional[str] = None,
+    use_keyword_search: bool = True,
+    keywords: Optional[List[str]] = None,
+    keyword_match_type: str = "any",
+    keyword_boost: float = 0.3
 ) -> List[Dict[str, Any]]:
     """
     Convenience function for GraphRAG search (matches Azure Search API style)
@@ -145,6 +164,10 @@ def graphrag_search(
         similarity_threshold: Minimum similarity for relationships
         machine_id: Optional machine ID to scope search
         directory_path: Optional directory path to scope search
+        use_keyword_search: Enable keyword search alongside semantic
+        keywords: Explicit keywords (auto-extracted if None)
+        keyword_match_type: "any" (OR) or "all" (AND) matching
+        keyword_boost: Weight for keyword matches in re-ranking (0.0 to 1.0)
     
     Returns:
         List of chunk results (compatible with Azure Search format)
@@ -156,6 +179,10 @@ def graphrag_search(
         max_hops=2,
         similarity_threshold=similarity_threshold,
         machine_id=machine_id,
-        directory_path=directory_path
+        directory_path=directory_path,
+        use_keyword_search=use_keyword_search,
+        keywords=keywords,
+        keyword_match_type=keyword_match_type,
+        keyword_boost=keyword_boost
     )[:top_k]  # Limit to top_k
 

@@ -19,7 +19,12 @@ class Settings:
     agent_id_aisearch: str
     reporter_ids: list[str]
     agent_id_reviewer: str
-    
+    agent_id_text_to_query: str
+    agent_id_text_to_api: str
+    agent_id_query_interpreter: str
+    agent_id_api_interpreter: str
+    agent_id_interpreter: str
+
     # === Optional agent settings ===
     agent_id_neo4j_search: str | None = None  # Optional Neo4j GraphRAG agent
     multi_route_always: bool = False
@@ -56,8 +61,13 @@ class Settings:
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
         aisearch = os.getenv("AGENT_ID_AISEARCH") or ""
-        neo4j_search = os.getenv("AGENT_ID_NEO4J_SEARCH")  # Optional
+        neo4j_search = os.getenv("AGENT_ID_NEO4J_SEARCH") or "" #Optional
         reviewer = os.getenv("AGENT_ID_REVIEWER") or ""
+        textToQuery = os.getenv("TEXT_TO_QUERY_AGENT_ID") or ""
+        textToAPI = os.getenv("TEXT_TO_API_AGENT_ID") or ""
+        queryInterpreter = os.getenv("QUERY_RESULT_INTERPRETER_ID") or ""
+        apiInterpreter = os.getenv("API_RESULT_INTERPRETER_ID") or ""
+        interpreter = os.getenv("RESULT_INTERPRETER_ID") or ""              
         reporters = _split_list(os.getenv("AGENT_ID_REPORTER_LIST"))
         if not reporters:
             single = os.getenv("AGENT_ID_REPORTER")
@@ -70,6 +80,12 @@ class Settings:
             raise RuntimeError("Missing required search agent ID in .env (AISEARCH or NEO4J_SEARCH)")
         if not (triage and reviewer and reporters):
             raise RuntimeError("Missing one or more required agent IDs in .env (TRIAGE/REPORTER(S)/REVIEWER)")
+        if not (textToQuery and textToAPI):
+            raise RuntimeError("Missing one or more required agent IDs in .env (TEXTTOQUERY/TEXTTOAPI)")
+        if not (queryInterpreter and apiInterpreter):
+            raise RuntimeError("Missing one or more required agent IDs in .env (QUERYINTERPRETER/APIINTERPRETER)")
+        if not (interpreter):
+            raise RuntimeError("Missing one or more required agent IDs in .env (INTERPRETER)")
 
         # Foundry
         ai_endpoint = os.getenv("AZURE_AI_PROJECT_ENDPOINT")  # can include project path
@@ -126,6 +142,11 @@ class Settings:
             agent_id_neo4j_search=neo4j_search,
             reporter_ids=reporters,
             agent_id_reviewer=reviewer,
+            agent_id_text_to_api=textToAPI, 
+            agent_id_text_to_query=textToQuery, 
+            agent_id_query_interpreter=queryInterpreter, 
+            agent_id_api_interpreter=apiInterpreter,
+            agent_id_interpreter=interpreter,
             multi_route_always=multi_flag,
             use_neo4j_search=use_neo4j,
             ai_project_endpoint=ai_endpoint,
@@ -146,9 +167,12 @@ class Settings:
             azure_blob_conn_str=blob_cs,
             blob_container_raw=blob_raw,
             blob_container_chunks=blob_chunks,
-            neo4j_api_url=neo4j_url,
+            neo4j_api_url=neo4j_url
         )
 
+    class Config:
+        env_file = ".env"
+        
     @classmethod
     def load(cls) -> "Settings":
         return cls.from_env()

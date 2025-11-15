@@ -1,0 +1,11 @@
+table,column,type,description
+Employee,id,INT,Identificador único del empleado
+Employee,name,TEXT,nombre del empleado
+Employee,lastname,TEXT,apellido del empleado
+Employee,date_of_birth,DATE,fecha de nacimiento del empleado
+Employee,biography,TEXT,biografia del empleado
+Employee2,id,INT,Identificador único del empleado
+Employee2,name,TEXT,nombre del empleado
+Employee2,lastname,TEXT,apellido del empleado
+Employee2,date_of_birth,DATE,fecha de nacimiento del empleado
+Employee2,datos_curiosos,TEXT,datos curiosos del empleado

@@ -143,6 +143,16 @@ def agent_specs(default_model: str) -> Tuple[tuple, ...]:
         ("ReviewAgent",       default_model,
          "You strictly review a news script for factuality and return STRICT JSON only: "
          '{"decision":"accept|revise","reason":string,"suggested_changes":string,"revised_script":string}'),
+        ("TextToQueryAgent", default_model,
+         "You analyze natural language and convert it into a valid SQL query for cosulting databases."),
+        ("TextToAPIAgent", default_model,
+         "You analyze natural language and convert it into a valid API call for consulting databases."),
+        ("QueryResultInterpreter", default_model,
+         "You interpret the result of a database query using a query and write the result in natural language."),
+        ("APIResultInterpreter", default_model,
+         "You interpret the result of a database API call using an API call and write the result in natural language."),       
+        ("ResultInterpreter", default_model,
+         "You interpret two paragraphs and join them in such a way that it is just one paragraph in natural language")       
     )
 
 def print_manual_instructions(endpoint: str, project: str, model: str):
@@ -157,6 +167,11 @@ def print_manual_instructions(endpoint: str, project: str, model: str):
     print("AISEARCH_AGENT_ID=<id of AiSearchAgent>")
     print("REPORTER_AGENT_IDS=<id of NewsReporterAgent>   # add more if you create multiple")
     print("REVIEWER_AGENT_ID=<id of ReviewAgent>")
+    print("TEXT_TO_QUERY_AGENT_ID=<id of TextToQueryAgent>")
+    print("TEXT_TO_API_AGENT_ID=<id of TextToAPIAgent>")
+    print("QUERY_RESULT_INTERPRETER_ID=<id of QueryResultInterpreter>")
+    print("API_RESULT_INTERPRETER_ID=<id of APIResultInterpreter>")
+    print("RESULT_INTERPRETER_ID=<id of ResultInterpreter>")
 
 # -------------------- main --------------------
 def main():
@@ -203,7 +218,17 @@ def main():
             print("REPORTER_AGENT_IDS=", created_ids["NewsReporterAgent"])
         if "ReviewAgent" in created_ids:
             print("REVIEWER_AGENT_ID=", created_ids["ReviewAgent"])
-
+        if "TextToQueryAgent" in created_ids:
+            print("TEXT_TO_QUERY_AGENT_ID=", created_ids["TextToQueryAgent"])
+        if "TextToAPIAgent" in created_ids:
+            print("TEXT_TO_API_AGENT_ID=", created_ids["TextToAPIAgent"])
+        if "QueryResultInterpreter" in created_ids:
+            print("QUERY_RESULT_INTERPRETER_ID=", created_ids["QueryResultInterpreter"])
+        if "APIResultInterpreter" in created_ids:
+            print("API_RESULT_INTERPRETER_ID=", created_ids["APIResultInterpreter"])
+        if "ResultInterpreter" in created_ids:
+            print("RESULT_INTERPRETER_ID=", created_ids["ResultInterpreter"])
+        
     if had_404 and not created_ids:
         # Nothing could be created → print manual steps once
         print_manual_instructions(parts["endpoint"], parts["project"], default_model)

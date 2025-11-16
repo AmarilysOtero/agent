@@ -201,6 +201,7 @@ class TextToQueryAgent:
         system_message = f"""
             Eres un experto en SQL (PostgreSQL) que traduce preguntas en lenguaje natural a SQL válidos para la base de datos de Supabase.
             Este es el schema de la tabla {schema_message}.
+            Usa la tabla Employee2.
             Usa comillas dobles (") para los nombres de las tablas.
             Devuelve SOLO el query SQL sin explicación, sin ```sql``` ni nada adicional.
             """
@@ -233,7 +234,7 @@ class TextToAPIAgent:
             Convierte las solicitudes del usuario en llamadas API a la base de datos Supabase (PostgREST).
             Este es el schema de la tabla {schema_message}. Escribe la primera letra de la tabla en mayuscula.
             Devuelve **únicamente un JSON válido** con este formato exacto:
-
+            Usa la tabla Employee.
             {{
             "method": "GET" | "POST" | "PUT" | "DELETE",
             "endpoint": "/<tabla_o_ruta>",

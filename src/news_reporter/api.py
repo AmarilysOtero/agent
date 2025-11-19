@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
@@ -25,6 +25,90 @@ except ImportError:
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+
+def extract_person_names(query: str) -> List[str]:
+    """Extract potential person names from query (capitalized words that might be names)
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        List of potential person names (capitalized words)
+    """
+    # Split query into words
+    words = query.split()
+    # Extract capitalized words that are likely names (length > 2, starts with capital)
+    names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
+    # Remove common words that start with capital but aren't names
+    common_words = {'The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Who', 'Why', 'How', 'Tell', 'Show', 'Give', 'Find', 'Search', 'Get'}
+    names = [n for n in names if n not in common_words]
+    return names
+
+
+def filter_results_by_exact_match(results: List[dict], query: str, min_similarity: float = 0.9) -> List[dict]:
+    """Filter search results to require query name appears in chunk text or very high similarity
+    
+    Args:
+        results: List of search result dictionaries
+        query: Original query text
+        min_similarity: Minimum similarity to keep result without exact match
+        
+    Returns:
+        Filtered list of results
+    """
+    if not results:
+        return results
+    
+    # Extract potential name words from query using the same function that filters common words
+    names = extract_person_names(query)
+    query_words = [n.lower() for n in names]
+    
+    # If no capitalized words, apply minimum similarity threshold only
+    if not query_words:
+        # Still filter out very low similarity results
+        return [res for res in results if res.get("similarity", 0.0) >= 0.3]
+    
+    # Get first name (first name word) - critical for distinguishing names
+    first_name = query_words[0] if query_words else None
+    last_name = query_words[-1] if len(query_words) > 1 else None
+    
+    logging.info(f"Filtering {len(results)} results for query '{query}' (first_name='{first_name}', last_name='{last_name}')")
+    
+    filtered = []
+    for res in results:
+        text = res.get("text", "").lower()
+        similarity = res.get("similarity", 0.0)
+        
+        # Apply absolute minimum similarity threshold (reject very low scores)
+        if similarity < 0.3:
+            logging.debug(f"Filtered out result: similarity={similarity:.3f} < 0.3 (absolute minimum)")
+            continue
+        
+        # Check if first name appears in text (required for name queries)
+        # This prevents "Axel Torres" from matching "Alexis Torres" queries
+        first_name_found = first_name in text if first_name else True
+        
+        # If we have both first and last name, require both to match
+        if first_name and last_name:
+            last_name_found = last_name in text
+            name_match = first_name_found and last_name_found
+        else:
+            # Only first name available, require it to match
+            name_match = first_name_found
+        
+        # Keep if: (name matches AND similarity >= 0.3) OR similarity is very high (>= min_similarity)
+        # Lower threshold for name matches to allow more results through
+        if (name_match and similarity >= 0.3) or similarity >= min_similarity:
+            filtered.append(res)
+            logging.debug(f"Kept result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}")
+        else:
+            logging.info(f"Filtered out result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}, text_preview={text[:100]}")
+    
+    logging.info(f"Filtered {len(results)} results down to {len(filtered)} results")
+    return filtered
+    
+    return filtered
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -199,13 +283,30 @@ async def chat(request: ChatRequest):
                 except ImportError:
                     from src.news_reporter.tools.neo4j_graphrag import graphrag_search
                 
+                # Extract person names from query for keyword filtering
+                person_names = extract_person_names(request.query)
+                
+                # Use higher similarity threshold and reduced hops to prevent false matches
                 search_results = graphrag_search(
                     query=request.query,
-                    top_k=8,
-                    similarity_threshold=0.7
+                    top_k=12,  # Get more results initially for filtering
+                    similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
+                    keywords=person_names if person_names else None,
+                    keyword_match_type="any",
+                    keyword_boost=0.4  # Increase keyword weight for name matching
                 )
                 
-                if search_results:
+                # Filter results to require exact name match or very high similarity
+                filtered_results = filter_results_by_exact_match(
+                    search_results, 
+                    request.query, 
+                    min_similarity=0.7  # Very high threshold for results without exact match
+                )
+                
+                # Limit to top 8 after filtering
+                filtered_results = filtered_results[:8]
+                
+                if filtered_results:
                     sources = [
                         Source(
                             file_name=res.get("file_name"),
@@ -216,11 +317,11 @@ async def chat(request: ChatRequest):
                             hybrid_score=res.get("hybrid_score"),
                             metadata=res.get("metadata")
                         )
-                        for res in search_results
+                        for res in filtered_results
                     ]
-                    logging.info(f"Retrieved {len(sources)} sources from Neo4j GraphRAG")
+                    logging.info(f"Retrieved {len(sources)} sources from Neo4j GraphRAG (filtered from {len(search_results)} initial results)")
                 else:
-                    logging.warning("No search results returned from Neo4j GraphRAG")
+                    logging.warning(f"No search results after filtering (had {len(search_results)} initial results)")
             except Exception as e:
                 logging.error(f"Failed to get Neo4j sources: {e}", exc_info=True)
                 sources = []

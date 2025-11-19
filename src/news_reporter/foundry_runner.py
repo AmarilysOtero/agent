@@ -90,21 +90,78 @@ def get_foundry_client() -> AIProjectClient:
         )
     if _client:
         return _client
-    endpoint = _require_env("AZURE_AI_PROJECT_ENDPOINT").rstrip("/")
-    cred = _choose_credential()
-    _client = AIProjectClient(endpoint=endpoint, credential=cred)
-    if not _validated:
-        _validated = True
-        print("[Foundry] Client ready (project endpoint).")
-    return _client
+    try:
+        endpoint = _require_env("AZURE_AI_PROJECT_ENDPOINT").rstrip("/")
+    except RuntimeError as e:
+        raise RuntimeError(
+            "Foundry access is not configured. "
+            "Please set AZURE_AI_PROJECT_ENDPOINT in your .env file. "
+            "If you don't have access to Foundry, you can use Neo4j search only mode."
+        ) from e
+    try:
+        cred = _choose_credential()
+        _client = AIProjectClient(endpoint=endpoint, credential=cred)
+        if not _validated:
+            _validated = True
+            print("[Foundry] Client ready (project endpoint).")
+        return _client
+    except Exception as e:
+        error_msg = str(e)
+        if "authentication" in error_msg.lower() or "credential" in error_msg.lower():
+            raise RuntimeError(
+                "Failed to authenticate with Foundry. "
+                "Please check your Azure credentials. "
+                "Run 'az login' to authenticate, or check your DefaultAzureCredential configuration. "
+                f"Error: {error_msg}"
+            ) from e
+        elif "not found" in error_msg.lower() or "404" in error_msg.lower():
+            raise RuntimeError(
+                "Foundry project not found or you don't have access to it. "
+                "Please verify your AZURE_AI_PROJECT_ENDPOINT and ensure you have access to the project. "
+                f"Error: {error_msg}"
+            ) from e
+        else:
+            raise RuntimeError(
+                f"Failed to connect to Foundry: {error_msg}. "
+                "Please check your Foundry configuration and access permissions."
+            ) from e
 
 def run_foundry_agent(agent_id: str, user_content: str, *, system_hint: str | None = None) -> str:
-    client = get_foundry_client()
+    try:
+        client = get_foundry_client()
+    except RuntimeError as e:
+        # Re-raise with clearer message
+        raise RuntimeError(
+            f"Foundry access error: {str(e)}. "
+            "The chat feature requires Foundry access. "
+            "Please configure Foundry or contact your administrator for access."
+        ) from e
     agents = client.agents
 
-    create_thread = _resolve(agents, "create_thread", "threads.create")
-    thread = _with_retries(lambda: create_thread(logging_enable=False))
-    thread_id = _get_id(thread)
+    try:
+        create_thread = _resolve(agents, "create_thread", "threads.create")
+        thread = _with_retries(lambda: create_thread(logging_enable=False))
+        thread_id = _get_id(thread)
+    except Exception as e:
+        error_msg = str(e)
+        if "authentication" in error_msg.lower() or "401" in error_msg.lower() or "403" in error_msg.lower():
+            raise RuntimeError(
+                "Access denied to Foundry. "
+                "Please check your Azure credentials and permissions. "
+                "Run 'az login' to authenticate. "
+                f"Error: {error_msg}"
+            ) from e
+        elif "not found" in error_msg.lower() or "404" in error_msg.lower():
+            raise RuntimeError(
+                "Foundry resource not found. "
+                "Please verify your Foundry configuration and agent IDs. "
+                f"Error: {error_msg}"
+            ) from e
+        else:
+            raise RuntimeError(
+                f"Failed to create Foundry thread: {error_msg}. "
+                "Please check your Foundry access and configuration."
+            ) from e
 
     create_message = _resolve(agents, "create_message", "messages.create")
     if system_hint:

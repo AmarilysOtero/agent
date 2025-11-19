@@ -3,9 +3,17 @@ import json
 import logging
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
-from ..tools.azure_search import hybrid_search
 
 logger = logging.getLogger(__name__)
+
+# Lazy import for Azure Search to avoid import errors when using Neo4j only
+def _get_hybrid_search():
+    try:
+        from ..tools.azure_search import hybrid_search
+        return hybrid_search
+    except ImportError as e:
+        logger.warning(f"Azure Search not available: {e}")
+        return None
 
 # ---------- TRIAGE (Foundry) ----------
 
@@ -22,7 +30,14 @@ class TriageAgent:
     async def run(self, goal: str) -> IntentResult:
         content = f"Classify and return JSON only. User goal: {goal}"
         print("TriageAgent: using Foundry agent:", self._id)  # keep print
-        raw = run_foundry_agent(self._id, content).strip()
+        try:
+            raw = run_foundry_agent(self._id, content).strip()
+        except RuntimeError as e:
+            logger.error("TriageAgent Foundry error: %s", e)
+            raise RuntimeError(
+                f"Triage agent failed: {str(e)}. "
+                "Please check your Foundry access and agent configuration."
+            ) from e
         print("Triage raw:", raw)  # keep print
         try:
             data = json.loads(raw)
@@ -41,6 +56,10 @@ class AiSearchAgent:
 
     async def run(self, query: str) -> str:
         print("AiSearchAgent: using Foundry agent:", self._id)  # keep print
+        hybrid_search = _get_hybrid_search()
+        if hybrid_search is None:
+            return "Azure Search is not available. Please configure Azure Search or use Neo4j search instead."
+        
         results = hybrid_search(
             search_text=query,
             top_k=8,
@@ -120,7 +139,14 @@ class NewsReporterAgent:
             "Write a description about the information in the tone of a news reporter." 
         )
         print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
-        return run_foundry_agent(self._id, content)
+        try:
+            return run_foundry_agent(self._id, content)
+        except RuntimeError as e:
+            logger.error("NewsReporterAgent Foundry error: %s", e)
+            raise RuntimeError(
+                f"Reporter agent failed: {str(e)}. "
+                "Please check your Foundry access and agent configuration."
+            ) from e
 
 # ---------- REVIEWER (Foundry, strict JSON) ----------
 
@@ -148,6 +174,14 @@ class ReviewAgent:
                 prompt,
                 system_hint="You are a reviewer that returns STRICT JSON only."
             )
+        except RuntimeError as e:
+            logger.error("ReviewAgent Foundry error: %s", e)
+            raise RuntimeError(
+                f"Review agent failed: {str(e)}. "
+                "Please check your Foundry access and agent configuration."
+            ) from e
+        
+        try:
             if not isinstance(data, dict) or "decision" not in data:
                 raise ValueError("Invalid JSON shape from reviewer")
             decision = (data.get("decision") or "revise").lower()

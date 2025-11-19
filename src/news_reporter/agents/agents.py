@@ -105,22 +105,42 @@ class Neo4jGraphRAGAgent:
             text = res.get("text", "").replace("\n", " ")
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
+            file_path = res.get("file_path", "")
             
-            # Include GraphRAG metadata for explainability
-            metadata = ""
-            if "hybrid_score" in res:
-                metadata = f" [score: {res['hybrid_score']:.2f}]"
-            if "metadata" in res and res["metadata"].get("hop_count", 0) > 0:
-                hops = res["metadata"]["hop_count"]
-                metadata += f" [hops: {hops}]"
+            # Include comprehensive metadata for agent context
+            metadata_parts = []
+            if "hybrid_score" in res and res["hybrid_score"] is not None:
+                metadata_parts.append(f"score:{res['hybrid_score']:.2f}")
+            if "similarity" in res and res["similarity"] is not None:
+                metadata_parts.append(f"similarity:{res['similarity']:.2f}")
+            if "metadata" in res and res["metadata"]:
+                meta = res["metadata"]
+                if meta.get("hop_count", 0) > 0:
+                    metadata_parts.append(f"hops:{meta['hop_count']}")
+                if meta.get("vector_score") is not None:
+                    metadata_parts.append(f"vector:{meta['vector_score']:.3f}")
+                if meta.get("keyword_score") is not None:
+                    metadata_parts.append(f"keyword:{meta['keyword_score']:.3f}")
+                if meta.get("path_score") is not None:
+                    metadata_parts.append(f"path:{meta['path_score']:.3f}")
+                if meta.get("chunk_index") is not None:
+                    metadata_parts.append(f"chunk_idx:{meta['chunk_index']}")
+                if meta.get("chunk_size") is not None:
+                    metadata_parts.append(f"size:{meta['chunk_size']}")
+                if meta.get("file_id"):
+                    metadata_parts.append(f"file_id:{meta['file_id']}")
             
-            # Format source info
-            if directory:
+            metadata_str = f" [{', '.join(metadata_parts)}]" if metadata_parts else ""
+            
+            # Format source info with file path (preferred) or directory/name
+            if file_path:
+                source_info = file_path
+            elif directory:
                 source_info = f"{directory}/{file_name}"
             else:
                 source_info = file_name
             
-            findings.append(f"- {source_info}: {text[:300]}...{metadata}")
+            findings.append(f"- {source_info}: {text[:300]}...{metadata_str}")
 
         return "\n".join(findings)
 

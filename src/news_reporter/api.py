@@ -82,6 +82,7 @@ class Source(BaseModel):
     text: Optional[str] = None
     similarity: Optional[float] = None
     hybrid_score: Optional[float] = None
+    metadata: Optional[dict] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -192,25 +193,36 @@ async def chat(request: ChatRequest):
         sources = []
         if cfg.use_neo4j_search:
             try:
-                from ..tools.neo4j_graphrag import graphrag_search
+                # Try relative import first, then absolute import
+                try:
+                    from ..tools.neo4j_graphrag import graphrag_search
+                except ImportError:
+                    from src.news_reporter.tools.neo4j_graphrag import graphrag_search
+                
                 search_results = graphrag_search(
                     query=request.query,
                     top_k=8,
                     similarity_threshold=0.7
                 )
-                sources = [
-                    Source(
-                        file_name=res.get("file_name"),
-                        file_path=res.get("file_path"),
-                        directory_name=res.get("directory_name"),
-                        text=res.get("text", "")[:500] if res.get("text") else None,  # Truncate for response
-                        similarity=res.get("similarity"),
-                        hybrid_score=res.get("hybrid_score")
-                    )
-                    for res in search_results
-                ]
+                
+                if search_results:
+                    sources = [
+                        Source(
+                            file_name=res.get("file_name"),
+                            file_path=res.get("file_path"),
+                            directory_name=res.get("directory_name"),
+                            text=res.get("text", "")[:500] if res.get("text") else None,  # Truncate for response
+                            similarity=res.get("similarity"),
+                            hybrid_score=res.get("hybrid_score"),
+                            metadata=res.get("metadata")
+                        )
+                        for res in search_results
+                    ]
+                    logging.info(f"Retrieved {len(sources)} sources from Neo4j GraphRAG")
+                else:
+                    logging.warning("No search results returned from Neo4j GraphRAG")
             except Exception as e:
-                logging.warning(f"Failed to get Neo4j sources: {e}")
+                logging.error(f"Failed to get Neo4j sources: {e}", exc_info=True)
                 sources = []
         
         # Run the agent workflow

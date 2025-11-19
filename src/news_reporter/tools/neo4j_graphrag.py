@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import requests
 import logging
+import time
 
 try:
     from ..config import Settings
@@ -103,10 +104,19 @@ class Neo4jGraphRAGRetriever:
             if keywords:
                 payload["keywords"] = keywords
             
-            logger.info(f"Querying Neo4j GraphRAG: '{query[:100]}...'")
-            response = requests.post(url, json=payload, timeout=30.0)
-            response.raise_for_status()
-            data = response.json()
+            logger.info(f"Querying Neo4j GraphRAG: '{query[:100]}...' (timeout: 120s)")
+            start_time = time.time()
+            # Increased timeout to 120 seconds for complex queries with graph expansion
+            try:
+                response = requests.post(url, json=payload, timeout=120.0)
+                elapsed = time.time() - start_time
+                logger.info(f"Neo4j GraphRAG request completed in {elapsed:.2f}s")
+                response.raise_for_status()
+                data = response.json()
+            except requests.exceptions.Timeout:
+                elapsed = time.time() - start_time
+                logger.error(f"Neo4j GraphRAG request timed out after {elapsed:.2f}s (timeout: 120s)")
+                raise
             
             # Transform to match Azure Search format for compatibility
             results = []
@@ -176,7 +186,7 @@ def graphrag_search(
     return retriever.hybrid_retrieve(
         query=query,
         top_k_vector=top_k,
-        max_hops=2,
+        max_hops=1,  # Reduced from 2 to 1 to limit indirect connections
         similarity_threshold=similarity_threshold,
         machine_id=machine_id,
         directory_path=directory_path,

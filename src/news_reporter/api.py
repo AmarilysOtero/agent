@@ -5,10 +5,13 @@ from typing import Optional
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 
 from .config import Settings
 from src.news_reporter.tools_upload_index.search_pipeline import ensure_pipeline, run_indexer_now
 from src.news_reporter.tools_upload_index.pdf_ingestor import ingest_pdf
+from src.news_reporter.tools.sql_generator import SQLGenerator
+from src.news_reporter.tools.schema_retrieval import SchemaRetriever
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -122,6 +125,60 @@ async def upload(file: UploadFile = File(...), tags: Optional[str] = Form(None))
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+# SQL Generation Endpoints
+
+class SQLGenerationRequest(BaseModel):
+    """Request model for SQL generation"""
+    query: str
+    database_id: str
+    top_k: int = 10
+    similarity_threshold: float = 0.7
+
+
+class SchemaSearchRequest(BaseModel):
+    """Request model for schema search"""
+    query: str
+    database_id: str
+    top_k: int = 10
+    similarity_threshold: float = 0.7
+    element_types: Optional[list] = None
+
+
+@app.post("/api/sql/generate")
+async def generate_sql(request: SQLGenerationRequest):
+    """Generate SQL from natural language query"""
+    try:
+        generator = SQLGenerator()
+        result = generator.generate_sql(
+            query=request.query,
+            database_id=request.database_id,
+            top_k=request.top_k,
+            similarity_threshold=request.similarity_threshold
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logging.exception("[sql/generate] Failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"SQL generation failed: {str(e)}")
+
+
+@app.post("/api/schema/search")
+async def search_schema(request: SchemaSearchRequest):
+    """Search database schema for relevant elements"""
+    try:
+        retriever = SchemaRetriever()
+        result = retriever.get_relevant_schema(
+            query=request.query,
+            database_id=request.database_id,
+            top_k=request.top_k,
+            similarity_threshold=request.similarity_threshold,
+            element_types=request.element_types
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logging.exception("[schema/search] Failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Schema search failed: {str(e)}")
 
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":

@@ -23,6 +23,16 @@ except ImportError:
     run_indexer_now = None
     ingest_pdf = None
 
+# SQL generation imports
+try:
+    from src.news_reporter.tools.sql_generator import SQLGenerator
+    from src.news_reporter.tools.schema_retrieval import SchemaRetriever
+    _SQL_AVAILABLE = True
+except ImportError:
+    _SQL_AVAILABLE = False
+    SQLGenerator = None
+    SchemaRetriever = None
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -106,8 +116,6 @@ def filter_results_by_exact_match(results: List[dict], query: str, min_similarit
             logging.info(f"Filtered out result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}, text_preview={text[:100]}")
     
     logging.info(f"Filtered {len(results)} results down to {len(filtered)} results")
-    return filtered
-    
     return filtered
 
 @asynccontextmanager
@@ -366,6 +374,63 @@ async def chat(request: ChatRequest):
                 )
             )
         raise HTTPException(status_code=500, detail=f"Chat processing failed: {error_msg}")
+
+# SQL Generation Endpoints
+
+class SQLGenerationRequest(BaseModel):
+    """Request model for SQL generation"""
+    query: str
+    database_id: str
+    top_k: int = 10
+    similarity_threshold: float = 0.7
+
+
+class SchemaSearchRequest(BaseModel):
+    """Request model for schema search"""
+    query: str
+    database_id: str
+    top_k: int = 10
+    similarity_threshold: float = 0.7
+    element_types: Optional[list] = None
+
+
+@app.post("/api/sql/generate")
+async def generate_sql(request: SQLGenerationRequest):
+    """Generate SQL from natural language query"""
+    if not _SQL_AVAILABLE:
+        raise HTTPException(status_code=503, detail="SQL generation functionality is not available. Required dependencies are missing.")
+    try:
+        generator = SQLGenerator()
+        result = generator.generate_sql(
+            query=request.query,
+            database_id=request.database_id,
+            top_k=request.top_k,
+            similarity_threshold=request.similarity_threshold
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logging.exception("[sql/generate] Failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"SQL generation failed: {str(e)}")
+
+
+@app.post("/api/schema/search")
+async def search_schema(request: SchemaSearchRequest):
+    """Search database schema for relevant elements"""
+    if not _SQL_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Schema search functionality is not available. Required dependencies are missing.")
+    try:
+        retriever = SchemaRetriever()
+        result = retriever.get_relevant_schema(
+            query=request.query,
+            database_id=request.database_id,
+            top_k=request.top_k,
+            similarity_threshold=request.similarity_threshold,
+            element_types=request.element_types
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logging.exception("[schema/search] Failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Schema search failed: {str(e)}")
 
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":

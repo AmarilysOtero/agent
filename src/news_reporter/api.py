@@ -25,8 +25,8 @@ except ImportError:
 
 # SQL generation imports
 try:
-    from src.news_reporter.tools.sql_generator import SQLGenerator
-    from src.news_reporter.tools.schema_retrieval import SchemaRetriever
+    from src.news_reporter.tools_sql.sql_generator import SQLGenerator
+    from src.news_reporter.tools_sql.schema_retrieval import SchemaRetriever
     _SQL_AVAILABLE = True
 except ImportError:
     _SQL_AVAILABLE = False

@@ -13,7 +13,7 @@ except ImportError:
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     sys.path.append(str(repo_root.parent))
     from src.news_reporter.config import Settings
-    from src.news_reporter.tools.schema_retrieval import SchemaRetriever
+    from src.news_reporter.tools_sql.schema_retrieval import SchemaRetriever
 
 logger = logging.getLogger(__name__)
 

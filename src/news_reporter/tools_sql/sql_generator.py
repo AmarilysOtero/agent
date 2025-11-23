@@ -139,30 +139,29 @@ SQL Query:"""
         return prompt
     
     def _call_llm(self, prompt: str, model: Optional[str] = None) -> Dict[str, Any]:
-        """Call LLM to generate SQL"""
+        """Call LLM to generate SQL using Foundry"""
         try:
+            from ..foundry_runner import run_foundry_agent
+            
             settings = Settings.load()
             
-            # Try Azure OpenAI first
-            if hasattr(settings, 'azure_openai_endpoint') and settings.azure_openai_endpoint:
-                return self._call_azure_openai(prompt, model or settings.azure_openai_deployment)
-            else:
-                # Fallback to OpenAI
-                import openai
-                client = openai.OpenAI(api_key=settings.openai_api_key)
-                
-                response = client.chat.completions.create(
-                    model=model or "gpt-4",
-                    messages=[
-                        {"role": "system", "content": "You are a SQL expert. Generate valid SQL queries based on natural language requests."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.1,
-                    max_tokens=1000
-                )
-                
-                content = response.choices[0].message.content
-                return self._parse_llm_response(content)
+            # Use Foundry agent for SQL generation
+            # Use an existing agent ID (aisearch agent can handle SQL generation)
+            # Alternatively, you could create a dedicated SQL agent and add agent_id_sql to Settings
+            agent_id = settings.agent_id_aisearch if hasattr(settings, 'agent_id_aisearch') and settings.agent_id_aisearch else None
+            
+            if not agent_id:
+                raise ValueError("No Foundry agent ID available for SQL generation. Please configure agent_id_aisearch or create a dedicated SQL agent.")
+            
+            # Call Foundry agent (this uses the ai_project_endpoint internally)
+            system_prompt = "You are a SQL expert. Generate valid SQL queries based on natural language requests. Format your response as JSON: {\"sql\": \"SELECT ...\", \"explanation\": \"...\", \"confidence\": 0.9}"
+            content = run_foundry_agent(
+                agent_id=agent_id,
+                user_content=prompt,
+                system_hint=system_prompt
+            )
+            
+            return self._parse_llm_response(content)
         except Exception as e:
             logger.error(f"LLM call failed: {e}", exc_info=True)
             return {
@@ -170,39 +169,6 @@ SQL Query:"""
                 "explanation": f"Failed to generate SQL: {str(e)}",
                 "confidence": 0.0
             }
-    
-    def _call_azure_openai(self, prompt: str, deployment: str) -> Dict[str, Any]:
-        """Call Azure OpenAI"""
-        try:
-            import requests
-            settings = Settings.load()
-            
-            url = f"{settings.azure_openai_endpoint.rstrip('/')}/openai/deployments/{deployment}/chat/completions"
-            headers = {
-                "api-key": settings.azure_openai_api_key,
-                "Content-Type": "application/json"
-            }
-            params = {
-                "api-version": settings.azure_openai_api_version
-            }
-            data = {
-                "messages": [
-                    {"role": "system", "content": "You are a SQL expert. Generate valid SQL queries based on natural language requests."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.1,
-                "max_tokens": 1000
-            }
-            
-            response = requests.post(url, headers=headers, params=params, json=data, timeout=30)
-            response.raise_for_status()
-            result = response.json()
-            
-            content = result["choices"][0]["message"]["content"]
-            return self._parse_llm_response(content)
-        except Exception as e:
-            logger.error(f"Azure OpenAI call failed: {e}", exc_info=True)
-            raise
     
     def _parse_llm_response(self, content: str) -> Dict[str, Any]:
         """Parse LLM response to extract SQL and explanation"""

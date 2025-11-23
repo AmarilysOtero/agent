@@ -11,24 +11,36 @@ except ImportError:
     sys.path.append(str(repo_root.parent))
     from src.news_reporter.config import Settings
 
-from azure.core.credentials import AzureKeyCredential
-from azure.search.documents import SearchClient
-from azure.search.documents.indexes import SearchIndexClient
-from azure.search.documents.indexes.models import (
-    SearchIndex,
-    SearchField,
-    SimpleField,
-    SearchableField,
-    SearchFieldDataType,
-    VectorSearch,
-    VectorSearchProfile,
-    HnswAlgorithmConfiguration,
-    HnswParameters,
-    VectorSearchAlgorithmKind,
-    SemanticConfiguration,
-    SemanticPrioritizedFields,
-    SemanticField,
-)
+# Try to import Azure Search - if it fails, the module can still be loaded
+# but functions will raise ImportError when called
+# Catch both ImportError and TypeError (TypeError can occur with version incompatibilities)
+try:
+    from azure.core.credentials import AzureKeyCredential
+    from azure.search.documents import SearchClient
+    from azure.search.documents.indexes import SearchIndexClient
+    from azure.search.documents.indexes.models import (
+        SearchIndex,
+        SearchField,
+        SimpleField,
+        SearchableField,
+        SearchFieldDataType,
+        VectorSearch,
+        VectorSearchProfile,
+        HnswAlgorithmConfiguration,
+        HnswParameters,
+        VectorSearchAlgorithmKind,
+        SemanticConfiguration,
+        SemanticPrioritizedFields,
+        SemanticField,
+    )
+    _AZURE_SEARCH_AVAILABLE = True
+except (ImportError, TypeError) as e:
+    _AZURE_SEARCH_AVAILABLE = False
+    _AZURE_SEARCH_ERROR = str(e)
+    # Create dummy classes to prevent NameError
+    AzureKeyCredential = None
+    SearchClient = None
+    SearchIndexClient = None
 
 # Load settings once
 settings = Settings.load()
@@ -39,13 +51,22 @@ def _require_str(val: Optional[str], name: str) -> str:
         raise RuntimeError(f"Missing required setting: {name}")
     return val
 
-ENDPOINT: str = _require_str(settings.azure_search_endpoint, "AZURE_SEARCH_ENDPOINT")
-API_KEY: str = _require_str(settings.azure_search_api_key, "AZURE_SEARCH_API_KEY")
-INDEX_NAME: str = _require_str(settings.azure_search_index, "AZURE_SEARCH_INDEX")
-VECTOR_DIM: int = settings.embedding_vector_dim  # e.g., 3072 for text-embedding-3-large
+# Only initialize Azure Search constants if available
+if _AZURE_SEARCH_AVAILABLE:
+    ENDPOINT: str = _require_str(settings.azure_search_endpoint, "AZURE_SEARCH_ENDPOINT")
+    API_KEY: str = _require_str(settings.azure_search_api_key, "AZURE_SEARCH_API_KEY")
+    INDEX_NAME: str = _require_str(settings.azure_search_index, "AZURE_SEARCH_INDEX")
+    VECTOR_DIM: int = settings.embedding_vector_dim  # e.g., 3072 for text-embedding-3-large
+else:
+    ENDPOINT = ""
+    API_KEY = ""
+    INDEX_NAME = ""
+    VECTOR_DIM = 0
 
 
 def _index_client() -> SearchIndexClient:
+    if not _AZURE_SEARCH_AVAILABLE:
+        raise ImportError(f"Azure Search is not available: {_AZURE_SEARCH_ERROR}")
     return SearchIndexClient(
         endpoint=ENDPOINT,
         credential=AzureKeyCredential(API_KEY),
@@ -53,6 +74,8 @@ def _index_client() -> SearchIndexClient:
 
 
 def _search_client() -> SearchClient:
+    if not _AZURE_SEARCH_AVAILABLE:
+        raise ImportError(f"Azure Search is not available: {_AZURE_SEARCH_ERROR}")
     return SearchClient(
         endpoint=ENDPOINT,
         index_name=INDEX_NAME,
@@ -204,6 +227,8 @@ def hybrid_search(
     Hybrid keyword + optional vector search.
     Set semantic=False if your service doesn't enable semantic search.
     """
+    if not _AZURE_SEARCH_AVAILABLE:
+        raise ImportError(f"Azure Search is not available: {_AZURE_SEARCH_ERROR}")
     sc = _search_client()
     if select is None:
         select = ["id", "doc_id", "page", "text", "blob_uri", "timestamp"]

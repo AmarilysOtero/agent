@@ -1,11 +1,104 @@
 from __future__ import annotations
 import json
 import logging
+from typing import List, Dict, Any
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
-from ..tools.azure_search import hybrid_search
 
 logger = logging.getLogger(__name__)
+
+
+def extract_person_names(query: str) -> List[str]:
+    """Extract potential person names from query (capitalized words that might be names)
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        List of potential person names (capitalized words)
+    """
+    # Split query into words
+    words = query.split()
+    # Extract capitalized words that are likely names (length > 2, starts with capital)
+    names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
+    # Remove common words that start with capital but aren't names
+    common_words = {'The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Who', 'Why', 'How', 'Tell', 'Show', 'Give', 'Find', 'Search', 'Get'}
+    names = [n for n in names if n not in common_words]
+    return names
+
+
+def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min_similarity: float = 0.88) -> List[Dict[str, Any]]:
+    """Filter search results to require query name appears in chunk text or very high similarity
+    
+    Args:
+        results: List of search result dictionaries
+        query: Original query text
+        min_similarity: Minimum similarity to keep result without exact match
+        
+    Returns:
+        Filtered list of results
+    """
+    if not results:
+        return results
+    
+    # Extract potential name words from query using the same function that filters common words
+    names = extract_person_names(query)
+    query_words = [n.lower() for n in names]
+    
+    # If no capitalized words, apply minimum similarity threshold only
+    if not query_words:
+        # Still filter out very low similarity results
+        return [res for res in results if res.get("similarity", 0.0) >= 0.3]
+    
+    # Get first name (first name word) - critical for distinguishing names
+    first_name = query_words[0] if query_words else None
+    last_name = query_words[-1] if len(query_words) > 1 else None
+    
+    logger.info(f"Filtering {len(results)} results for query '{query}' (first_name='{first_name}', last_name='{last_name}')")
+    
+    filtered = []
+    for res in results:
+        text = res.get("text", "").lower()
+        similarity = res.get("similarity", 0.0)
+        
+        # Apply absolute minimum similarity threshold (reject very low scores)
+        if similarity < 0.3:
+            logger.debug(f"Filtered out result: similarity={similarity:.3f} < 0.3 (absolute minimum)")
+            continue
+        
+        # Check if first name appears in text (required for name queries)
+        # This prevents "Axel Torres" from matching "Alexis Torres" queries
+        first_name_found = first_name in text if first_name else True
+        
+        # If we have both first and last name, require both to match
+        if first_name and last_name:
+            last_name_found = last_name in text
+            name_match = first_name_found and last_name_found
+        else:
+            # Only first name available, require it to match
+            name_match = first_name_found
+        
+        # Keep if: (name matches AND similarity >= 0.3) OR similarity is very high (>= min_similarity)
+        # Lower threshold for name matches to allow more results through
+        if (name_match and similarity >= 0.3) or similarity >= min_similarity:
+            filtered.append(res)
+            logger.debug(f"Kept result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}")
+        else:
+            logger.info(f"Filtered out result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}, text_preview={text[:100]}")
+    
+    logger.info(f"Filtered {len(results)} results down to {len(filtered)} results")
+    return filtered
+    
+    return filtered
+
+# Lazy import for Azure Search to avoid import errors when using Neo4j only
+def _get_hybrid_search():
+    try:
+        from ..tools.azure_search import hybrid_search
+        return hybrid_search
+    except ImportError as e:
+        logger.warning(f"Azure Search not available: {e}")
+        return None
 
 # ---------- TRIAGE (Foundry) ----------
 
@@ -22,7 +115,14 @@ class TriageAgent:
     async def run(self, goal: str) -> IntentResult:
         content = f"Classify and return JSON only. User goal: {goal}"
         print("TriageAgent: using Foundry agent:", self._id)  # keep print
-        raw = run_foundry_agent(self._id, content).strip()
+        try:
+            raw = run_foundry_agent(self._id, content).strip()
+        except RuntimeError as e:
+            logger.error("TriageAgent Foundry error: %s", e)
+            raise RuntimeError(
+                f"Triage agent failed: {str(e)}. "
+                "Please check your Foundry access and agent configuration."
+            ) from e
         print("Triage raw:", raw)  # keep print
         try:
             data = json.loads(raw)
@@ -41,6 +141,10 @@ class AiSearchAgent:
 
     async def run(self, query: str) -> str:
         print("AiSearchAgent: using Foundry agent:", self._id)  # keep print
+        hybrid_search = _get_hybrid_search()
+        if hybrid_search is None:
+            return "Azure Search is not available. Please configure Azure Search or use Neo4j search instead."
+        
         results = hybrid_search(
             search_text=query,
             top_k=8,
@@ -72,36 +176,77 @@ class Neo4jGraphRAGAgent:
         print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
         from ..tools.neo4j_graphrag import graphrag_search
         
+        # Extract person names from query for keyword filtering
+        person_names = extract_person_names(query)
+        
+        # Use improved search parameters to reduce false matches
         results = graphrag_search(
             query=query,
-            top_k=8,
-            similarity_threshold=0.7
+            top_k=12,  # Get more results initially for filtering
+            similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
+            keywords=person_names if person_names else None,
+            keyword_match_type="any",
+            keyword_boost=0.4  # Increase keyword weight for name matching
         )
 
         if not results:
             return "No results found in Neo4j GraphRAG."
 
+        # Filter results to require exact name match or very high similarity
+        filtered_results = filter_results_by_exact_match(
+            results, 
+            query, 
+            min_similarity=0.7  # Very high threshold for results without exact match
+        )
+        
+        # Limit to top 8 after filtering
+        filtered_results = filtered_results[:8]
+
+        if not filtered_results:
+            logger.warning(f"No relevant results found after filtering (had {len(results)} initial results)")
+            return "No relevant results found in Neo4j GraphRAG after filtering."
+
         findings = []
-        for res in results:
+        for res in filtered_results:
             text = res.get("text", "").replace("\n", " ")
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
+            file_path = res.get("file_path", "")
             
-            # Include GraphRAG metadata for explainability
-            metadata = ""
-            if "hybrid_score" in res:
-                metadata = f" [score: {res['hybrid_score']:.2f}]"
-            if "metadata" in res and res["metadata"].get("hop_count", 0) > 0:
-                hops = res["metadata"]["hop_count"]
-                metadata += f" [hops: {hops}]"
+            # Include comprehensive metadata for agent context
+            metadata_parts = []
+            if "hybrid_score" in res and res["hybrid_score"] is not None:
+                metadata_parts.append(f"score:{res['hybrid_score']:.2f}")
+            if "similarity" in res and res["similarity"] is not None:
+                metadata_parts.append(f"similarity:{res['similarity']:.2f}")
+            if "metadata" in res and res["metadata"]:
+                meta = res["metadata"]
+                if meta.get("hop_count", 0) > 0:
+                    metadata_parts.append(f"hops:{meta['hop_count']}")
+                if meta.get("vector_score") is not None:
+                    metadata_parts.append(f"vector:{meta['vector_score']:.3f}")
+                if meta.get("keyword_score") is not None:
+                    metadata_parts.append(f"keyword:{meta['keyword_score']:.3f}")
+                if meta.get("path_score") is not None:
+                    metadata_parts.append(f"path:{meta['path_score']:.3f}")
+                if meta.get("chunk_index") is not None:
+                    metadata_parts.append(f"chunk_idx:{meta['chunk_index']}")
+                if meta.get("chunk_size") is not None:
+                    metadata_parts.append(f"size:{meta['chunk_size']}")
+                if meta.get("file_id"):
+                    metadata_parts.append(f"file_id:{meta['file_id']}")
             
-            # Format source info
-            if directory:
+            metadata_str = f" [{', '.join(metadata_parts)}]" if metadata_parts else ""
+            
+            # Format source info with file path (preferred) or directory/name
+            if file_path:
+                source_info = file_path
+            elif directory:
                 source_info = f"{directory}/{file_name}"
             else:
                 source_info = file_name
             
-            findings.append(f"- {source_info}: {text[:300]}...{metadata}")
+            findings.append(f"- {source_info}: {text[:300]}...{metadata_str}")
 
         return "\n".join(findings)
 
@@ -120,7 +265,14 @@ class NewsReporterAgent:
             "Write a description about the information in the tone of a news reporter." 
         )
         print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
-        return run_foundry_agent(self._id, content)
+        try:
+            return run_foundry_agent(self._id, content)
+        except RuntimeError as e:
+            logger.error("NewsReporterAgent Foundry error: %s", e)
+            raise RuntimeError(
+                f"Reporter agent failed: {str(e)}. "
+                "Please check your Foundry access and agent configuration."
+            ) from e
 
 # ---------- REVIEWER (Foundry, strict JSON) ----------
 
@@ -148,6 +300,14 @@ class ReviewAgent:
                 prompt,
                 system_hint="You are a reviewer that returns STRICT JSON only."
             )
+        except RuntimeError as e:
+            logger.error("ReviewAgent Foundry error: %s", e)
+            raise RuntimeError(
+                f"Review agent failed: {str(e)}. "
+                "Please check your Foundry access and agent configuration."
+            ) from e
+        
+        try:
             if not isinstance(data, dict) or "decision" not in data:
                 raise ValueError("Invalid JSON shape from reviewer")
             decision = (data.get("decision") or "revise").lower()

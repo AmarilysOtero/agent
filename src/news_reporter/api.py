@@ -180,6 +180,7 @@ class ChatResponse(BaseModel):
     response: str
     sources: list[Source] = []
     conversation_id: str
+    exact_answer: Optional[dict] = None  # Exact numerical answer from CSV query
 
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
@@ -283,6 +284,7 @@ async def chat(request: ChatRequest):
         
         # Get sources from Neo4j if using Neo4j search
         sources = []
+        exact_answer_data = None  # Initialize exact answer data
         if cfg.use_neo4j_search:
             try:
                 # Try relative import first, then absolute import
@@ -290,6 +292,28 @@ async def chat(request: ChatRequest):
                     from ..tools.neo4j_graphrag import graphrag_search
                 except ImportError:
                     from src.news_reporter.tools.neo4j_graphrag import graphrag_search
+                
+                # Import CSV query tools for exact numerical calculations
+                try:
+                    try:
+                        from ..tools.csv_query import (
+                            query_requires_exact_numbers,
+                            extract_csv_path_from_rag_results,
+                            extract_filter_value_from_query,
+                            sum_numeric_columns
+                        )
+                        csv_query_available = True
+                    except ImportError:
+                        from src.news_reporter.tools.csv_query import (
+                            query_requires_exact_numbers,
+                            extract_csv_path_from_rag_results,
+                            extract_filter_value_from_query,
+                            sum_numeric_columns
+                        )
+                        csv_query_available = True
+                except ImportError:
+                    logging.warning("CSV query tools not available, skipping exact number calculations")
+                    csv_query_available = False
                 
                 # Extract person names from query for keyword filtering
                 person_names = extract_person_names(request.query)
@@ -313,6 +337,46 @@ async def chat(request: ChatRequest):
                 
                 # Limit to top 8 after filtering
                 filtered_results = filtered_results[:8]
+                
+                # Check if query requires exact numerical calculation and try CSV query
+                exact_answer_data = None
+                if csv_query_available and query_requires_exact_numbers(request.query) and filtered_results:
+                    try:
+                        csv_path = extract_csv_path_from_rag_results(filtered_results)
+                        
+                        if csv_path:
+                            # Try to extract filter values from query (common column names)
+                            filter_columns = ['Model', 'Product', 'Category', 'Item', 'Name', 'Type']
+                            filters = {}
+                            
+                            for col in filter_columns:
+                                value = extract_filter_value_from_query(request.query, col, filtered_results)
+                                if value:
+                                    filters[col] = value
+                                    logging.info(f"Extracted filter: {col} = {value}")
+                                    break  # Use first match
+                            
+                            if filters:
+                                # Get exact numerical answer using pandas
+                                exact_result = sum_numeric_columns(
+                                    file_path=csv_path,
+                                    filters=filters,
+                                    exclude_columns=list(filters.keys()) + ['Factory Location', 'Location', 'Region']
+                                )
+                                
+                                if 'error' not in exact_result and exact_result.get('total', 0) > 0:
+                                    exact_answer_data = {
+                                        'total': exact_result.get('total', 0),
+                                        'breakdown': exact_result.get('breakdown', {}),
+                                        'filters': filters,
+                                        'columns_summed': exact_result.get('columns_summed', 0),
+                                        'file_path': csv_path
+                                    }
+                                    logging.info(f"CSV query successful: total={exact_answer_data['total']}, columns={exact_answer_data['columns_summed']}")
+                                else:
+                                    logging.warning(f"CSV query returned no data or error: {exact_result.get('error', 'unknown')}")
+                    except Exception as e:
+                        logging.warning(f"CSV query failed, falling back to RAG only: {e}", exc_info=True)
                 
                 if filtered_results:
                     sources = [
@@ -356,7 +420,8 @@ async def chat(request: ChatRequest):
         return ChatResponse(
             response=response_text,
             sources=sources,
-            conversation_id=conversation_id
+            conversation_id=conversation_id,
+            exact_answer=exact_answer_data
         )
     except HTTPException:
         raise

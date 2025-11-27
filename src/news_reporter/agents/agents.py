@@ -184,7 +184,8 @@ class Neo4jGraphRAGAgent:
                 extract_csv_path_from_rag_results,
                 extract_filter_value_from_query,
                 sum_numeric_columns,
-                get_distinct_values
+                get_distinct_values,
+                is_csv_specific_query
             )
             csv_query_available = True
         except ImportError:
@@ -327,9 +328,37 @@ class Neo4jGraphRAGAgent:
                                 'columns_summed': exact_result.get('columns_summed', 0)
                             }
                             logger.info(f"✅ CSV query successful: total={exact_answer['total']}, columns={exact_answer['columns_summed']}")
+                        elif 'error' not in exact_result and exact_result.get('total', 0) == 0:
+                            # CSV returned 0 - check if query is CSV-specific
+                            is_csv_specific = is_csv_specific_query(query)
+                            
+                            if is_csv_specific:
+                                # Query is CSV-specific, so 0 means no data in CSV
+                                exact_answer = {
+                                    'total': 0,
+                                    'no_data': True,
+                                    'message': f"No matching data found in CSV for filter: {filters}",
+                                    'filters': filters,
+                                    'source': 'csv'
+                                }
+                                logger.warning(f"⚠️ CSV-specific query returned 0 - no data found in CSV")
+                            else:
+                                # General query - CSV has no matches, but data might be in PDFs/other docs
+                                # Filter out CSV chunks from RAG results to avoid confusion
+                                original_count = len(filtered_results)
+                                filtered_results = [
+                                    res for res in filtered_results 
+                                    if not res.get('file_path', '').lower().endswith('.csv')
+                                ]
+                                filtered_count = len(filtered_results)
+                                
+                                if filtered_count < original_count:
+                                    logger.info(f"ℹ️ CSV query returned 0, filtered out {original_count - filtered_count} CSV chunks, keeping {filtered_count} non-CSV chunks (PDFs, Word docs, etc.)")
+                                else:
+                                    logger.info(f"ℹ️ CSV query returned 0, no CSV chunks to filter (all chunks are from other sources)")
                         else:
                             error_msg = exact_result.get('error', 'unknown')
-                            logger.warning(f"❌ CSV query returned no data or error: {error_msg}. Full result keys: {list(exact_result.keys())}")
+                            logger.warning(f"❌ CSV query returned error: {error_msg}. Full result keys: {list(exact_result.keys())}")
                             if 'metadata' in exact_result:
                                 logger.warning(f"   Metadata: {exact_result['metadata']}")
                     else:
@@ -365,17 +394,46 @@ class Neo4jGraphRAGAgent:
         
         # Add exact answer at the top if available (make it very prominent)
         if exact_answer:
-            filter_str = ', '.join([f"{k}={v}" for k, v in exact_answer['filters'].items()])
-            findings.append(
-                f"═══════════════════════════════════════════════════════════\n"
-                f"**EXACT NUMERICAL ANSWER:**\n"
-                f"Total = {exact_answer['total']:,} units\n"
-                f"Filter: {filter_str}\n"
-                f"Summed across {exact_answer['columns_summed']} numeric columns\n"
-                f"═══════════════════════════════════════════════════════════\n\n"
-                f"**Context from documents:**\n"
+            if exact_answer.get('no_data'):
+                # CSV-specific query with no data
+                filter_str = ', '.join([f"{k}={v}" for k, v in exact_answer['filters'].items()])
+                findings.append(
+                    f"═══════════════════════════════════════════════════════════\n"
+                    f"**NO DATA FOUND IN CSV:**\n"
+                    f"Filter: {filter_str}\n"
+                    f"Message: {exact_answer.get('message', 'No matching data found')}\n"
+                    f"═══════════════════════════════════════════════════════════\n\n"
+                    f"**Note:** This query is CSV-specific. No matching data found in the CSV file.\n"
+                    f"**Context from documents (if any):**\n"
+                )
+                logger.info(f"⚠️ Added 'no data' message to response for CSV-specific query")
+            else:
+                # Successful CSV query
+                filter_str = ', '.join([f"{k}={v}" for k, v in exact_answer['filters'].items()])
+                findings.append(
+                    f"═══════════════════════════════════════════════════════════\n"
+                    f"**EXACT NUMERICAL ANSWER:**\n"
+                    f"Total = {exact_answer['total']:,} units\n"
+                    f"Filter: {filter_str}\n"
+                    f"Summed across {exact_answer['columns_summed']} numeric columns\n"
+                    f"═══════════════════════════════════════════════════════════\n\n"
+                    f"**Context from documents:**\n"
+                )
+                logger.info(f"✅ Added exact answer to response: {exact_answer['total']:,} units")
+        
+        # Add note if CSV returned 0 for general query (CSV chunks already filtered out)
+        if not exact_answer and not list_answer and csv_query_available and needs_exact:
+            # Check if we filtered out CSV chunks (this means CSV returned 0 for general query)
+            csv_chunks_in_results = any(
+                res.get('file_path', '').lower().endswith('.csv') 
+                for res in filtered_results
             )
-            logger.info(f"✅ Added exact answer to response: {exact_answer['total']:,} units")
+            if not csv_chunks_in_results and len(filtered_results) > 0:
+                findings.append(
+                    f"**Note:** CSV query returned no matches for the specified filters. "
+                    f"Searching in other document sources (PDFs, Word documents, etc.)...\n\n"
+                )
+                logger.info(f"ℹ️ Added note that CSV had no matches, using other document sources")
         
         if not exact_answer and not list_answer:
             logger.warning("⚠️ No CSV query answer available - response will use RAG chunks only")
@@ -385,6 +443,18 @@ class Neo4jGraphRAGAgent:
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
             file_path = res.get("file_path", "")
+            
+            # Add source type indicator to help agent distinguish data sources
+            if file_path.lower().endswith('.csv'):
+                source_note = "[CSV Data]"
+            elif file_path.lower().endswith('.pdf'):
+                source_note = "[PDF Document]"
+            elif file_path.lower().endswith(('.doc', '.docx')):
+                source_note = "[Word Document]"
+            elif file_path.lower().endswith(('.xls', '.xlsx')):
+                source_note = "[Excel Document]"
+            else:
+                source_note = "[Document]"
             
             # Include comprehensive metadata for agent context
             metadata_parts = []
@@ -419,7 +489,7 @@ class Neo4jGraphRAGAgent:
             else:
                 source_info = file_name
             
-            findings.append(f"- {source_info}: {text[:300]}...{metadata_str}")
+            findings.append(f"- {source_note} {source_info}: {text[:300]}...{metadata_str}")
 
         return "\n".join(findings)
 

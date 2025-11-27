@@ -707,6 +707,25 @@ def query_requires_list(query: str) -> bool:
     return result['requires']
 
 
+def is_csv_specific_query(query: str) -> bool:
+    """
+    Detect if query explicitly mentions CSV/inventory/file
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        True if query is CSV-specific (mentions CSV, inventory file, etc.)
+    """
+    query_lower = query.lower()
+    csv_indicators = [
+        'csv', 'inventory', 'inventory file', 'inventory csv',
+        'in the csv', 'from the csv', 'in the file', 'from the file',
+        'inventory data', 'csv file', 'csv data', 'in the inventory'
+    ]
+    return any(indicator in query_lower for indicator in csv_indicators)
+
+
 def is_date_like(value: str) -> bool:
     """Check if a value looks like a date/date range (to avoid using dates as filter values)"""
     import re
@@ -831,6 +850,7 @@ def extract_filter_value_from_query(
                         cells = [cell.strip() for cell in row.split('|')[1:-1]]
                         if len(cells) > header_col_index:
                             value = cells[header_col_index].strip()
+                            # Normalize whitespace: replace multiple spaces with single space
                             value = re.sub(r'\s+', ' ', value).strip()
                             # Validate the value
                             if is_valid_model_name(value):
@@ -869,6 +889,8 @@ def extract_filter_value_from_query(
     quoted = re.search(r'"([^"]+)"', query)
     if quoted:
         value = quoted.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         if is_valid_model_name(value):
             logger.debug(f"Extracted {filter_column} value from quoted string: '{value}'")
             return value
@@ -880,6 +902,8 @@ def extract_filter_value_from_query(
     match = re.search(how_many_pattern, query, re.IGNORECASE)
     if match:
         value = match.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         if is_valid_model_name(value):
             logger.debug(f"Extracted {filter_column} value after 'how many/much': '{value}'")
             return value
@@ -888,6 +912,8 @@ def extract_filter_value_from_query(
     after_for = re.search(r'(?:for|of)\s+([A-Z][^?.,!]+?)(?:\s+are|\s+is|\s+there|\s+in|$)', query, re.IGNORECASE)
     if after_for:
         value = after_for.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         if is_valid_model_name(value):
             logger.debug(f"Extracted {filter_column} value after 'for/of': '{value}'")
             return value
@@ -898,12 +924,16 @@ def extract_filter_value_from_query(
     match = re.search(number_product_pattern, query)
     if match:
         value = match.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         # Try to extend to get full name (e.g., "4Runner TRD Pro" instead of just "4Runner")
         # Look for additional capitalized words after the number+word pattern
         extended_pattern = rf'{re.escape(value)}\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)'
         extended_match = re.search(extended_pattern, query)
         if extended_match:
             extended_value = f"{value} {extended_match.group(1)}"
+            # Normalize whitespace: replace multiple spaces with single space
+            extended_value = re.sub(r'\s+', ' ', extended_value).strip()
             if is_valid_model_name(extended_value):
                 logger.debug(f"Extracted {filter_column} value from extended number+product pattern: '{extended_value}'")
                 return extended_value
@@ -918,6 +948,8 @@ def extract_filter_value_from_query(
     # Sort by length (longest first) to get longer matches first
     matches.sort(key=len, reverse=True)
     for match in matches:
+        # Normalize whitespace: replace multiple spaces with single space
+        match = re.sub(r'\s+', ' ', match).strip()
         # Skip common words that aren't product names
         skip_words = {'How', 'Many', 'What', 'Total', 'Sum', 'Count', 'There', 'Are', 'Is', 'Toyota'}
         words = match.split()

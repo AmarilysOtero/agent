@@ -176,17 +176,19 @@ class Neo4jGraphRAGAgent:
         print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
         from ..tools.neo4j_graphrag import graphrag_search
         
-        # Import CSV query tools for exact numerical calculations
+        # Import CSV query tools for exact numerical calculations and list queries
         try:
             from ..tools.csv_query import (
                 query_requires_exact_numbers,
+                query_requires_list,
                 extract_csv_path_from_rag_results,
                 extract_filter_value_from_query,
-                sum_numeric_columns
+                sum_numeric_columns,
+                get_distinct_values
             )
             csv_query_available = True
         except ImportError:
-            logger.warning("CSV query tools not available, skipping exact number calculations")
+            logger.warning("CSV query tools not available, skipping CSV queries")
             csv_query_available = False
         
         # Extract person names from query for keyword filtering
@@ -219,17 +221,75 @@ class Neo4jGraphRAGAgent:
             logger.warning(f"No relevant results found after filtering (had {len(results)} initial results)")
             return "No relevant results found in Neo4j GraphRAG after filtering."
 
-        # Check if query requires exact numerical calculation and try CSV query
+        # Check if query requires exact numerical calculation or list query and try CSV query
         exact_answer = None
+        list_answer = None
         
         # Always log the check status for debugging
         if csv_query_available:
             needs_exact = query_requires_exact_numbers(query)
-            logger.warning(f"🔍 CSV query check: available={csv_query_available}, needs_exact={needs_exact}, query='{query[:50]}...', has_results={bool(filtered_results)}")
+            needs_list = query_requires_list(query)
+            logger.warning(f"🔍 CSV query check: available={csv_query_available}, needs_exact={needs_exact}, needs_list={needs_list}, query='{query[:50]}...', has_results={bool(filtered_results)}")
         else:
             needs_exact = False
+            needs_list = False
             logger.warning(f"🔍 CSV query check: available={csv_query_available} (tools not imported)")
         
+        # Handle "list all" queries (e.g., "name all models")
+        if csv_query_available and needs_list and filtered_results:
+            logger.info(f"Query requires list, attempting CSV distinct values query for: '{query[:100]}...'")
+            try:
+                csv_path = extract_csv_path_from_rag_results(filtered_results)
+                logger.info(f"Extracted CSV path: {csv_path}")
+                
+                if csv_path:
+                    # Try to detect which column to list (Model, Product, Category, etc.)
+                    list_columns = ['Model', 'Product', 'Category', 'Item', 'Name', 'Type']
+                    column_to_list = None
+                    
+                    # Check query for column name hints
+                    query_lower = query.lower()
+                    for col in list_columns:
+                        if col.lower() in query_lower:
+                            column_to_list = col
+                            logger.info(f"Detected column to list from query: {column_to_list}")
+                            break
+                    
+                    # If not found, try common patterns
+                    if not column_to_list:
+                        if 'model' in query_lower or 'car' in query_lower:
+                            column_to_list = 'Model'
+                        elif 'product' in query_lower:
+                            column_to_list = 'Product'
+                        elif 'category' in query_lower:
+                            column_to_list = 'Category'
+                        else:
+                            # Default to first common column
+                            column_to_list = 'Model'
+                            logger.info(f"Using default column: {column_to_list}")
+                    
+                    # Get distinct values
+                    list_result = get_distinct_values(
+                        file_path=csv_path,
+                        column=column_to_list
+                    )
+                    
+                    logger.info(f"CSV distinct values result - count: {list_result.get('count', 'N/A')}, error: {list_result.get('error', 'none')}")
+                    
+                    if 'error' not in list_result and list_result.get('values'):
+                        list_answer = {
+                            'values': list_result['values'],
+                            'count': list_result.get('count', 0),
+                            'column': column_to_list
+                        }
+                        logger.info(f"✅ CSV list query successful: {list_answer['count']} distinct values in column '{column_to_list}'")
+                    else:
+                        error_msg = list_result.get('error', 'unknown')
+                        logger.warning(f"❌ CSV list query returned no data or error: {error_msg}")
+            except Exception as e:
+                logger.error(f"❌ CSV list query failed: {e}", exc_info=True)
+        
+        # Handle exact numerical queries (e.g., "how many")
         if csv_query_available and needs_exact and filtered_results:
             logger.info(f"Query requires exact numbers, attempting CSV query for: '{query[:100]}...'")
             try:
@@ -288,6 +348,21 @@ class Neo4jGraphRAGAgent:
 
         findings = []
         
+        # Add list answer at the top if available (for "list all" queries)
+        if list_answer:
+            values_str = ', '.join(list_answer['values'][:20])  # Show first 20
+            if list_answer['count'] > 20:
+                values_str += f", ... and {list_answer['count'] - 20} more"
+            findings.append(
+                f"═══════════════════════════════════════════════════════════\n"
+                f"**COMPLETE LIST ({list_answer['column']} column):**\n"
+                f"Total distinct values: {list_answer['count']}\n"
+                f"Values: {values_str}\n"
+                f"═══════════════════════════════════════════════════════════\n\n"
+                f"**Context from documents:**\n"
+            )
+            logger.info(f"✅ Added list answer to response: {list_answer['count']} distinct values")
+        
         # Add exact answer at the top if available (make it very prominent)
         if exact_answer:
             filter_str = ', '.join([f"{k}={v}" for k, v in exact_answer['filters'].items()])
@@ -301,8 +376,9 @@ class Neo4jGraphRAGAgent:
                 f"**Context from documents:**\n"
             )
             logger.info(f"✅ Added exact answer to response: {exact_answer['total']:,} units")
-        else:
-            logger.warning("⚠️ No exact answer available - response will use RAG chunks only")
+        
+        if not exact_answer and not list_answer:
+            logger.warning("⚠️ No CSV query answer available - response will use RAG chunks only")
         
         for res in filtered_results:
             text = res.get("text", "").replace("\n", " ")

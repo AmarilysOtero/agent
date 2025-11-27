@@ -181,6 +181,7 @@ class ChatResponse(BaseModel):
     sources: list[Source] = []
     conversation_id: str
     exact_answer: Optional[dict] = None  # Exact numerical answer from CSV query
+    list_answer: Optional[dict] = None  # List answer from CSV query (distinct values)
 
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
@@ -293,26 +294,30 @@ async def chat(request: ChatRequest):
                 except ImportError:
                     from src.news_reporter.tools.neo4j_graphrag import graphrag_search
                 
-                # Import CSV query tools for exact numerical calculations
+                # Import CSV query tools for exact numerical calculations and list queries
                 try:
                     try:
                         from ..tools.csv_query import (
                             query_requires_exact_numbers,
+                            query_requires_list,
                             extract_csv_path_from_rag_results,
                             extract_filter_value_from_query,
-                            sum_numeric_columns
+                            sum_numeric_columns,
+                            get_distinct_values
                         )
                         csv_query_available = True
                     except ImportError:
                         from src.news_reporter.tools.csv_query import (
                             query_requires_exact_numbers,
+                            query_requires_list,
                             extract_csv_path_from_rag_results,
                             extract_filter_value_from_query,
-                            sum_numeric_columns
+                            sum_numeric_columns,
+                            get_distinct_values
                         )
                         csv_query_available = True
                 except ImportError:
-                    logging.warning("CSV query tools not available, skipping exact number calculations")
+                    logging.warning("CSV query tools not available, skipping CSV queries")
                     csv_query_available = False
                 
                 # Extract person names from query for keyword filtering
@@ -337,6 +342,57 @@ async def chat(request: ChatRequest):
                 
                 # Limit to top 8 after filtering
                 filtered_results = filtered_results[:8]
+                
+                # Check if query requires list query (e.g., "name all models")
+                list_answer_data = None
+                if csv_query_available and query_requires_list(request.query) and filtered_results:
+                    try:
+                        csv_path = extract_csv_path_from_rag_results(filtered_results)
+                        
+                        if csv_path:
+                            # Try to detect which column to list (Model, Product, Category, etc.)
+                            list_columns = ['Model', 'Product', 'Category', 'Item', 'Name', 'Type']
+                            column_to_list = None
+                            
+                            # Check query for column name hints
+                            query_lower = request.query.lower()
+                            for col in list_columns:
+                                if col.lower() in query_lower:
+                                    column_to_list = col
+                                    logging.info(f"Detected column to list from query: {column_to_list}")
+                                    break
+                            
+                            # If not found, try common patterns
+                            if not column_to_list:
+                                if 'model' in query_lower or 'car' in query_lower:
+                                    column_to_list = 'Model'
+                                elif 'product' in query_lower:
+                                    column_to_list = 'Product'
+                                elif 'category' in query_lower:
+                                    column_to_list = 'Category'
+                                else:
+                                    # Default to first common column
+                                    column_to_list = 'Model'
+                                    logging.info(f"Using default column: {column_to_list}")
+                            
+                            # Get distinct values
+                            list_result = get_distinct_values(
+                                file_path=csv_path,
+                                column=column_to_list
+                            )
+                            
+                            if 'error' not in list_result and list_result.get('values'):
+                                list_answer_data = {
+                                    'values': list_result['values'],
+                                    'count': list_result.get('count', 0),
+                                    'column': column_to_list,
+                                    'file_path': csv_path
+                                }
+                                logging.info(f"CSV list query successful: {list_answer_data['count']} distinct values in column '{column_to_list}'")
+                            else:
+                                logging.warning(f"CSV list query returned no data or error: {list_result.get('error', 'unknown')}")
+                    except Exception as e:
+                        logging.warning(f"CSV list query failed, falling back to RAG only: {e}", exc_info=True)
                 
                 # Check if query requires exact numerical calculation and try CSV query
                 exact_answer_data = None
@@ -421,7 +477,8 @@ async def chat(request: ChatRequest):
             response=response_text,
             sources=sources,
             conversation_id=conversation_id,
-            exact_answer=exact_answer_data
+            exact_answer=exact_answer_data,
+            list_answer=list_answer_data
         )
     except HTTPException:
         raise

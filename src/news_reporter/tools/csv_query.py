@@ -134,6 +134,52 @@ class CSVQueryTool:
             logger.error(f"CSV column info error: {e}", exc_info=True)
             return {'columns': {}, 'error': str(e), 'file_path': file_path}
     
+    def get_distinct_values(
+        self,
+        file_path: str,
+        column: str,
+        filters: Optional[Dict[str, Any]] = None,
+        order_by: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Get distinct/unique values from a column
+        
+        Useful for queries like "list all models" or "name all products"
+        
+        Args:
+            file_path: Path to CSV file
+            column: Column name to get distinct values from
+            filters: Optional filters to apply before getting distinct values
+            order_by: Optional sorting
+            
+        Returns:
+            Dict with 'values' (list), 'count', and 'metadata'
+        """
+        try:
+            url = f"{self.neo4j_api_url}/api/v1/csv/distinct"
+            payload = {
+                "file_path": file_path,
+                "column": column
+            }
+            if filters:
+                payload["filters"] = filters
+            if order_by:
+                payload["order_by"] = order_by
+            
+            logger.info(f"Getting distinct values for CSV: {file_path}, column: {column}")
+            response = requests.post(url, json=payload, timeout=30.0)
+            response.raise_for_status()
+            return response.json()
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"CSV distinct values API error: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response: {e.response.text}")
+            return {'values': [], 'count': 0, 'error': str(e), 'file_path': file_path}
+        except Exception as e:
+            logger.error(f"CSV distinct values error: {e}", exc_info=True)
+            return {'values': [], 'count': 0, 'error': str(e), 'file_path': file_path}
+    
     def detect_numeric_columns(
         self,
         file_path: str,
@@ -506,6 +552,33 @@ def query_requires_exact_numbers(query: str) -> bool:
     return result
 
 
+def query_requires_list(query: str) -> bool:
+    """
+    Detect if a query requires listing all values from a column
+    
+    Checks for keywords that indicate the query needs a list of all values
+    (e.g., "list all models", "name all products")
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        True if query likely requires listing all values
+    """
+    query_lower = query.lower().strip()
+    
+    # Keywords that indicate list queries
+    list_keywords = [
+        'list all', 'name all', 'show all', 'what are all',
+        'all models', 'all products', 'all items', 'all categories',
+        'enumerate', 'list every', 'name every'
+    ]
+    
+    result = any(keyword in query_lower for keyword in list_keywords)
+    logger.debug(f"query_requires_list('{query[:50]}...') = {result}")
+    return result
+
+
 def is_date_like(value: str) -> bool:
     """Check if a value looks like a date/date range (to avoid using dates as filter values)"""
     import re
@@ -745,4 +818,26 @@ def extract_model_from_query(query: str, rag_results: Optional[List[Dict[str, An
         Model name if found, None otherwise
     """
     return extract_filter_value_from_query(query, 'Model', rag_results)
+
+
+def get_distinct_values(
+    file_path: str,
+    column: str,
+    filters: Optional[Dict[str, Any]] = None,
+    order_by: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """
+    Get distinct/unique values from a CSV column (convenience function)
+    
+    Args:
+        file_path: Path to CSV file
+        column: Column name to get distinct values from
+        filters: Optional filters to apply
+        order_by: Optional sorting
+        
+    Returns:
+        Dict with 'values' (list), 'count', and 'metadata'
+    """
+    tool = CSVQueryTool()
+    return tool.get_distinct_values(file_path, column, filters, order_by)
 

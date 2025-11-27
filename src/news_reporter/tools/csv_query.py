@@ -525,12 +525,84 @@ def extract_csv_path_from_rag_results(rag_results: List[Dict[str, Any]]) -> Opti
     return None
 
 
+def _heuristic_exact_number_detection(query: str) -> Dict[str, Any]:
+    """
+    Heuristic-based detection for exact numerical queries.
+    Uses structural patterns instead of hardcoded keywords.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool) and 'confidence' (float 0.0-1.0)
+    """
+    import re
+    
+    query_lower = query.lower().strip()
+    confidence = 0.0
+    signals = []
+    
+    # Pattern 1: Question words + quantity indicators (high confidence)
+    quantity_indicators = ['many', 'much', 'total', 'sum', 'count', 'number', 'quantity']
+    question_words = ['how', 'what', 'which']
+    
+    has_question = any(qw in query_lower for qw in question_words)
+    has_quantity = any(qi in query_lower for qi in quantity_indicators)
+    
+    if has_question and has_quantity:
+        confidence += 0.5
+        signals.append("question+quantity")
+    
+    # Pattern 2: Imperative calculation verbs (high confidence)
+    calc_verbs = ['calculate', 'compute', 'sum', 'count', 'aggregate', 'add', 'total']
+    if any(verb in query_lower for verb in calc_verbs):
+        confidence += 0.4
+        signals.append("calculation_verb")
+    
+    # Pattern 3: "exact" or "precise" modifiers (very high confidence)
+    if 'exact' in query_lower or 'precise' in query_lower:
+        confidence += 0.6
+        signals.append("exactness_modifier")
+    
+    # Pattern 4: Mathematical operations mentioned (medium confidence)
+    math_ops = ['add', 'sum', 'total', 'aggregate', 'summarize', 'tally']
+    if any(op in query_lower for op in math_ops):
+        confidence += 0.3
+        signals.append("math_operation")
+    
+    # Pattern 5: "what is the" + quantity pattern (high confidence)
+    if re.search(r'what\s+is\s+the\s+(total|count|sum|number)', query_lower):
+        confidence += 0.5
+        signals.append("what_is_quantity")
+    
+    # Pattern 6: Numeric result expectation (low confidence, but helps)
+    if re.search(r'\d+', query_lower) and (has_question or has_quantity):
+        confidence += 0.1
+        signals.append("numeric_expectation")
+    
+    # Cap confidence at 1.0
+    confidence = min(confidence, 1.0)
+    
+    requires = confidence >= 0.4  # Threshold for detection
+    
+    logger.debug(
+        f"_heuristic_exact_number_detection('{query[:50]}...') = "
+        f"requires={requires}, confidence={confidence:.2f}, signals={signals}"
+    )
+    
+    return {
+        'requires': requires,
+        'confidence': confidence,
+        'signals': signals
+    }
+
+
 def query_requires_exact_numbers(query: str) -> bool:
     """
-    Detect if a query requires exact numerical calculation
+    Detect if a query requires exact numerical calculation.
     
-    Checks for keywords that indicate the query needs exact numbers
-    rather than semantic search results.
+    Uses heuristic pattern matching (Option 3) - no hardcoded keywords.
+    Can be extended with semantic similarity (Option 2) or LLM (Option 1) later.
     
     Args:
         query: User query text
@@ -538,26 +610,92 @@ def query_requires_exact_numbers(query: str) -> bool:
     Returns:
         True if query likely requires exact numerical calculation
     """
+    result = _heuristic_exact_number_detection(query)
+    return result['requires']
+
+
+def _heuristic_list_detection(query: str) -> Dict[str, Any]:
+    """
+    Heuristic-based detection for list queries.
+    Uses structural patterns instead of hardcoded keywords.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool) and 'confidence' (float 0.0-1.0)
+    """
+    import re
+    
     query_lower = query.lower().strip()
+    confidence = 0.0
+    signals = []
     
-    # Keywords that indicate exact numerical queries
-    exact_number_keywords = [
-        'how many', 'how much', 'total', 'sum', 'count',
-        'exact', 'precise', 'calculate', 'compute',
-        'aggregate', 'what is the total', 'what is the count'
-    ]
+    # Pattern 1: "all" + plural noun pattern (high confidence)
+    # Matches: "all models", "all products", "all items"
+    if re.search(r'\ball\s+\w+s\b', query_lower):
+        confidence += 0.5
+        signals.append("all_plural")
     
-    result = any(keyword in query_lower for keyword in exact_number_keywords)
-    logger.debug(f"query_requires_exact_numbers('{query[:50]}...') = {result}")
-    return result
+    # Pattern 2: List/enumerate verbs + "all" or "every" (high confidence)
+    list_verbs = ['list', 'name', 'show', 'enumerate', 'display', 'present']
+    if any(verb in query_lower for verb in list_verbs):
+        if 'all' in query_lower or 'every' in query_lower:
+            confidence += 0.6
+            signals.append("list_verb_all")
+        else:
+            confidence += 0.2  # Lower confidence if just verb without "all"
+            signals.append("list_verb")
+    
+    # Pattern 3: "what are all" pattern (very high confidence)
+    if re.search(r'what\s+are\s+all', query_lower):
+        confidence += 0.7
+        signals.append("what_are_all")
+    
+    # Pattern 4: Plural question pattern (medium confidence)
+    # Matches: "what are the models", "what are the products"
+    if re.search(r'what\s+(are|is)\s+the\s+\w+s', query_lower):
+        confidence += 0.4
+        signals.append("plural_question")
+    
+    # Pattern 5: "name all" or "list all" explicit patterns (very high confidence)
+    if re.search(r'(name|list|show|enumerate)\s+all', query_lower):
+        confidence += 0.7
+        signals.append("explicit_list_all")
+    
+    # Pattern 6: "every" + noun pattern (medium confidence)
+    if re.search(r'\bevery\s+\w+', query_lower):
+        confidence += 0.3
+        signals.append("every_pattern")
+    
+    # Pattern 7: "complete list" or "full list" (high confidence)
+    if re.search(r'(complete|full|entire)\s+list', query_lower):
+        confidence += 0.5
+        signals.append("complete_list")
+    
+    # Cap confidence at 1.0
+    confidence = min(confidence, 1.0)
+    
+    requires = confidence >= 0.4  # Threshold for detection
+    
+    logger.debug(
+        f"_heuristic_list_detection('{query[:50]}...') = "
+        f"requires={requires}, confidence={confidence:.2f}, signals={signals}"
+    )
+    
+    return {
+        'requires': requires,
+        'confidence': confidence,
+        'signals': signals
+    }
 
 
 def query_requires_list(query: str) -> bool:
     """
-    Detect if a query requires listing all values from a column
+    Detect if a query requires listing all values from a column.
     
-    Checks for keywords that indicate the query needs a list of all values
-    (e.g., "list all models", "name all products")
+    Uses heuristic pattern matching (Option 3) - no hardcoded keywords.
+    Can be extended with semantic similarity (Option 2) or LLM (Option 1) later.
     
     Args:
         query: User query text
@@ -565,18 +703,8 @@ def query_requires_list(query: str) -> bool:
     Returns:
         True if query likely requires listing all values
     """
-    query_lower = query.lower().strip()
-    
-    # Keywords that indicate list queries
-    list_keywords = [
-        'list all', 'name all', 'show all', 'what are all',
-        'all models', 'all products', 'all items', 'all categories',
-        'enumerate', 'list every', 'name every'
-    ]
-    
-    result = any(keyword in query_lower for keyword in list_keywords)
-    logger.debug(f"query_requires_list('{query[:50]}...') = {result}")
-    return result
+    result = _heuristic_list_detection(query)
+    return result['requires']
 
 
 def is_date_like(value: str) -> bool:

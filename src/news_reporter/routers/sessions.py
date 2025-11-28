@@ -151,3 +151,36 @@ async def update_session(
     except Exception as e:
         logger.error(f"Failed to update session: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update session: {str(e)}")
+
+
+@router.delete("/{session_id}", status_code=204)
+async def delete_session(
+    session_id: str,
+    user_id: str = Query(..., description="User ID for authorization"),
+    request: Request = None
+):
+    """
+    Delete a chat session
+    """
+    try:
+        repo = get_repository(request)
+        
+        # Verify ownership
+        session = repo.get_session(session_id, user_id=user_id)
+        if not session:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Session {session_id} not found or access denied"
+            )
+            
+        # Delete session
+        repo.delete_session(session_id)
+        
+        logger.info(f"Deleted session {session_id} for user {user_id}")
+        return None
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete session: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")

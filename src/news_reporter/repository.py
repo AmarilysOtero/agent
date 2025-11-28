@@ -437,3 +437,45 @@ class LLMChatRepository:
         """Fallback UPDATE for session title"""
         sql = "UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?"
         self.db.execute_sql(sql, (title, datetime.utcnow().isoformat(), session_id))
+
+    def delete_session(self, session_id: str) -> None:
+        """
+        Delete a session and its messages
+        
+        Args:
+            session_id: Session ID
+        """
+        try:
+            # Generate DELETE SQL via LLM
+            delete_query = f"""
+            Delete the session with id = '{session_id}' from the sessions table.
+            Also delete all messages associated with this session from the messages table.
+            """
+            
+            result = self.sql_generator.generate_sql(
+                query=delete_query,
+                database_id=self.DATABASE_ID,
+                top_k=3
+            )
+            
+            if result.get("error") or not result.get("sql"):
+                logger.warning("LLM DELETE generation failed, using fallback")
+                self._delete_session_fallback(session_id)
+            else:
+                # Execute the generated SQL (might be multiple statements)
+                sql = result["sql"]
+                for statement in sql.split(";"):
+                    statement = statement.strip()
+                    if statement:
+                        self.db.execute_sql(statement)
+                
+        except Exception as e:
+            logger.error(f"Failed to delete session: {e}")
+            raise
+
+    def _delete_session_fallback(self, session_id: str) -> None:
+        """Fallback DELETE for session"""
+        # Delete messages first (foreign key)
+        self.db.execute_sql("DELETE FROM messages WHERE session_id = ?", (session_id,))
+        # Delete session
+        self.db.execute_sql("DELETE FROM sessions WHERE id = ?", (session_id,))

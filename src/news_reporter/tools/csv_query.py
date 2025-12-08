@@ -9,16 +9,33 @@ from typing import List, Dict, Any, Optional
 import requests
 import logging
 import time
+import numpy as np
 
 try:
     from ..config import Settings
+    from .embeddings import EmbeddingsProvider
 except ImportError:
     import sys, pathlib
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     sys.path.append(str(repo_root.parent))
     from src.news_reporter.config import Settings
+    from src.news_reporter.tools.embeddings import EmbeddingsProvider
 
 logger = logging.getLogger(__name__)
+
+# Global embeddings provider (lazy initialization)
+_embeddings_provider: Optional[EmbeddingsProvider] = None
+
+def _get_embeddings_provider() -> Optional[EmbeddingsProvider]:
+    """Lazy initialization of embeddings provider."""
+    global _embeddings_provider
+    if _embeddings_provider is None:
+        try:
+            _embeddings_provider = EmbeddingsProvider()
+        except Exception as e:
+            logger.warning(f"Failed to initialize EmbeddingsProvider: {e}. Semantic detection will be disabled.")
+            return None
+    return _embeddings_provider
 
 
 class CSVQueryTool:
@@ -525,6 +542,194 @@ def extract_csv_path_from_rag_results(rag_results: List[Dict[str, Any]]) -> Opti
     return None
 
 
+def _semantic_exact_number_detection(query: str) -> Dict[str, Any]:
+    """
+    Semantic similarity-based detection for exact numerical queries (Option 2).
+    Uses embeddings to match query against intent descriptions.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool), 'confidence' (float 0.0-1.0), and 'method' (str)
+    """
+    provider = _get_embeddings_provider()
+    if provider is None:
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_disabled'
+        }
+    
+    # Intent descriptions for exact numerical queries
+    intent_descriptions = [
+        "How many items are there?",
+        "What is the total count?",
+        "Calculate the sum of values",
+        "What is the exact number?",
+        "Count all matching records",
+        "What is the total quantity?",
+        "Sum all values",
+        "How much is the total?",
+        "What is the precise count?",
+        "Calculate total inventory",
+        "Get the exact amount",
+        "What is the aggregate total?",
+        "Count the number of items",
+        "What is the sum total?",
+        "How many total units?",
+    ]
+    
+    try:
+        # Generate embeddings
+        texts_to_embed = [query] + intent_descriptions
+        embeddings = provider.embed(texts_to_embed)
+        
+        if not embeddings or len(embeddings) < 2:
+            return {
+                'requires': False,
+                'confidence': 0.0,
+                'method': 'semantic_error'
+            }
+        
+        query_embedding = np.array(embeddings[0])
+        intent_embeddings = np.array(embeddings[1:])
+        
+        # Calculate cosine similarity
+        # Normalize embeddings
+        query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-8)
+        intent_norms = intent_embeddings / (np.linalg.norm(intent_embeddings, axis=1, keepdims=True) + 1e-8)
+        
+        # Cosine similarity = dot product of normalized vectors
+        similarities = np.dot(intent_norms, query_norm)
+        
+        # Get max similarity and average similarity
+        max_similarity = float(np.max(similarities))
+        avg_similarity = float(np.mean(similarities))
+        
+        # Use weighted combination: max (0.7) + avg (0.3)
+        confidence = (max_similarity * 0.7) + (avg_similarity * 0.3)
+        
+        # Threshold for detection (tuned for semantic similarity)
+        requires = confidence >= 0.65  # Higher threshold for semantic
+        
+        logger.debug(
+            f"_semantic_exact_number_detection('{query[:50]}...') = "
+            f"requires={requires}, confidence={confidence:.3f}, "
+            f"max_sim={max_similarity:.3f}, avg_sim={avg_similarity:.3f}"
+        )
+        
+        return {
+            'requires': requires,
+            'confidence': confidence,
+            'method': 'semantic',
+            'max_similarity': max_similarity,
+            'avg_similarity': avg_similarity
+        }
+        
+    except Exception as e:
+        logger.warning(f"Semantic detection failed: {e}. Falling back to heuristics.")
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_error'
+        }
+
+
+def _semantic_list_detection(query: str) -> Dict[str, Any]:
+    """
+    Semantic similarity-based detection for list queries (Option 2).
+    Uses embeddings to match query against intent descriptions.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool), 'confidence' (float 0.0-1.0), and 'method' (str)
+    """
+    provider = _get_embeddings_provider()
+    if provider is None:
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_disabled'
+        }
+    
+    # Intent descriptions for list queries
+    intent_descriptions = [
+        "List all items",
+        "What are all the options?",
+        "Show me all available values",
+        "Name all items",
+        "What are all the different types?",
+        "List every option",
+        "Show all distinct values",
+        "What are all the categories?",
+        "Enumerate all items",
+        "Display all available options",
+        "What are all the possible values?",
+        "List all unique items",
+        "Show me all the choices",
+        "What are all the variants?",
+        "Get all distinct entries",
+    ]
+    
+    try:
+        # Generate embeddings
+        texts_to_embed = [query] + intent_descriptions
+        embeddings = provider.embed(texts_to_embed)
+        
+        if not embeddings or len(embeddings) < 2:
+            return {
+                'requires': False,
+                'confidence': 0.0,
+                'method': 'semantic_error'
+            }
+        
+        query_embedding = np.array(embeddings[0])
+        intent_embeddings = np.array(embeddings[1:])
+        
+        # Calculate cosine similarity
+        # Normalize embeddings
+        query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-8)
+        intent_norms = intent_embeddings / (np.linalg.norm(intent_embeddings, axis=1, keepdims=True) + 1e-8)
+        
+        # Cosine similarity = dot product of normalized vectors
+        similarities = np.dot(intent_norms, query_norm)
+        
+        # Get max similarity and average similarity
+        max_similarity = float(np.max(similarities))
+        avg_similarity = float(np.mean(similarities))
+        
+        # Use weighted combination: max (0.7) + avg (0.3)
+        confidence = (max_similarity * 0.7) + (avg_similarity * 0.3)
+        
+        # Threshold for detection (tuned for semantic similarity)
+        requires = confidence >= 0.65  # Higher threshold for semantic
+        
+        logger.debug(
+            f"_semantic_list_detection('{query[:50]}...') = "
+            f"requires={requires}, confidence={confidence:.3f}, "
+            f"max_sim={max_similarity:.3f}, avg_sim={avg_similarity:.3f}"
+        )
+        
+        return {
+            'requires': requires,
+            'confidence': confidence,
+            'method': 'semantic',
+            'max_similarity': max_similarity,
+            'avg_similarity': avg_similarity
+        }
+        
+    except Exception as e:
+        logger.warning(f"Semantic detection failed: {e}. Falling back to heuristics.")
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_error'
+        }
+
+
 def _heuristic_exact_number_detection(query: str) -> Dict[str, Any]:
     """
     Heuristic-based detection for exact numerical queries.
@@ -601,8 +806,9 @@ def query_requires_exact_numbers(query: str) -> bool:
     """
     Detect if a query requires exact numerical calculation.
     
-    Uses heuristic pattern matching (Option 3) - no hardcoded keywords.
-    Can be extended with semantic similarity (Option 2) or LLM (Option 1) later.
+    Uses hybrid approach: Option 2 (semantic similarity) + Option 3 (heuristics).
+    - Primary: Semantic similarity (if available)
+    - Fallback: Heuristic pattern matching
     
     Args:
         query: User query text
@@ -610,8 +816,33 @@ def query_requires_exact_numbers(query: str) -> bool:
     Returns:
         True if query likely requires exact numerical calculation
     """
-    result = _heuristic_exact_number_detection(query)
-    return result['requires']
+    # Try semantic detection first (Option 2)
+    semantic_result = _semantic_exact_number_detection(query)
+    
+    # If semantic detection is available and confident, use it
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] >= 0.65:
+        logger.debug(f"Using semantic detection for exact numbers: confidence={semantic_result['confidence']:.3f}")
+        return semantic_result['requires']
+    
+    # Fallback to heuristic detection (Option 3)
+    heuristic_result = _heuristic_exact_number_detection(query)
+    
+    # If semantic was attempted but low confidence, combine with heuristic
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] > 0.0:
+        # Weighted combination: semantic (0.6) + heuristic (0.4)
+        combined_confidence = (semantic_result['confidence'] * 0.6) + (heuristic_result['confidence'] * 0.4)
+        requires = combined_confidence >= 0.5
+        logger.debug(
+            f"Using combined detection (semantic+heuristic) for exact numbers: "
+            f"semantic={semantic_result['confidence']:.3f}, "
+            f"heuristic={heuristic_result['confidence']:.3f}, "
+            f"combined={combined_confidence:.3f}, requires={requires}"
+        )
+        return requires
+    
+    # Pure heuristic fallback
+    logger.debug(f"Using heuristic detection for exact numbers: confidence={heuristic_result['confidence']:.3f}")
+    return heuristic_result['requires']
 
 
 def _heuristic_list_detection(query: str) -> Dict[str, Any]:
@@ -691,6 +922,46 @@ def _heuristic_list_detection(query: str) -> Dict[str, Any]:
 
 
 def query_requires_list(query: str) -> bool:
+    """
+    Detect if a query requires a list of distinct values.
+    
+    Uses hybrid approach: Option 2 (semantic similarity) + Option 3 (heuristics).
+    - Primary: Semantic similarity (if available)
+    - Fallback: Heuristic pattern matching
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        True if query likely requires a list of distinct values
+    """
+    # Try semantic detection first (Option 2)
+    semantic_result = _semantic_list_detection(query)
+    
+    # If semantic detection is available and confident, use it
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] >= 0.65:
+        logger.debug(f"Using semantic detection for list: confidence={semantic_result['confidence']:.3f}")
+        return semantic_result['requires']
+    
+    # Fallback to heuristic detection (Option 3)
+    heuristic_result = _heuristic_list_detection(query)
+    
+    # If semantic was attempted but low confidence, combine with heuristic
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] > 0.0:
+        # Weighted combination: semantic (0.6) + heuristic (0.4)
+        combined_confidence = (semantic_result['confidence'] * 0.6) + (heuristic_result['confidence'] * 0.4)
+        requires = combined_confidence >= 0.5
+        logger.debug(
+            f"Using combined detection (semantic+heuristic) for list: "
+            f"semantic={semantic_result['confidence']:.3f}, "
+            f"heuristic={heuristic_result['confidence']:.3f}, "
+            f"combined={combined_confidence:.3f}, requires={requires}"
+        )
+        return requires
+    
+    # Pure heuristic fallback
+    logger.debug(f"Using heuristic detection for list: confidence={heuristic_result['confidence']:.3f}")
+    return heuristic_result['requires']
     """
     Detect if a query requires listing all values from a column.
     

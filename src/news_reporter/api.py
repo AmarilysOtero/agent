@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 import uuid
+from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional, List
 from pydantic import BaseModel
@@ -210,6 +211,23 @@ class ChatResponse(BaseModel):
     response: str
     sources: list[Source] = []
     conversation_id: str
+
+# Agent Management Models
+class AgentResponse(BaseModel):
+    """Response model for a single agent"""
+    id: str
+    name: str
+    model: str
+    description: Optional[str] = None
+    created_at: Optional[datetime] = None
+    instructions: Optional[str] = None
+
+class CreateAgentRequest(BaseModel):
+    """Request model for creating a new agent"""
+    name: str
+    model: Optional[str] = None
+    instructions: Optional[str] = None
+    description: Optional[str] = None
     exact_answer: Optional[dict] = None  # Exact numerical answer from CSV query
     list_answer: Optional[dict] = None  # List answer from CSV query (distinct values)
 
@@ -296,6 +314,56 @@ async def upload(file: UploadFile = File(...), tags: Optional[str] = Form(None))
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+# Agent Management Endpoints
+@app.get("/api/agents", response_model=List[AgentResponse])
+async def list_foundry_agents():
+    """
+    List all available workflow agents from Azure AI Foundry Graph environment.
+    
+    Returns:
+        List of agents with id, name, model, description, etc.
+    """
+    try:
+        from .agent_manager import list_graph_workflow_agents
+        agents = list_graph_workflow_agents()
+        
+        print(f"Returned {len(agents)} graph workflow agents: {[a.get('name') for a in agents]}")
+        return agents
+    except ValueError as e:
+        # Configuration error
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.exception("[agents/list] Failed to list graph workflow agents: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to list agents: {str(e)}")
+
+@app.post("/api/agents", response_model=AgentResponse)
+async def create_foundry_agent(request: CreateAgentRequest):
+    """
+    Create a new agent in Azure AI Foundry.
+    
+    Args:
+        request: Agent creation parameters (name, model, instructions, description)
+        
+    Returns:
+        Created agent with id, name, model, etc.
+    """
+    try:
+        from .agent_manager import create_agent
+        
+        agent = create_agent(
+            name=request.name,
+            model=request.model,
+            instructions=request.instructions,
+            description=request.description
+        )
+        return agent
+    except ValueError as e:
+        # Configuration error or 404 from Foundry
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.exception("[agents/create] Failed to create agent: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to create agent: {str(e)}")
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):

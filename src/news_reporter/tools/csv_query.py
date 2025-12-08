@@ -9,16 +9,33 @@ from typing import List, Dict, Any, Optional
 import requests
 import logging
 import time
+import numpy as np
 
 try:
     from ..config import Settings
+    from .embeddings import EmbeddingsProvider
 except ImportError:
     import sys, pathlib
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     sys.path.append(str(repo_root.parent))
     from src.news_reporter.config import Settings
+    from src.news_reporter.tools.embeddings import EmbeddingsProvider
 
 logger = logging.getLogger(__name__)
+
+# Global embeddings provider (lazy initialization)
+_embeddings_provider: Optional[EmbeddingsProvider] = None
+
+def _get_embeddings_provider() -> Optional[EmbeddingsProvider]:
+    """Lazy initialization of embeddings provider."""
+    global _embeddings_provider
+    if _embeddings_provider is None:
+        try:
+            _embeddings_provider = EmbeddingsProvider()
+        except Exception as e:
+            logger.warning(f"Failed to initialize EmbeddingsProvider: {e}. Semantic detection will be disabled.")
+            return None
+    return _embeddings_provider
 
 
 class CSVQueryTool:
@@ -525,12 +542,273 @@ def extract_csv_path_from_rag_results(rag_results: List[Dict[str, Any]]) -> Opti
     return None
 
 
+def _semantic_exact_number_detection(query: str) -> Dict[str, Any]:
+    """
+    Semantic similarity-based detection for exact numerical queries (Option 2).
+    Uses embeddings to match query against intent descriptions.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool), 'confidence' (float 0.0-1.0), and 'method' (str)
+    """
+    provider = _get_embeddings_provider()
+    if provider is None:
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_disabled'
+        }
+    
+    # Intent descriptions for exact numerical queries
+    intent_descriptions = [
+        "How many items are there?",
+        "What is the total count?",
+        "Calculate the sum of values",
+        "What is the exact number?",
+        "Count all matching records",
+        "What is the total quantity?",
+        "Sum all values",
+        "How much is the total?",
+        "What is the precise count?",
+        "Calculate total inventory",
+        "Get the exact amount",
+        "What is the aggregate total?",
+        "Count the number of items",
+        "What is the sum total?",
+        "How many total units?",
+    ]
+    
+    try:
+        # Generate embeddings
+        texts_to_embed = [query] + intent_descriptions
+        embeddings = provider.embed(texts_to_embed)
+        
+        if not embeddings or len(embeddings) < 2:
+            return {
+                'requires': False,
+                'confidence': 0.0,
+                'method': 'semantic_error'
+            }
+        
+        query_embedding = np.array(embeddings[0])
+        intent_embeddings = np.array(embeddings[1:])
+        
+        # Calculate cosine similarity
+        # Normalize embeddings
+        query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-8)
+        intent_norms = intent_embeddings / (np.linalg.norm(intent_embeddings, axis=1, keepdims=True) + 1e-8)
+        
+        # Cosine similarity = dot product of normalized vectors
+        similarities = np.dot(intent_norms, query_norm)
+        
+        # Get max similarity and average similarity
+        max_similarity = float(np.max(similarities))
+        avg_similarity = float(np.mean(similarities))
+        
+        # Use weighted combination: max (0.7) + avg (0.3)
+        confidence = (max_similarity * 0.7) + (avg_similarity * 0.3)
+        
+        # Threshold for detection (tuned for semantic similarity)
+        requires = confidence >= 0.65  # Higher threshold for semantic
+        
+        logger.debug(
+            f"_semantic_exact_number_detection('{query[:50]}...') = "
+            f"requires={requires}, confidence={confidence:.3f}, "
+            f"max_sim={max_similarity:.3f}, avg_sim={avg_similarity:.3f}"
+        )
+        
+        return {
+            'requires': requires,
+            'confidence': confidence,
+            'method': 'semantic',
+            'max_similarity': max_similarity,
+            'avg_similarity': avg_similarity
+        }
+        
+    except Exception as e:
+        logger.warning(f"Semantic detection failed: {e}. Falling back to heuristics.")
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_error'
+        }
+
+
+def _semantic_list_detection(query: str) -> Dict[str, Any]:
+    """
+    Semantic similarity-based detection for list queries (Option 2).
+    Uses embeddings to match query against intent descriptions.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool), 'confidence' (float 0.0-1.0), and 'method' (str)
+    """
+    provider = _get_embeddings_provider()
+    if provider is None:
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_disabled'
+        }
+    
+    # Intent descriptions for list queries
+    intent_descriptions = [
+        "List all items",
+        "What are all the options?",
+        "Show me all available values",
+        "Name all items",
+        "What are all the different types?",
+        "List every option",
+        "Show all distinct values",
+        "What are all the categories?",
+        "Enumerate all items",
+        "Display all available options",
+        "What are all the possible values?",
+        "List all unique items",
+        "Show me all the choices",
+        "What are all the variants?",
+        "Get all distinct entries",
+    ]
+    
+    try:
+        # Generate embeddings
+        texts_to_embed = [query] + intent_descriptions
+        embeddings = provider.embed(texts_to_embed)
+        
+        if not embeddings or len(embeddings) < 2:
+            return {
+                'requires': False,
+                'confidence': 0.0,
+                'method': 'semantic_error'
+            }
+        
+        query_embedding = np.array(embeddings[0])
+        intent_embeddings = np.array(embeddings[1:])
+        
+        # Calculate cosine similarity
+        # Normalize embeddings
+        query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-8)
+        intent_norms = intent_embeddings / (np.linalg.norm(intent_embeddings, axis=1, keepdims=True) + 1e-8)
+        
+        # Cosine similarity = dot product of normalized vectors
+        similarities = np.dot(intent_norms, query_norm)
+        
+        # Get max similarity and average similarity
+        max_similarity = float(np.max(similarities))
+        avg_similarity = float(np.mean(similarities))
+        
+        # Use weighted combination: max (0.7) + avg (0.3)
+        confidence = (max_similarity * 0.7) + (avg_similarity * 0.3)
+        
+        # Threshold for detection (tuned for semantic similarity)
+        requires = confidence >= 0.65  # Higher threshold for semantic
+        
+        logger.debug(
+            f"_semantic_list_detection('{query[:50]}...') = "
+            f"requires={requires}, confidence={confidence:.3f}, "
+            f"max_sim={max_similarity:.3f}, avg_sim={avg_similarity:.3f}"
+        )
+        
+        return {
+            'requires': requires,
+            'confidence': confidence,
+            'method': 'semantic',
+            'max_similarity': max_similarity,
+            'avg_similarity': avg_similarity
+        }
+        
+    except Exception as e:
+        logger.warning(f"Semantic detection failed: {e}. Falling back to heuristics.")
+        return {
+            'requires': False,
+            'confidence': 0.0,
+            'method': 'semantic_error'
+        }
+
+
+def _heuristic_exact_number_detection(query: str) -> Dict[str, Any]:
+    """
+    Heuristic-based detection for exact numerical queries.
+    Uses structural patterns instead of hardcoded keywords.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool) and 'confidence' (float 0.0-1.0)
+    """
+    import re
+    
+    query_lower = query.lower().strip()
+    confidence = 0.0
+    signals = []
+    
+    # Pattern 1: Question words + quantity indicators (high confidence)
+    quantity_indicators = ['many', 'much', 'total', 'sum', 'count', 'number', 'quantity']
+    question_words = ['how', 'what', 'which']
+    
+    has_question = any(qw in query_lower for qw in question_words)
+    has_quantity = any(qi in query_lower for qi in quantity_indicators)
+    
+    if has_question and has_quantity:
+        confidence += 0.5
+        signals.append("question+quantity")
+    
+    # Pattern 2: Imperative calculation verbs (high confidence)
+    calc_verbs = ['calculate', 'compute', 'sum', 'count', 'aggregate', 'add', 'total']
+    if any(verb in query_lower for verb in calc_verbs):
+        confidence += 0.4
+        signals.append("calculation_verb")
+    
+    # Pattern 3: "exact" or "precise" modifiers (very high confidence)
+    if 'exact' in query_lower or 'precise' in query_lower:
+        confidence += 0.6
+        signals.append("exactness_modifier")
+    
+    # Pattern 4: Mathematical operations mentioned (medium confidence)
+    math_ops = ['add', 'sum', 'total', 'aggregate', 'summarize', 'tally']
+    if any(op in query_lower for op in math_ops):
+        confidence += 0.3
+        signals.append("math_operation")
+    
+    # Pattern 5: "what is the" + quantity pattern (high confidence)
+    if re.search(r'what\s+is\s+the\s+(total|count|sum|number)', query_lower):
+        confidence += 0.5
+        signals.append("what_is_quantity")
+    
+    # Pattern 6: Numeric result expectation (low confidence, but helps)
+    if re.search(r'\d+', query_lower) and (has_question or has_quantity):
+        confidence += 0.1
+        signals.append("numeric_expectation")
+    
+    # Cap confidence at 1.0
+    confidence = min(confidence, 1.0)
+    
+    requires = confidence >= 0.4  # Threshold for detection
+    
+    logger.debug(
+        f"_heuristic_exact_number_detection('{query[:50]}...') = "
+        f"requires={requires}, confidence={confidence:.2f}, signals={signals}"
+    )
+    
+    return {
+        'requires': requires,
+        'confidence': confidence,
+        'signals': signals
+    }
+
+
 def query_requires_exact_numbers(query: str) -> bool:
     """
-    Detect if a query requires exact numerical calculation
+    Detect if a query requires exact numerical calculation.
     
-    Checks for keywords that indicate the query needs exact numbers
-    rather than semantic search results.
+    Uses hybrid approach: Option 2 (semantic similarity) + Option 3 (heuristics).
+    - Primary: Semantic similarity (if available)
+    - Fallback: Heuristic pattern matching
     
     Args:
         query: User query text
@@ -538,26 +816,157 @@ def query_requires_exact_numbers(query: str) -> bool:
     Returns:
         True if query likely requires exact numerical calculation
     """
+    # Try semantic detection first (Option 2)
+    semantic_result = _semantic_exact_number_detection(query)
+    
+    # If semantic detection is available and confident, use it
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] >= 0.65:
+        logger.debug(f"Using semantic detection for exact numbers: confidence={semantic_result['confidence']:.3f}")
+        return semantic_result['requires']
+    
+    # Fallback to heuristic detection (Option 3)
+    heuristic_result = _heuristic_exact_number_detection(query)
+    
+    # If semantic was attempted but low confidence, combine with heuristic
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] > 0.0:
+        # Weighted combination: semantic (0.6) + heuristic (0.4)
+        combined_confidence = (semantic_result['confidence'] * 0.6) + (heuristic_result['confidence'] * 0.4)
+        requires = combined_confidence >= 0.5
+        logger.debug(
+            f"Using combined detection (semantic+heuristic) for exact numbers: "
+            f"semantic={semantic_result['confidence']:.3f}, "
+            f"heuristic={heuristic_result['confidence']:.3f}, "
+            f"combined={combined_confidence:.3f}, requires={requires}"
+        )
+        return requires
+    
+    # Pure heuristic fallback
+    logger.debug(f"Using heuristic detection for exact numbers: confidence={heuristic_result['confidence']:.3f}")
+    return heuristic_result['requires']
+
+
+def _heuristic_list_detection(query: str) -> Dict[str, Any]:
+    """
+    Heuristic-based detection for list queries.
+    Uses structural patterns instead of hardcoded keywords.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        Dict with 'requires' (bool) and 'confidence' (float 0.0-1.0)
+    """
+    import re
+    
     query_lower = query.lower().strip()
+    confidence = 0.0
+    signals = []
     
-    # Keywords that indicate exact numerical queries
-    exact_number_keywords = [
-        'how many', 'how much', 'total', 'sum', 'count',
-        'exact', 'precise', 'calculate', 'compute',
-        'aggregate', 'what is the total', 'what is the count'
-    ]
+    # Pattern 1: "all" + plural noun pattern (high confidence)
+    # Matches: "all models", "all products", "all items"
+    if re.search(r'\ball\s+\w+s\b', query_lower):
+        confidence += 0.5
+        signals.append("all_plural")
     
-    result = any(keyword in query_lower for keyword in exact_number_keywords)
-    logger.debug(f"query_requires_exact_numbers('{query[:50]}...') = {result}")
-    return result
+    # Pattern 2: List/enumerate verbs + "all" or "every" (high confidence)
+    list_verbs = ['list', 'name', 'show', 'enumerate', 'display', 'present']
+    if any(verb in query_lower for verb in list_verbs):
+        if 'all' in query_lower or 'every' in query_lower:
+            confidence += 0.6
+            signals.append("list_verb_all")
+        else:
+            confidence += 0.2  # Lower confidence if just verb without "all"
+            signals.append("list_verb")
+    
+    # Pattern 3: "what are all" pattern (very high confidence)
+    if re.search(r'what\s+are\s+all', query_lower):
+        confidence += 0.7
+        signals.append("what_are_all")
+    
+    # Pattern 4: Plural question pattern (medium confidence)
+    # Matches: "what are the models", "what are the products"
+    if re.search(r'what\s+(are|is)\s+the\s+\w+s', query_lower):
+        confidence += 0.4
+        signals.append("plural_question")
+    
+    # Pattern 5: "name all" or "list all" explicit patterns (very high confidence)
+    if re.search(r'(name|list|show|enumerate)\s+all', query_lower):
+        confidence += 0.7
+        signals.append("explicit_list_all")
+    
+    # Pattern 6: "every" + noun pattern (medium confidence)
+    if re.search(r'\bevery\s+\w+', query_lower):
+        confidence += 0.3
+        signals.append("every_pattern")
+    
+    # Pattern 7: "complete list" or "full list" (high confidence)
+    if re.search(r'(complete|full|entire)\s+list', query_lower):
+        confidence += 0.5
+        signals.append("complete_list")
+    
+    # Cap confidence at 1.0
+    confidence = min(confidence, 1.0)
+    
+    requires = confidence >= 0.4  # Threshold for detection
+    
+    logger.debug(
+        f"_heuristic_list_detection('{query[:50]}...') = "
+        f"requires={requires}, confidence={confidence:.2f}, signals={signals}"
+    )
+    
+    return {
+        'requires': requires,
+        'confidence': confidence,
+        'signals': signals
+    }
 
 
 def query_requires_list(query: str) -> bool:
     """
-    Detect if a query requires listing all values from a column
+    Detect if a query requires a list of distinct values.
     
-    Checks for keywords that indicate the query needs a list of all values
-    (e.g., "list all models", "name all products")
+    Uses hybrid approach: Option 2 (semantic similarity) + Option 3 (heuristics).
+    - Primary: Semantic similarity (if available)
+    - Fallback: Heuristic pattern matching
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        True if query likely requires a list of distinct values
+    """
+    # Try semantic detection first (Option 2)
+    semantic_result = _semantic_list_detection(query)
+    
+    # If semantic detection is available and confident, use it
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] >= 0.65:
+        logger.debug(f"Using semantic detection for list: confidence={semantic_result['confidence']:.3f}")
+        return semantic_result['requires']
+    
+    # Fallback to heuristic detection (Option 3)
+    heuristic_result = _heuristic_list_detection(query)
+    
+    # If semantic was attempted but low confidence, combine with heuristic
+    if semantic_result['method'] == 'semantic' and semantic_result['confidence'] > 0.0:
+        # Weighted combination: semantic (0.6) + heuristic (0.4)
+        combined_confidence = (semantic_result['confidence'] * 0.6) + (heuristic_result['confidence'] * 0.4)
+        requires = combined_confidence >= 0.5
+        logger.debug(
+            f"Using combined detection (semantic+heuristic) for list: "
+            f"semantic={semantic_result['confidence']:.3f}, "
+            f"heuristic={heuristic_result['confidence']:.3f}, "
+            f"combined={combined_confidence:.3f}, requires={requires}"
+        )
+        return requires
+    
+    # Pure heuristic fallback
+    logger.debug(f"Using heuristic detection for list: confidence={heuristic_result['confidence']:.3f}")
+    return heuristic_result['requires']
+    """
+    Detect if a query requires listing all values from a column.
+    
+    Uses heuristic pattern matching (Option 3) - no hardcoded keywords.
+    Can be extended with semantic similarity (Option 2) or LLM (Option 1) later.
     
     Args:
         query: User query text
@@ -565,18 +974,27 @@ def query_requires_list(query: str) -> bool:
     Returns:
         True if query likely requires listing all values
     """
-    query_lower = query.lower().strip()
+    result = _heuristic_list_detection(query)
+    return result['requires']
+
+
+def is_csv_specific_query(query: str) -> bool:
+    """
+    Detect if query explicitly mentions CSV/inventory/file
     
-    # Keywords that indicate list queries
-    list_keywords = [
-        'list all', 'name all', 'show all', 'what are all',
-        'all models', 'all products', 'all items', 'all categories',
-        'enumerate', 'list every', 'name every'
+    Args:
+        query: User query text
+        
+    Returns:
+        True if query is CSV-specific (mentions CSV, inventory file, etc.)
+    """
+    query_lower = query.lower()
+    csv_indicators = [
+        'csv', 'inventory', 'inventory file', 'inventory csv',
+        'in the csv', 'from the csv', 'in the file', 'from the file',
+        'inventory data', 'csv file', 'csv data', 'in the inventory'
     ]
-    
-    result = any(keyword in query_lower for keyword in list_keywords)
-    logger.debug(f"query_requires_list('{query[:50]}...') = {result}")
-    return result
+    return any(indicator in query_lower for indicator in csv_indicators)
 
 
 def is_date_like(value: str) -> bool:
@@ -703,6 +1121,7 @@ def extract_filter_value_from_query(
                         cells = [cell.strip() for cell in row.split('|')[1:-1]]
                         if len(cells) > header_col_index:
                             value = cells[header_col_index].strip()
+                            # Normalize whitespace: replace multiple spaces with single space
                             value = re.sub(r'\s+', ' ', value).strip()
                             # Validate the value
                             if is_valid_model_name(value):
@@ -741,6 +1160,8 @@ def extract_filter_value_from_query(
     quoted = re.search(r'"([^"]+)"', query)
     if quoted:
         value = quoted.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         if is_valid_model_name(value):
             logger.debug(f"Extracted {filter_column} value from quoted string: '{value}'")
             return value
@@ -752,6 +1173,8 @@ def extract_filter_value_from_query(
     match = re.search(how_many_pattern, query, re.IGNORECASE)
     if match:
         value = match.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         if is_valid_model_name(value):
             logger.debug(f"Extracted {filter_column} value after 'how many/much': '{value}'")
             return value
@@ -760,6 +1183,8 @@ def extract_filter_value_from_query(
     after_for = re.search(r'(?:for|of)\s+([A-Z][^?.,!]+?)(?:\s+are|\s+is|\s+there|\s+in|$)', query, re.IGNORECASE)
     if after_for:
         value = after_for.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         if is_valid_model_name(value):
             logger.debug(f"Extracted {filter_column} value after 'for/of': '{value}'")
             return value
@@ -770,12 +1195,16 @@ def extract_filter_value_from_query(
     match = re.search(number_product_pattern, query)
     if match:
         value = match.group(1).strip()
+        # Normalize whitespace: replace multiple spaces with single space
+        value = re.sub(r'\s+', ' ', value).strip()
         # Try to extend to get full name (e.g., "4Runner TRD Pro" instead of just "4Runner")
         # Look for additional capitalized words after the number+word pattern
         extended_pattern = rf'{re.escape(value)}\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)'
         extended_match = re.search(extended_pattern, query)
         if extended_match:
             extended_value = f"{value} {extended_match.group(1)}"
+            # Normalize whitespace: replace multiple spaces with single space
+            extended_value = re.sub(r'\s+', ' ', extended_value).strip()
             if is_valid_model_name(extended_value):
                 logger.debug(f"Extracted {filter_column} value from extended number+product pattern: '{extended_value}'")
                 return extended_value
@@ -790,6 +1219,8 @@ def extract_filter_value_from_query(
     # Sort by length (longest first) to get longer matches first
     matches.sort(key=len, reverse=True)
     for match in matches:
+        # Normalize whitespace: replace multiple spaces with single space
+        match = re.sub(r'\s+', ' ', match).strip()
         # Skip common words that aren't product names
         skip_words = {'How', 'Many', 'What', 'Total', 'Sum', 'Count', 'There', 'Are', 'Is', 'Toyota'}
         words = match.split()

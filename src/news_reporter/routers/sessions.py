@@ -10,7 +10,7 @@ from ..repository import LLMChatRepository
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/sessions", tags=["sessions"])
+router = APIRouter(prefix="/api/chat/sessions", tags=["sessions"])
 
 
 def get_repository(request: Request) -> LLMChatRepository:

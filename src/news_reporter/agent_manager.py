@@ -58,10 +58,10 @@ def parse_connection_string(conn: str) -> Dict[str, str]:
     
     return parts
 
-def get_graph_ai_project_client() -> AIProjectClient:
-    conn = os.getenv("AI_PROJECT_GRAPH_CONNECTION_STRING")
+def get_ai_project_client() -> AIProjectClient:
+    conn = os.getenv("AI_PROJECT_CONNECTION_STRING")
     if not conn:
-        raise ValueError("AI_PROJECT_GRAPH_CONNECTION_STRING is not set")
+        raise ValueError("AI_PROJECT_CONNECTION_STRING is not set")
 
     parts = parse_connection_string(conn)
     credential = DefaultAzureCredential()
@@ -75,6 +75,21 @@ def get_graph_ai_project_client() -> AIProjectClient:
         credential=credential,
     )
 
+def list_agents() -> List[Dict[str, Any]]:
+    """
+    List all available agents.
+    First tries graph-based registry (workflow-native agents), 
+    falls back to Foundry if graph query fails.
+    
+    Returns:
+        List of agent dictionaries with id, name, model, description, etc.
+    """
+    try:
+        return list_agents_from_foundry()
+    except Exception as foundry_error:
+        logger.error(f"Foundry queries failed")
+        # Return empty list rather than crashing
+        return []
 
 def list_agents_from_foundry() -> List[Dict[str, Any]]:
     """
@@ -84,7 +99,12 @@ def list_agents_from_foundry() -> List[Dict[str, Any]]:
         List of agent dictionaries with id, name, model, description, etc.
     """
     try:
-        client = get_graph_ai_project_client()
+        # Ensure OPENAI_API_VERSION is set for the SDK
+        if "OPENAI_API_VERSION" not in os.environ:
+            os.environ["OPENAI_API_VERSION"] = "2024-05-01-preview"
+            logger.info("Set default OPENAI_API_VERSION to 2024-05-01-preview for agents")
+
+        client = get_ai_project_client()
         listing = client.agents.list_agents()
 
         agents: List[Dict[str, Any]] = []
@@ -126,33 +146,6 @@ def list_agents_from_foundry() -> List[Dict[str, Any]]:
         logger.error(f"Failed to list agents from Foundry: {e}")
         raise
 
-    #     # Handle different SDK response formats
-    #     agents_data = getattr(listing, "data", None) or getattr(listing, "value", None) or []
-        
-    #     print('\n\nagents_data from Foundry')
-    #     print(agents_data)
-
-    #     agents = []
-    #     for agent in agents_data:
-    #         agent_dict = {
-    #             "id": getattr(agent, "id", None) or getattr(agent, "value", None) or "",
-    #             "name": getattr(agent, "name", "Unknown"),
-    #             "model": getattr(agent, "model", ""),
-    #             "description": getattr(agent, "description", ""),
-    #             "created_at": getattr(agent, "created_at", None),
-    #             "instructions": getattr(agent, "instructions", ""),
-    #         }
-    #         agents.append(agent_dict)
-        
-    #     logger.info(f"Successfully listed {len(agents)} agents from Foundry")
-    #     return agents
-        
-    # except HttpResponseError as e:
-    #     logger.error(f"HTTP error listing agents from Foundry: {e}")
-    #     raise
-    # except Exception as e:
-    #     logger.error(f"Failed to list agents from Foundry: {e}")
-    #     raise
 
 
 def list_agents_from_local_graph() -> List[Dict[str, Any]]:
@@ -176,36 +169,10 @@ def list_agents_from_local_graph() -> List[Dict[str, Any]]:
         agents = response.json()
         logger.info(f"Successfully fetched {len(agents)} agents from graph")
         
-        print('\n\nagents_data from Neo4j Graph')
-        print(agents)
-        
         return agents
     except Exception as e:
         logger.error(f"Failed to fetch agents from graph: {e}")
         raise
-
-
-def list_agents() -> List[Dict[str, Any]]:
-    """
-    List all available agents.
-    First tries graph-based registry (workflow-native agents), 
-    falls back to Foundry if graph query fails.
-    
-    Returns:
-        List of agent dictionaries with id, name, model, description, etc.
-    """
-    # try:
-    #     # Try graph-based registry first
-    #     return list_agents_from_local_graph()
-    # except Exception as e:
-    # logger.warning(f"\nGraph query failed, falling back to Foundry: {e}")
-    try:
-        return list_agents_from_foundry()
-    except Exception as foundry_error:
-        logger.error(f"Foundry queries failed")
-        # Return empty list rather than crashing
-        return []
-
 
 def create_agent(
     name: str,
@@ -226,7 +193,7 @@ def create_agent(
         Created agent dictionary with id, name, etc.
     """
     try:
-        client = get_graph_ai_project_client()
+        client = get_ai_project_client()
         
         # Use default model if not provided
         if not model:
@@ -290,162 +257,3 @@ def create_agent(
         logger.error(f"Failed to create agent: {e}")
         raise
 
-
-def list_graph_workflow_agents() -> List[Dict[str, Any]]:
-    """
-    List workflow-style agents from the AI Foundry Graph environment.
-    These are the agents that can be referenced in the "Build a Workflow" template
-    via the workflow["name"] field.
-    
-    Returns:
-        List of agent dictionaries with id, name, model, description, etc.
-        Returns empty list if SDK doesn't support workflow agent listing.
-    """
-    try:
-        logger.info("Attempting to list graph workflow agents from AI Foundry Graph environment")
-        
-        # Get the graph project client
-        project_client = get_graph_ai_project_client()
-        
-        # Ensure OPENAI_API_VERSION is set for get_openai_client()
-        if "AZURE_OPENAI_API_VERSION" not in os.environ:
-            print('AZURE_OPENAI_API_VERSION not set')
-            # Default to a recent preview version if not set
-            os.environ["AZURE_OPENAI_API_VERSION"] = "2024-05-01-preview"
-            logger.info("Set default AZURE_OPENAI_API_VERSION to 2024-05-01-preview")
-        
-        with project_client:
-            # Get the OpenAI client as shown in the workflow template
-            openai_client = project_client.get_openai_client()
-            logger.info("Successfully obtained OpenAI client from project client")
-            
-            # Try to introspect and find agent/workflow listing methods
-            agents: List[Dict[str, Any]] = []
-            
-            # Strategy 1: Check if openai_client has an agents attribute with list method
-            if hasattr(openai_client, 'agents'):
-                logger.info("OpenAI client has 'agents' attribute, attempting to list agents")
-                agents_api = openai_client.agents
-                
-                # Try different method names
-                for method_name in ['list', 'list_agents', 'get_all']:
-                    if hasattr(agents_api, method_name):
-                        try:
-                            logger.info(f"Trying {method_name}() method")
-                            result = getattr(agents_api, method_name)()
-                            
-                            # Handle different response formats
-                            if hasattr(result, 'data'):
-                                items = result.data
-                            elif hasattr(result, 'value'):
-                                items = result.value
-                            elif isinstance(result, list):
-                                items = result
-                            else:
-                                # Assume it's an iterable
-                                items = list(result)
-                            
-                            # Transform to our schema
-                            for agent in items:
-                                agent_dict = {
-                                    "id": getattr(agent, "id", None) or str(agent),
-                                    "name": getattr(agent, "name", "Unknown"),
-                                    "model": getattr(agent, "model", ""),
-                                    "description": getattr(agent, "description", ""),
-                                    "created_at": getattr(agent, "created_at", None),
-                                    "instructions": getattr(agent, "instructions", ""),
-                                }
-                                agents.append(agent_dict)
-                            
-                            logger.info(f"Successfully listed {len(agents)} workflow agents: {[a['name'] for a in agents]}")
-                            return agents
-                            
-                        except Exception as e:
-                            logger.debug(f"Method {method_name}() failed: {e}")
-                            continue
-            
-            # Strategy 2: Check if openai_client has beta.assistants (OpenAI SDK pattern)
-            if hasattr(openai_client, 'beta') and hasattr(openai_client.beta, 'assistants'):
-                logger.info("OpenAI client has 'beta.assistants', attempting to list assistants")
-                try:
-                    result = openai_client.beta.assistants.list()
-                    
-                    # Handle different response formats
-                    if hasattr(result, 'data'):
-                        items = result.data
-                    else:
-                        items = list(result)
-                    
-                    # Transform to our schema
-                    for assistant in items:
-                        agent_dict = {
-                            "id": getattr(assistant, "id", None) or str(assistant),
-                            "name": getattr(assistant, "name", "Unknown"),
-                            "model": getattr(assistant, "model", ""),
-                            "description": getattr(assistant, "description", ""),
-                            "created_at": getattr(assistant, "created_at", None),
-                            "instructions": getattr(assistant, "instructions", ""),
-                        }
-                        agents.append(agent_dict)
-                    
-                    logger.info(f"Successfully listed {len(agents)} workflow agents via beta.assistants: {[a['name'] for a in agents]}")
-                    return agents
-                    
-                except Exception as e:
-                    print(f"beta.assistants.list() failed: {e}")
-            
-            # Strategy 3: Check project_client for workflow/agent listing
-            for attr_name in ['workflows', 'workflow_agents', 'graph_agents']:
-                if hasattr(project_client, attr_name):
-                    logger.info(f"Project client has '{attr_name}' attribute")
-                    attr = getattr(project_client, attr_name)
-                    
-                    for method_name in ['list', 'list_all', 'get_all']:
-                        if hasattr(attr, method_name):
-                            try:
-                                logger.info(f"Trying project_client.{attr_name}.{method_name}()")
-                                result = getattr(attr, method_name)()
-                                
-                                # Handle different response formats
-                                if hasattr(result, 'data'):
-                                    items = result.data
-                                elif hasattr(result, 'value'):
-                                    items = result.value
-                                else:
-                                    items = list(result)
-                                
-                                # Transform to our schema
-                                for item in items:
-                                    agent_dict = {
-                                        "id": getattr(item, "id", None) or getattr(item, "name", str(item)),
-                                        "name": getattr(item, "name", "Unknown"),
-                                        "model": getattr(item, "model", ""),
-                                        "description": getattr(item, "description", ""),
-                                        "created_at": getattr(item, "created_at", None),
-                                        "instructions": getattr(item, "instructions", ""),
-                                    }
-                                    agents.append(agent_dict)
-                                
-                                logger.info(f"Successfully listed {len(agents)} workflow agents via {attr_name}: {[a['name'] for a in agents]}")
-                                return agents
-                                
-                            except Exception as e:
-                                print(f"Method {attr_name}.{method_name}() failed: {e}")
-                                continue
-            
-            # If we reach here, no listing method was found
-            print(
-                "Could not find a workflow agent listing method in the SDK. "
-                "Attempted: openai_client.agents.list(), openai_client.beta.assistants.list(), "
-                "and various project_client methods. Returning empty list."
-            )
-            return []
-            
-    except ValueError as e:
-        # Configuration error (e.g., connection string not set)
-        print(f"Configuration error listing graph workflow agents: {e}")
-        raise
-    except Exception as e:
-        print(f"Failed to list graph workflow agents: {e}", exc_info=True)
-        # Return empty list rather than crashing
-        return []

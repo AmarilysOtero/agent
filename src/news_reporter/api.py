@@ -319,22 +319,22 @@ def healthz():
 @app.get("/api/agents", response_model=List[AgentResponse])
 async def list_foundry_agents():
     """
-    List all available workflow agents from Azure AI Foundry Graph environment.
+    List all available workflow agents from Azure AI Foundry environment.
     
     Returns:
         List of agents with id, name, model, description, etc.
     """
     try:
-        from .agent_manager import list_graph_workflow_agents
-        agents = list_graph_workflow_agents()
+        from .agent_manager import list_agents
+        agents = list_agents()
         
-        print(f"Returned {len(agents)} graph workflow agents: {[a.get('name') for a in agents]}")
+        print(f"Returned {len(agents)} workflow agents: {[a.get('name') for a in agents]}")
         return agents
     except ValueError as e:
         # Configuration error
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logging.exception("[agents/list] Failed to list graph workflow agents: %s", e)
+        logging.exception("[agents/list] Failed to list workflow agents: %s", e)
         raise HTTPException(status_code=500, detail=f"Failed to list agents: {str(e)}")
 
 @app.post("/api/agents", response_model=AgentResponse)

@@ -51,6 +51,9 @@ class Settings:
 
     # === Neo4j GraphRAG ===
     neo4j_api_url: str | None = None  # Neo4j backend API URL (e.g., "http://localhost:8000")
+    
+    # === Chat Sessions (SQLite) ===
+    sqlite_db_path: str = "chat_sessions.db"  # Path to SQLite database for chat sessions
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -97,6 +100,9 @@ class Settings:
 
         # Neo4j GraphRAG
         neo4j_url = os.getenv("NEO4J_API_URL")  # e.g., "http://localhost:8000"
+        
+        # Chat Sessions (SQLite)
+        sqlite_db = os.getenv("SQLITE_DB_PATH", "chat_sessions.db")
 
         # minimal validation (you likely already have these set)
         missing = []
@@ -147,6 +153,7 @@ class Settings:
             blob_container_raw=blob_raw,
             blob_container_chunks=blob_chunks,
             neo4j_api_url=neo4j_url,
+            sqlite_db_path=sqlite_db,
         )
 
     @classmethod

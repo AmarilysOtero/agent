@@ -2,10 +2,11 @@ from __future__ import annotations
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from typing import Optional, List
+from typing import Optional, List, Dict
+from datetime import datetime
 from pydantic import BaseModel
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -210,8 +211,23 @@ class ChatResponse(BaseModel):
     response: str
     sources: list[Source] = []
     conversation_id: str
-    exact_answer: Optional[dict] = None  # Exact numerical answer from CSV query
-    list_answer: Optional[dict] = None  # List answer from CSV query (distinct values)
+
+class SessionCreate(BaseModel):
+    user_id: str
+    title: Optional[str] = "New Chat"
+
+class SessionUpdate(BaseModel):
+    title: Optional[str] = None
+
+class Session(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    created_at: str
+    updated_at: str
+
+# In-memory session store (in production, use a database)
+_sessions: Dict[str, Session] = {}
 
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
@@ -344,7 +360,6 @@ async def chat(request: ChatRequest):
         
         # Get sources from Neo4j if using Neo4j search
         sources = []
-        exact_answer_data = None  # Initialize exact answer data
         if cfg.use_neo4j_search:
             try:
                 # Try relative import first, then absolute import
@@ -352,32 +367,6 @@ async def chat(request: ChatRequest):
                     from ..tools.neo4j_graphrag import graphrag_search
                 except ImportError:
                     from src.news_reporter.tools.neo4j_graphrag import graphrag_search
-                
-                # Import CSV query tools for exact numerical calculations and list queries
-                try:
-                    try:
-                        from ..tools.csv_query import (
-                            query_requires_exact_numbers,
-                            query_requires_list,
-                            extract_csv_path_from_rag_results,
-                            extract_filter_value_from_query,
-                            sum_numeric_columns,
-                            get_distinct_values
-                        )
-                        csv_query_available = True
-                    except ImportError:
-                        from src.news_reporter.tools.csv_query import (
-                            query_requires_exact_numbers,
-                            query_requires_list,
-                            extract_csv_path_from_rag_results,
-                            extract_filter_value_from_query,
-                            sum_numeric_columns,
-                            get_distinct_values
-                        )
-                        csv_query_available = True
-                except ImportError:
-                    logging.warning("CSV query tools not available, skipping CSV queries")
-                    csv_query_available = False
                 
                 # Extract person names from query for keyword filtering
                 person_names = extract_person_names(request.query)
@@ -401,97 +390,6 @@ async def chat(request: ChatRequest):
                 
                 # Limit to top 8 after filtering
                 filtered_results = filtered_results[:8]
-                
-                # Check if query requires list query (e.g., "name all models")
-                list_answer_data = None
-                if csv_query_available and query_requires_list(request.query) and filtered_results:
-                    try:
-                        csv_path = extract_csv_path_from_rag_results(filtered_results)
-                        
-                        if csv_path:
-                            # Try to detect which column to list (Model, Product, Category, etc.)
-                            list_columns = ['Model', 'Product', 'Category', 'Item', 'Name', 'Type']
-                            column_to_list = None
-                            
-                            # Check query for column name hints
-                            query_lower = request.query.lower()
-                            for col in list_columns:
-                                if col.lower() in query_lower:
-                                    column_to_list = col
-                                    logging.info(f"Detected column to list from query: {column_to_list}")
-                                    break
-                            
-                            # If not found, try common patterns
-                            if not column_to_list:
-                                if 'model' in query_lower or 'car' in query_lower:
-                                    column_to_list = 'Model'
-                                elif 'product' in query_lower:
-                                    column_to_list = 'Product'
-                                elif 'category' in query_lower:
-                                    column_to_list = 'Category'
-                                else:
-                                    # Default to first common column
-                                    column_to_list = 'Model'
-                                    logging.info(f"Using default column: {column_to_list}")
-                            
-                            # Get distinct values
-                            list_result = get_distinct_values(
-                                file_path=csv_path,
-                                column=column_to_list
-                            )
-                            
-                            if 'error' not in list_result and list_result.get('values'):
-                                list_answer_data = {
-                                    'values': list_result['values'],
-                                    'count': list_result.get('count', 0),
-                                    'column': column_to_list,
-                                    'file_path': csv_path
-                                }
-                                logging.info(f"CSV list query successful: {list_answer_data['count']} distinct values in column '{column_to_list}'")
-                            else:
-                                logging.warning(f"CSV list query returned no data or error: {list_result.get('error', 'unknown')}")
-                    except Exception as e:
-                        logging.warning(f"CSV list query failed, falling back to RAG only: {e}", exc_info=True)
-                
-                # Check if query requires exact numerical calculation and try CSV query
-                exact_answer_data = None
-                if csv_query_available and query_requires_exact_numbers(request.query) and filtered_results:
-                    try:
-                        csv_path = extract_csv_path_from_rag_results(filtered_results)
-                        
-                        if csv_path:
-                            # Try to extract filter values from query (common column names)
-                            filter_columns = ['Model', 'Product', 'Category', 'Item', 'Name', 'Type']
-                            filters = {}
-                            
-                            for col in filter_columns:
-                                value = extract_filter_value_from_query(request.query, col, filtered_results)
-                                if value:
-                                    filters[col] = value
-                                    logging.info(f"Extracted filter: {col} = {value}")
-                                    break  # Use first match
-                            
-                            if filters:
-                                # Get exact numerical answer using pandas
-                                exact_result = sum_numeric_columns(
-                                    file_path=csv_path,
-                                    filters=filters,
-                                    exclude_columns=list(filters.keys()) + ['Factory Location', 'Location', 'Region']
-                                )
-                                
-                                if 'error' not in exact_result and exact_result.get('total', 0) > 0:
-                                    exact_answer_data = {
-                                        'total': exact_result.get('total', 0),
-                                        'breakdown': exact_result.get('breakdown', {}),
-                                        'filters': filters,
-                                        'columns_summed': exact_result.get('columns_summed', 0),
-                                        'file_path': csv_path
-                                    }
-                                    logging.info(f"CSV query successful: total={exact_answer_data['total']}, columns={exact_answer_data['columns_summed']}")
-                                else:
-                                    logging.warning(f"CSV query returned no data or error: {exact_result.get('error', 'unknown')}")
-                    except Exception as e:
-                        logging.warning(f"CSV query failed, falling back to RAG only: {e}", exc_info=True)
                 
                 if filtered_results:
                     sources = [
@@ -552,9 +450,7 @@ async def chat(request: ChatRequest):
         return ChatResponse(
             response=response_text,
             sources=sources,
-            conversation_id=conversation_id,
-            exact_answer=exact_answer_data,
-            list_answer=list_answer_data
+            conversation_id=conversation_id
         )
     except HTTPException:
         raise
@@ -629,6 +525,76 @@ async def search_schema(request: SchemaSearchRequest):
     except Exception as e:
         logging.exception("[schema/search] Failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Schema search failed: {str(e)}")
+
+
+# Session management endpoints
+@app.get("/api/sessions")
+async def get_sessions(user_id: str = Query(..., description="User ID")):
+    """Get all sessions for a user"""
+    user_sessions = [session.dict() for session in _sessions.values() if session.user_id == user_id]
+    return JSONResponse(user_sessions)
+
+@app.post("/api/sessions", response_model=Session)
+async def create_session(request: SessionCreate):
+    """Create a new chat session"""
+    session_id = str(uuid.uuid4())
+    now = datetime.utcnow().isoformat()
+    
+    session = Session(
+        id=session_id,
+        user_id=request.user_id,
+        title=request.title or "New Chat",
+        created_at=now,
+        updated_at=now
+    )
+    
+    _sessions[session_id] = session
+    logging.info(f"Created session {session_id} for user {request.user_id}")
+    return JSONResponse(session.dict())
+
+@app.get("/api/sessions/{session_id}", response_model=Session)
+async def get_session(session_id: str, user_id: str = Query(..., description="User ID")):
+    """Get a specific session"""
+    if session_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = _sessions[session_id]
+    if session.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    return JSONResponse(session.dict())
+
+@app.patch("/api/sessions/{session_id}", response_model=Session)
+async def update_session(session_id: str, request: SessionUpdate, user_id: str = Query(..., description="User ID")):
+    """Update a session"""
+    if session_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = _sessions[session_id]
+    if session.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    if request.title is not None:
+        session.title = request.title
+        session.updated_at = datetime.utcnow().isoformat()
+    
+    _sessions[session_id] = session
+    logging.info(f"Updated session {session_id}")
+    return JSONResponse(session.dict())
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str, user_id: str = Query(..., description="User ID")):
+    """Delete a session"""
+    if session_id not in _sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = _sessions[session_id]
+    if session.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    del _sessions[session_id]
+    logging.info(f"Deleted session {session_id}")
+    return JSONResponse({"status": "deleted"})
 
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":

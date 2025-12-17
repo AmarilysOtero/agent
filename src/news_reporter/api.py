@@ -123,27 +123,7 @@ def filter_results_by_exact_match(results: List[dict], query: str, min_similarit
 async def lifespan(app: FastAPI):
     try:
         logging.info("[lifespan] Loading configuration...")
-        cfg = Settings.load()
-
-        # Initialize chat session database
-        try:
-            from .database import Database
-            from .repository import LLMChatRepository
-            from .tools_sql.sql_generator import SQLGenerator
-            
-            logging.info("[lifespan] Initializing chat session database...")
-            db = Database(cfg.sqlite_db_path)
-            sql_generator = SQLGenerator()
-            chat_repo = LLMChatRepository(db, sql_generator)
-            chat_repo.ensure_schema()
-            
-            # Store in app state for access in routes
-            app.state.chat_repository = chat_repo
-            logging.info("[lifespan] Chat session database initialized successfully")
-        except Exception as e:
-            logging.exception("[lifespan] Chat session database initialization failed: %s", e)
-            # Don't fail startup if chat sessions aren't critical
-            app.state.chat_repository = None
+        _ = Settings.load()
 
         if _UPLOAD_AVAILABLE:
             logging.info("[lifespan] Ensuring Azure Search pipeline...")
@@ -330,34 +310,6 @@ async def chat(request: ChatRequest):
         # Load settings
         cfg = Settings.load()
         
-        # Get chat repository (optional - chat works without sessions)
-        chat_repo = None
-        try:
-            from .database import Database
-            from .repository import LLMChatRepository
-            from .tools_sql.sql_generator import SQLGenerator
-            from .models import Message
-            
-            db = Database(cfg.sqlite_db_path)
-            sql_generator = SQLGenerator() 
-            chat_repo = LLMChatRepository(db, sql_generator)
-        except Exception as e:
-            logging.warning(f"Chat repository not available: {e}")
-        
-        # Persist user message if we have conversation_id and user_id
-        # Note: Session must be created explicitly via POST /api/sessions first
-        if chat_repo and request.conversation_id and request.user_id:
-            try:
-                user_message = Message(
-                    role="user",
-                    content=request.query,
-                    sources=None
-                )
-                chat_repo.add_message(request.conversation_id, user_message)
-                logging.info(f"Persisted user message to session {request.conversation_id}")
-            except Exception as e:
-                logging.warning(f"Failed to persist user message: {e}")
-        
         # Get sources from Neo4j if using Neo4j search
         sources = []
         if cfg.use_neo4j_search:
@@ -429,24 +381,7 @@ async def chat(request: ChatRequest):
                 )
             # Re-raise other RuntimeErrors
             raise HTTPException(status_code=500, detail=f"Agent workflow failed: {error_msg}")
-        
-        # Persist assistant message if we have conversation_id and user_id
-        # Note: Session must exist (created via POST /api/sessions)
-        if chat_repo and request.conversation_id and request.user_id:
-            try:
-                # Convert sources to dict for JSON serialization
-                sources_data = [s.model_dump() for s in sources] if sources else None
-                
-                assistant_message = Message(
-                    role="assistant",
-                    content=response_text,
-                    sources=sources_data
-                )
-                chat_repo.add_message(request.conversation_id, assistant_message)
-                logging.info(f"Persisted assistant message to session {request.conversation_id}")
-            except Exception as e:
-                logging.warning(f"Failed to persist assistant message: {e}")
-        
+
         return ChatResponse(
             response=response_text,
             sources=sources,
@@ -525,77 +460,7 @@ async def search_schema(request: SchemaSearchRequest):
     except Exception as e:
         logging.exception("[schema/search] Failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Schema search failed: {str(e)}")
-
-
-# Session management endpoints
-@app.get("/api/sessions")
-async def get_sessions(user_id: str = Query(..., description="User ID")):
-    """Get all sessions for a user"""
-    user_sessions = [session.dict() for session in _sessions.values() if session.user_id == user_id]
-    return JSONResponse(user_sessions)
-
-@app.post("/api/sessions", response_model=Session)
-async def create_session(request: SessionCreate):
-    """Create a new chat session"""
-    session_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
-    
-    session = Session(
-        id=session_id,
-        user_id=request.user_id,
-        title=request.title or "New Chat",
-        created_at=now,
-        updated_at=now
-    )
-    
-    _sessions[session_id] = session
-    logging.info(f"Created session {session_id} for user {request.user_id}")
-    return JSONResponse(session.dict())
-
-@app.get("/api/sessions/{session_id}", response_model=Session)
-async def get_session(session_id: str, user_id: str = Query(..., description="User ID")):
-    """Get a specific session"""
-    if session_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    session = _sessions[session_id]
-    if session.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    
-    return JSONResponse(session.dict())
-
-@app.patch("/api/sessions/{session_id}", response_model=Session)
-async def update_session(session_id: str, request: SessionUpdate, user_id: str = Query(..., description="User ID")):
-    """Update a session"""
-    if session_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    session = _sessions[session_id]
-    if session.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    
-    if request.title is not None:
-        session.title = request.title
-        session.updated_at = datetime.utcnow().isoformat()
-    
-    _sessions[session_id] = session
-    logging.info(f"Updated session {session_id}")
-    return JSONResponse(session.dict())
-
-@app.delete("/api/sessions/{session_id}")
-async def delete_session(session_id: str, user_id: str = Query(..., description="User ID")):
-    """Delete a session"""
-    if session_id not in _sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    session = _sessions[session_id]
-    if session.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    
-    del _sessions[session_id]
-    logging.info(f"Deleted session {session_id}")
-    return JSONResponse({"status": "deleted"})
-
+        
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":
     import uvicorn

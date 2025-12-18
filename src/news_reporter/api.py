@@ -164,6 +164,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+try:
+    from .routers.auth import router as auth_router
+    app.include_router(auth_router)
+    logging.info("Auth router mounted successfully")
+except ImportError as e:
+    logging.warning(f"Auth router not available: {e}")
+
+
 # # Mount chat session management router
 # try:
 #     from .routers.chat_sessions import router as chat_sessions_router

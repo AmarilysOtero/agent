@@ -164,14 +164,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount session management router
-try:
-    from .routers.sessions import router as sessions_router
-    app.include_router(sessions_router)
-    logging.info("Sessions router mounted successfully")
-except ImportError as e:
-    logging.warning(f"Sessions router not available: {e}")
-
 # Request/Response models
 class ChatRequest(BaseModel):
     query: str

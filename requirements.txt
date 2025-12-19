@@ -7,7 +7,7 @@ azure-ai-projects>=1.0.0b11,<1.1.0
 azure-identity>=1.17.1
 
 python-dotenv>=1.0.1
-pydantic>=2.8.2
+pydantic[email]>=2.8.2
 tenacity>=9.0.0
 
 ruff>=0.6.9
@@ -15,15 +15,11 @@ black>=24.8.0
 mypy>=1.10.0
 pre-commit>=3.8.0
 
-
-python-dotenv>=1.0.1
-pydantic>=2.8.2
-
 #for upload and vectorized PDF
 fastapi
 uvicorn
-python-dotenv
-pydantic>=2,<3
+#python-dotenv
+#pydantic>=2,<3
 azure-ai-projects
 azure-identity
 azure-search-documents
@@ -32,3 +28,6 @@ azure-cosmos
 pymupdf
 openai
 
+# Auth dependencies
+bcrypt>=4.0.0
+pymongo>=4.6.0

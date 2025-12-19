@@ -51,6 +51,9 @@ class Settings:
 
     # === Neo4j GraphRAG ===
     neo4j_api_url: str | None = None  # Neo4j backend API URL (e.g., "http://localhost:8000")
+
+    # === Auth API ===
+    auth_api_url: str | None = None
     
     @classmethod
     def from_env(cls) -> "Settings":
@@ -97,6 +100,9 @@ class Settings:
 
         # Neo4j GraphRAG
         neo4j_url = os.getenv("NEO4J_API_URL")  # e.g., "http://localhost:8000"
+
+        # Auth
+        auth_url = os.getenv("MONGO_AUTH_URL")
 
         # minimal validation (you likely already have these set)
         missing = []
@@ -147,6 +153,7 @@ class Settings:
             blob_container_raw=blob_raw,
             blob_container_chunks=blob_chunks,
             neo4j_api_url=neo4j_url,
+            auth_api_url=auth_url,
         )
 
     @classmethod

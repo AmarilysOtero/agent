@@ -69,7 +69,7 @@ def create_session(user_id: str) -> dict:
 
 def get_current_user(sid: Optional[str] = Cookie(None)) -> dict:
     """Dependency to get the current user from session cookie."""
-    print(f"\n[AUTH] get_current_user called with sid: {sid}")
+    print(f"[AUTH] get_current_user called with sid: {sid}")
     
     if not sid:
         print("[AUTH] No session cookie found - returning 401")

@@ -165,7 +165,7 @@ async def create_session(user: dict = Depends(get_current_user)):
     if sessions_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    print(f"\n\nUser: {user}")
+    print(f"[create_session] User: {user}")
     
     try:
         user_id = str(user["_id"])
@@ -222,13 +222,18 @@ async def get_session(session_id: str, user: dict = Depends(get_current_user)):
     # Format messages
     formatted_messages = []
     for msg in messages:
-        formatted_messages.append({
+        message_data = {
             "id": str(msg["_id"]),
             "sessionId": msg["sessionId"],
             "role": msg["role"],
             "content": msg["content"],
             "createdAt": msg["createdAt"].isoformat() + 'Z',
-        })
+        }
+        
+        if "sources" in msg and msg["sources"]:
+            message_data["sources"] = msg["sources"]
+        
+        formatted_messages.append(message_data)
     
     return {
         "id": str(session["_id"]),
@@ -316,8 +321,7 @@ async def add_message(
     user: dict = Depends(get_current_user)
 ):
     """Add a message to a session (user message + get AI response)."""
-    print("\n\nadd_message")
-    print(message)
+    print(f"[add_message] Message: {message}")
     if sessions_collection is None or messages_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
@@ -394,13 +398,10 @@ async def add_message(
                         "file_path": res.get("file_path"),
                         "directory_name": res.get("directory_name"),
                         "text": res.get("text", "")[:500] if res.get("text") else None,
-                        # "similarity": res.get("similarity"),
-                        # "hybrid_score": res.get("hybrid_score"),
-                        # "metadata": res.get("metadata")
                         "similarity": float(res.get("similarity", 0.0)) if res.get("similarity") is not None else None,
                         "hybrid_score": float(res.get("hybrid_score", 0.0)) if res.get("hybrid_score") is not None else None,
-                        # CRITICAL: Ensure metadata values are serializable (convert ObjectId/datetime to str)
-                        # Failure to do this causes 500 Internal Server Error during JSON response generation
+                        # Ensure metadata values are serializable (convert ObjectId/datetime to str)
+                        # Failure to do would cause 500 Server Error during JSON response generation
                         "metadata": {k: str(v) if isinstance(v, (ObjectId, datetime)) else v 
                                    for k, v in res.get("metadata", {}).items()} if res.get("metadata") else None
                     }
@@ -417,18 +418,33 @@ async def add_message(
         print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
     except RuntimeError as e:
         error_msg = str(e)
-        # Check if it's a Foundry access error
+
+        detail_prefix = "Agent workflow failed: "
+        status_code = 500
+
         if "Foundry" in error_msg or "foundry" in error_msg or "AZURE_AI_PROJECT" in error_msg:
-            raise HTTPException(
-                status_code=503,
-                detail=f"Foundry access is required but not available. Error: {error_msg}"
-            )
-        raise HTTPException(status_code=500, detail=f"Agent workflow failed: {error_msg}")
+            detail_prefix = "Foundry access is required but not available. Error: "
+            status_code = 503
+
+        _persist_and_raise_chat_error(
+            session_id=session_id,
+            user_id=user_id,
+            error_msg=error_msg,
+            detail_prefix=detail_prefix,
+            status_code=status_code,
+        )
     except Exception as e:
         import logging
         logging.exception("[add_message] Failed to process query: %s", e)
-        raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
-    
+
+        _persist_and_raise_chat_error(
+            session_id=session_id,
+            user_id=user_id,
+            error_msg=error_msg,
+            detail_prefix="Chat processing failed: ",
+            status_code=500,
+        )
+
     # Insert assistant message with sources
     assistant_message = {
         "sessionId": session_id,
@@ -451,32 +467,6 @@ async def add_message(
         "sources": sources,
         "conversation_id": session_id,
     }
-    # # Test serialization before returning (to catch the error here)
-    # try:
-    #     from fastapi.encoders import jsonable_encoder
-    #     jsonable_encoder(response_data)
-    # except Exception as e:
-    #     logging.error(f"Serialization Failed! Error: {e}")
-    #     # Log specifically which part failed
-    #     try:
-    #         jsonable_encoder(sources)
-    #     except:
-    #         logging.error("Sources serialization failed")
-    #         # If sources failed, fallback to sanitization (so the user gets a response)
-    #         sources = [
-    #             {
-    #                 "file_name": res.get("file_name"),
-    #                 "file_path": res.get("file_path"),
-    #                 "directory_name": res.get("directory_name"),
-    #                 "text": res.get("text", "")[:500] if res.get("text") else None,
-    #                 "similarity": float(res.get("similarity", 0.0)) if res.get("similarity") is not None else None,
-    #                 "hybrid_score": float(res.get("hybrid_score", 0.0)) if res.get("hybrid_score") is not None else None,
-    #                 "metadata": {k: str(v) for k, v in res.get("metadata", {}).items()} if res.get("metadata") else None
-    #             }
-    #             for res in (sources or [])
-    #         ]
-    #         response_data["sources"] = sources
-    # return response_data
     
     # Ensure COMPLETE serialization safety
     safe_response = recursive_serialize(raw_response)
@@ -501,3 +491,35 @@ def recursive_serialize(obj):
     else:
         return str(obj)
 
+
+def _persist_and_raise_chat_error(
+    session_id: str,
+    user_id: str,
+    error_msg: str,
+    detail_prefix: str,
+    status_code: int = 500,
+) -> None:
+    """
+    Persist an assistant error message for a chat session, update the session timestamp,
+    and raise an HTTPException with the given status and message prefix.
+    """
+    # Persist error as an assistant message
+    error_message_doc = {
+        "sessionId": session_id,
+        "userId": user_id,
+        "role": "assistant",
+        "content": f"[ERROR] {detail_prefix}{error_msg}",
+        "isError": True,
+        "sources": None,
+        "createdAt": datetime.utcnow(),
+    }
+    messages_collection.insert_one(error_message_doc)
+
+    # Update session timestamp
+    sessions_collection.update_one(
+        {"_id": ObjectId(session_id)},
+        {"$set": {"updatedAt": datetime.utcnow()}}
+    )
+
+    # Raise HTTP error back to client
+    raise HTTPException(status_code=status_code, detail=f"{detail_prefix}{error_msg}")

@@ -226,3 +226,9 @@ def query_database(natural_language_query: str, database_id: str) -> str:
     
     # Format as JSON string for Foundry
     return json.dumps(result, indent=2)
+
+
+
+
+
+

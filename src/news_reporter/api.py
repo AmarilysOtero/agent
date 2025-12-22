@@ -85,18 +85,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include auth router
 try:
-    # Include auth router
+    logging.info("Attempting to import auth router...")
     from .routers.auth import router as auth_router
+    logging.info(f"Auth router imported successfully. Prefix: {auth_router.prefix}, Routes: {len(auth_router.routes)}")
     app.include_router(auth_router)
     logging.info("Auth router mounted successfully")
+except ImportError as e:
+    logging.warning(f"Auth router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount auth router: {e}", exc_info=True)
 
-    # Include chat sessions router
+# Include chat sessions router
+try:
+    logging.info("Attempting to import chat sessions router...")
     from .routers.chat_sessions import router as chat_router
+    logging.info(f"Chat sessions router imported successfully. Prefix: {chat_router.prefix}, Routes: {len(chat_router.routes)}")
     app.include_router(chat_router)
     logging.info("Chat sessions router mounted successfully")
 except ImportError as e:
-    logging.warning(f"Chat sessions router not available: {e}")
+    logging.warning(f"Chat sessions router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount chat sessions router: {e}", exc_info=True)
 
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
@@ -243,4 +254,8 @@ async def search_schema(request: SchemaSearchRequest):
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.news_reporter.api:app", host="127.0.0.1", port=8787, reload=True)
+    import os
+    # In Docker, bind to 0.0.0.0; locally, use 127.0.0.1
+    host = "0.0.0.0" if os.getenv("DOCKER_ENV") else "127.0.0.1"
+    reload = os.getenv("DOCKER_ENV") is None
+    uvicorn.run("src.news_reporter.api:app", host=host, port=8787, reload=reload)

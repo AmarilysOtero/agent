@@ -2,10 +2,18 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from typing import List, Optional
 from datetime import datetime
-from pymongo import MongoClient
-from bson import ObjectId
 import os
 import logging
+
+# Optional MongoDB imports
+try:
+    from pymongo import MongoClient
+    from bson import ObjectId
+    _MONGO_AVAILABLE = True
+except ImportError:
+    MongoClient = None
+    ObjectId = None
+    _MONGO_AVAILABLE = False
 
 from .auth import get_current_user
 from ..config import Settings
@@ -95,24 +103,77 @@ def filter_results_by_exact_match(results: List[dict], query: str, min_similarit
 
 # MongoDB connection
 print("[CHAT_SESSIONS] Initializing chat sessions router...")
-try:
-    settings = Settings.load()
-    # Use the same auth database URI for chat sessions
-    MONGO_AGENT_URL = os.getenv("MONGO_AGENT_URL")
-    
-    if not MONGO_AGENT_URL:
-        # Fall back to auth URI if agent URI not set
-        MONGO_AGENT_URL = settings.auth_api_url
-        print(f"[CHAT_SESSIONS] Using auth_api_url as fallback")
-        raise RuntimeError("No MongoDB URI available for chat sessions")
-    
-    print(f"[CHAT_SESSIONS] Connecting to MongoDB...")
-    client = MongoClient(MONGO_AGENT_URL)
-    agent_db = client.get_database()
-    print(f"[CHAT_SESSIONS] Connected to database: {agent_db.name}")
-except Exception as e:
-    print(f"[CHAT_SESSIONS] Failed to connect to MongoDB: {e}")
-    agent_db = None
+agent_db = None
+if _MONGO_AVAILABLE:
+    try:
+        settings = Settings.load()
+        # Use the same auth database URI for chat sessions
+        MONGO_AGENT_URL = os.getenv("MONGO_AGENT_URL")
+        
+        if not MONGO_AGENT_URL:
+            # Fall back to auth URI if agent URI not set
+            MONGO_AGENT_URL = settings.auth_api_url
+            print(f"[CHAT_SESSIONS] Using auth_api_url as fallback")
+        
+        if not MONGO_AGENT_URL:
+            print("[CHAT_SESSIONS] WARNING: No MongoDB URI available for chat sessions")
+            agent_db = None
+        else:
+            print(f"[CHAT_SESSIONS] Connecting to MongoDB with URL: {MONGO_AGENT_URL.split('@')[0]}@***")  # Hide password in logs
+            # Parse connection string to extract components
+            from urllib.parse import urlparse, parse_qs, unquote
+            parsed = urlparse(MONGO_AGENT_URL)
+            db_name = parsed.path.lstrip('/').split('?')[0] if parsed.path else 'agent_db'
+            query_params = parse_qs(parsed.query)
+            auth_source = query_params.get('authSource', [db_name])[0]
+            
+            # Use explicit parameters to avoid URL parsing issues with special characters
+            password = unquote(parsed.password) if parsed.password else ""
+            print(f"[CHAT_SESSIONS] Using explicit parameters (password length: {len(password)})")
+            
+            # Use the parsed hostname from connection string (mongo in Docker, 127.0.0.1 locally)
+            mongo_host = parsed.hostname or "127.0.0.1"
+            mongo_port = parsed.port or 27017
+            
+            print(f"[CHAT_SESSIONS] Connecting to {mongo_host}:{mongo_port}...")
+            client = MongoClient(
+                host=mongo_host,
+                port=mongo_port,
+                username=parsed.username,
+                password=password,
+                authSource=auth_source,
+                authMechanism="SCRAM-SHA-256",
+                serverSelectionTimeoutMS=5000
+            )
+            agent_db = client[db_name]
+            agent_db.command('ping')
+            # Connection already tested above
+            print(f"[CHAT_SESSIONS] Successfully connected to MongoDB database: {agent_db.name}")
+    except Exception as e:
+        print(f"[CHAT_SESSIONS] Failed to connect to MongoDB: {e}")
+        print(f"[CHAT_SESSIONS] Connection string: {MONGO_AGENT_URL.split('@')[0] if MONGO_AGENT_URL else 'NOT SET'}@***")
+        print(f"[CHAT_SESSIONS] Troubleshooting:")
+        print(f"  1. Verify MongoDB is running (run from any directory):")
+        print(f"     docker ps | findstr rag-mongo")
+        print(f"  2. Check password matches MONGO_APP_PASS (run from RAG_Infra directory):")
+        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
+        print(f"     # Check .env file for MONGO_APP_PASS value")
+        print(f"  3. Verify user exists (run from RAG_Infra directory):")
+        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
+        print(f"     docker exec rag-mongo mongosh -u root -p rootpassword --authenticationDatabase admin")
+        print(f"  4. Test connection (run from RAG_Infra directory):")
+        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
+        if MONGO_AGENT_URL:
+            parsed_url = MONGO_AGENT_URL.split('/')
+            db_name = parsed_url[-1].split('?')[0] if parsed_url else 'agent_db'
+            query_part = MONGO_AGENT_URL.split('?')[1] if '?' in MONGO_AGENT_URL else 'authSource=agent_db'
+            auth_source = query_part.split('=')[1] if 'authSource=' in query_part else 'agent_db'
+            print(f"     docker exec rag-mongo mongosh \"{MONGO_AGENT_URL.split('@')[0]}@127.0.0.1:27017/{db_name}?authSource={auth_source}\"")
+        else:
+            print(f"     docker exec rag-mongo mongosh \"mongodb://user_rw:BestRAG.2026@127.0.0.1:27017/agent_db?authSource=agent_db\"")
+        agent_db = None
+else:
+    print("[CHAT_SESSIONS] pymongo not available - MongoDB features disabled")
 
 # Collections
 if agent_db is not None:

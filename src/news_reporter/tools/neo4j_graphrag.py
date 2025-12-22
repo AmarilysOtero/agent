@@ -8,6 +8,7 @@ Provides hybrid GraphRAG retrieval from Neo4j:
 
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
+import os
 import requests
 import logging
 import time
@@ -43,6 +44,11 @@ class Neo4jGraphRAGRetriever:
                 "NEO4J_API_URL must be set in .env or passed to constructor. "
                 "Example: http://localhost:8000"
             )
+        
+        # If running in Docker and URL uses localhost, replace with host.docker.internal
+        if os.getenv("DOCKER_ENV") and "localhost" in self.neo4j_api_url:
+            self.neo4j_api_url = self.neo4j_api_url.replace("localhost", "host.docker.internal")
+            logger.info(f"Running in Docker - updated Neo4j URL to use host.docker.internal")
         
         # Remove trailing slash if present
         self.neo4j_api_url = self.neo4j_api_url.rstrip("/")

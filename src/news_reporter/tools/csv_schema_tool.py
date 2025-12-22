@@ -52,3 +52,9 @@ def get_file_schema(file_path: str) -> str:
             "error": f"Failed to get schema: {str(e)}"
         }
         return json.dumps(error_result, indent=2)
+
+
+
+
+
+

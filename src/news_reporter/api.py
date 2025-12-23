@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 import uuid
+from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -95,8 +96,14 @@ try:
     from .routers.chat_sessions import router as chat_router
     app.include_router(chat_router)
     logging.info("Chat sessions router mounted successfully")
+
+    # Include workflows router
+    from .routers.workflows import router as workflows_router
+    app.include_router(workflows_router)
+    logging.info("Workflows router mounted successfully")
 except ImportError as e:
-    logging.warning(f"Chat sessions router not available: {e}")
+    logging.warning(f"Router not available: {e}")
+
 
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
@@ -239,6 +246,7 @@ async def search_schema(request: SchemaSearchRequest):
     except Exception as e:
         logging.exception("[schema/search] Failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Schema search failed: {str(e)}")
+
         
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":

@@ -54,16 +54,23 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
     first_name = query_words[0] if query_words else None
     last_name = query_words[-1] if len(query_words) > 1 else None
     
-    logger.info(f"Filtering {len(results)} results for query '{query}' (first_name='{first_name}', last_name='{last_name}')")
+    logger.info(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
+    logger.info(f"🔍 [filter_results_by_exact_match] Extracted names: {names}, query_words: {query_words}")
+    logger.info(f"🔍 [filter_results_by_exact_match] first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
+    print(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
+    print(f"🔍 [filter_results_by_exact_match] first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
     
     filtered = []
-    for res in results:
+    for i, res in enumerate(results, 1):
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
+        file_name = res.get("file_name", "?")
+        text_preview = text[:100].replace("\n", " ")
         
         # Apply absolute minimum similarity threshold (reject very low scores)
         if similarity < 0.3:
-            logger.debug(f"Filtered out result: similarity={similarity:.3f} < 0.3 (absolute minimum)")
+            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3 (absolute minimum), file='{file_name}'")
+            print(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3 (absolute minimum), file='{file_name}'")
             continue
         
         # Check if first name appears in text (required for name queries)
@@ -82,13 +89,29 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
         # Lower threshold for name matches to allow more results through
         if (name_match and similarity >= 0.3) or similarity >= min_similarity:
             filtered.append(res)
-            logger.debug(f"Kept result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}")
+            logger.info(
+                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
+                f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
+                f"name_match={name_match}, file='{file_name}'"
+            )
+            print(
+                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
+                f"name_match={name_match}, file='{file_name}'"
+            )
         else:
-            logger.info(f"Filtered out result: similarity={similarity:.3f}, first_name_match={first_name_found}, name_match={name_match}, text_preview={text[:100]}")
+            logger.info(
+                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
+                f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
+                f"name_match={name_match}, similarity >= min_similarity={similarity >= min_similarity}, "
+                f"file='{file_name}', text_preview='{text_preview}...'"
+            )
+            print(
+                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
+                f"name_match={name_match}, file='{file_name}'"
+            )
     
-    logger.info(f"Filtered {len(results)} results down to {len(filtered)} results")
-    return filtered
-    
+    logger.info(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
+    print(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
     return filtered
 
 # Lazy import for Azure Search to avoid import errors when using Neo4j only
@@ -116,6 +139,8 @@ class TriageAgent:
         self._id = foundry_agent_id
 
     async def run(self, goal: str) -> IntentResult:
+        logger.info(f"🤖 [AGENT INVOKED] TriageAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] TriageAgent (ID: {self._id})")
         content = f"Classify and return JSON only. User goal: {goal}"
         print("TriageAgent: using Foundry agent:", self._id)  # keep print
         try:
@@ -212,6 +237,8 @@ class AiSearchAgent:
         self._id = foundry_agent_id
 
     async def run(self, query: str) -> str:
+        logger.info(f"🤖 [AGENT INVOKED] AiSearchAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] AiSearchAgent (ID: {self._id})")
         print("AiSearchAgent: using Foundry agent:", self._id)  # keep print
         from ..tools.neo4j_graphrag import graphrag_search
         
@@ -234,7 +261,15 @@ class AiSearchAgent:
         # Extract person names from query for keyword filtering
         person_names = extract_person_names(query)
         
+        logger.info(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
+        logger.info(f"🔍 [AiSearchAgent] Extracted person names: {person_names}")
+        print(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
+        print(f"🔍 [AiSearchAgent] Extracted person names: {person_names}")
+        
         # Use improved search parameters to reduce false matches
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={person_names}, keyword_boost=0.4")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={person_names}, keyword_boost=0.4")
+        
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
@@ -244,21 +279,72 @@ class AiSearchAgent:
             keyword_boost=0.4  # Increase keyword weight for name matching
         )
 
+        logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        
+        # Log detailed information about each result
+        if results:
+            logger.info(f"📋 [AiSearchAgent] Detailed results from GraphRAG:")
+            print(f"📋 [AiSearchAgent] Detailed results from GraphRAG:")
+            for i, res in enumerate(results, 1):
+                similarity = res.get("similarity", 0.0)
+                hybrid_score = res.get("hybrid_score", 0.0)
+                text_preview = res.get("text", "")[:150].replace("\n", " ")
+                file_name = res.get("file_name", "?")
+                file_path = res.get("file_path", "?")
+                chunk_id = res.get("id", "?")
+                metadata = res.get("metadata", {})
+                vector_score = metadata.get("vector_score", 0.0)
+                keyword_score = metadata.get("keyword_score", 0.0)
+                
+                logger.info(
+                    f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
+                    f"vector_score={vector_score:.3f}, keyword_score={keyword_score:.3f}, "
+                    f"file='{file_name}', chunk_id='{chunk_id[:50]}...', "
+                    f"text_preview='{text_preview}...'"
+                )
+                print(
+                    f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
+                    f"vector_score={vector_score:.3f}, keyword_score={keyword_score:.3f}, "
+                    f"file='{file_name}', text_preview='{text_preview}...'"
+                )
+        else:
+            logger.warning(f"⚠️ [AiSearchAgent] No results returned from GraphRAG search")
+            print(f"⚠️ [AiSearchAgent] No results returned from GraphRAG search")
+
         if not results:
             return "No results found in Neo4j GraphRAG."
 
         # Filter results to require exact name match or very high similarity
+        logger.info(f"🔍 [AiSearchAgent] Filtering {len(results)} results with filter_results_by_exact_match (min_similarity=0.7)")
+        print(f"🔍 [AiSearchAgent] Filtering {len(results)} results with filter_results_by_exact_match (min_similarity=0.7)")
+        
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
             min_similarity=0.7  # Very high threshold for results without exact match
         )
         
+        logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
+        print(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
+        
+        # Log filtered results details
+        if filtered_results:
+            logger.info(f"📋 [AiSearchAgent] Filtered results details:")
+            print(f"📋 [AiSearchAgent] Filtered results details:")
+            for i, res in enumerate(filtered_results, 1):
+                similarity = res.get("similarity", 0.0)
+                text_preview = res.get("text", "")[:150].replace("\n", " ")
+                file_name = res.get("file_name", "?")
+                logger.info(f"   Filtered {i}: similarity={similarity:.3f}, file='{file_name}', text_preview='{text_preview}...'")
+                print(f"   Filtered {i}: similarity={similarity:.3f}, file='{file_name}', text_preview='{text_preview}...'")
+        
         # Limit to top 8 after filtering
         filtered_results = filtered_results[:8]
 
         if not filtered_results:
-            logger.warning(f"No relevant results found after filtering (had {len(results)} initial results)")
+            logger.warning(f"⚠️ [AiSearchAgent] No relevant results found after filtering (had {len(results)} initial results)")
+            print(f"⚠️ [AiSearchAgent] No relevant results found after filtering (had {len(results)} initial results)")
             return "No relevant results found in Neo4j GraphRAG after filtering."
 
         # Check if query requires exact numerical calculation or list query and try CSV query
@@ -552,6 +638,8 @@ class SQLAgent:
         Returns:
             Results from first successful source in fallback chain
         """
+        logger.info(f"🤖 [AGENT INVOKED] SQLAgent (ID: {self._id}, database_id: {database_id})")
+        print(f"🤖 [AGENT INVOKED] SQLAgent (ID: {self._id}, database_id: {database_id})")
         print("SQLAgent: using Foundry agent:", self._id)  # keep print
         
         # Step 1: Try PostgreSQL SQL first
@@ -768,6 +856,8 @@ class Neo4jGraphRAGAgent:
         self._id = foundry_agent_id
 
     async def run(self, query: str) -> str:
+        logger.info(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
         from ..tools.neo4j_graphrag import graphrag_search
         
@@ -1102,6 +1192,8 @@ class NewsReporterAgent:
             # "Write a 60-90s news broadcast script."
             "Write a description about the information in the tone of a news reporter." 
         )
+        logger.info(f"🤖 [AGENT INVOKED] NewsReporterAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] NewsReporterAgent (ID: {self._id})")
         print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
         try:
             return run_foundry_agent(self._id, content)
@@ -1131,6 +1223,8 @@ class ReviewAgent:
             "Evaluate factual accuracy, relevance, and tone of a news reporter. " 
             "Return ONLY STRICT JSON (no markdown, no prose) as per your schema."
         )
+        logger.info(f"🤖 [AGENT INVOKED] ReviewAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] ReviewAgent (ID: {self._id})")
         print("ReviewAgent: using Foundry agent:", self._id)  # keep print
         try:
             data = run_foundry_agent_json(

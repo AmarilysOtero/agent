@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 import requests
 import logging
 import time
+import os
 
 try:
     from ..config import Settings
@@ -36,6 +37,11 @@ class SchemaRetriever:
                 "NEO4J_API_URL must be set in .env or passed to constructor. "
                 "Example: http://localhost:8000"
             )
+        
+        # If running in Docker and URL uses localhost, replace with host.docker.internal
+        if os.getenv("DOCKER_ENV") and "localhost" in self.neo4j_api_url:
+            self.neo4j_api_url = self.neo4j_api_url.replace("localhost", "host.docker.internal")
+            logger.info(f"Running in Docker - updated Neo4j URL to use host.docker.internal")
         
         # Remove trailing slash if present
         self.neo4j_api_url = self.neo4j_api_url.rstrip("/")
@@ -162,6 +168,201 @@ class SchemaRetriever:
         
         lines.append("\n" + "=" * 60)
         return "\n".join(lines)
+    
+    def list_databases(self) -> List[Dict[str, Any]]:
+        """
+        List all available database configurations from Neo4j backend
+        
+        Returns:
+            List of database configurations with their IDs and metadata
+        """
+        try:
+            # Try different possible endpoints
+            endpoints = [
+                f"{self.neo4j_api_url}/api/databases",
+                f"{self.neo4j_api_url}/api/v1/database/config",
+                f"{self.neo4j_api_url}/api/v1/databases"
+            ]
+            
+            for url in endpoints:
+                try:
+                    logger.info(f"Trying to list databases from: {url}")
+                    response = requests.get(url, timeout=10.0)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    # Handle different response formats
+                    if isinstance(data, list):
+                        databases = data
+                    elif isinstance(data, dict):
+                        databases = data.get("databases", data.get("data", []))
+                    else:
+                        databases = []
+                    
+                    if databases:
+                        logger.info(f"Found {len(databases)} available databases from {url}")
+                        return databases
+                except requests.exceptions.RequestException:
+                    continue
+            
+            logger.warning("Could not list databases from any endpoint, will need database_id to be provided")
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error listing databases: {e}", exc_info=True)
+            return []
+    
+    def find_best_database(
+        self,
+        query: str,
+        candidate_database_ids: Optional[List[str]] = None,
+        top_k: int = 10,
+        similarity_threshold: float = 0.5
+    ) -> Optional[str]:
+        """
+        Automatically find the best database_id for a query using priority order:
+        1. PostgreSQL databases first
+        2. CSV databases second  
+        3. Other databases (vector similarity) third
+        
+        Args:
+            query: Natural language query
+            candidate_database_ids: Optional list of database IDs to search. If None, searches all databases.
+            top_k: Number of schema elements to retrieve per database
+            similarity_threshold: Minimum similarity score
+        
+        Returns:
+            Best matching database_id, or None if no relevant schema found
+        """
+        # Get list of databases to search
+        if candidate_database_ids is None:
+            databases = self.list_databases()
+            candidate_database_ids = []
+            for db in databases:
+                db_id = db.get("id") or db.get("database_id") or db.get("_id")
+                if db_id:
+                    candidate_database_ids.append(db_id)
+        else:
+            # If candidate_database_ids provided, still need to fetch full database info for categorization
+            databases = self.list_databases()
+        
+        if not candidate_database_ids:
+            logger.warning("No databases available to search - database listing may not be supported by backend API")
+            logger.info("Auto-detection requires database listing endpoint. Falling back to provided database_id.")
+            return None
+        
+        # Build dictionary of database info for categorization
+        databases_dict = {db.get("id") or db.get("database_id") or db.get("_id"): db 
+                         for db in databases 
+                         if db.get("id") or db.get("database_id") or db.get("_id")}
+        
+        # Categorize databases by type (priority order: PostgreSQL -> CSV -> Others)
+        postgresql_dbs = []
+        csv_dbs = []
+        other_dbs = []
+        
+        for db_id in candidate_database_ids:
+            db_info = databases_dict.get(db_id, {})
+            db_type = (db_info.get("databaseType") or db_info.get("database_type") or "").lower()
+            db_name = (db_info.get("name") or db_id).lower()
+            
+            if "postgresql" in db_type or "postgres" in db_type:
+                postgresql_dbs.append(db_id)
+            elif "csv" in db_type or "csv" in db_name or ".csv" in db_name:
+                csv_dbs.append(db_id)
+            else:
+                other_dbs.append(db_id)
+        
+        logger.info(f"Database priority order: {len(postgresql_dbs)} PostgreSQL, {len(csv_dbs)} CSV, {len(other_dbs)} other")
+        logger.info(f"Searching for best database for query: '{query[:100]}...'")
+        
+        # Extract key terms from query for relevance checking
+        query_lower = query.lower()
+        query_terms = set(word for word in query_lower.split() if len(word) > 3)  # Words longer than 3 chars
+        
+        # Search in priority order: PostgreSQL -> CSV -> Others
+        search_order = [
+            ("PostgreSQL", postgresql_dbs),
+            ("CSV", csv_dbs),
+            ("Other", other_dbs)
+        ]
+        
+        best_database_id = None
+        best_score = 0
+        best_schema_slice = None
+        
+        for category_name, db_list in search_order:
+            if not db_list:
+                continue
+                
+            logger.info(f"Searching {category_name} databases ({len(db_list)} databases)...")
+            
+            for db_id in db_list:
+                try:
+                    schema_result = self.get_relevant_schema(
+                        query=query,
+                        database_id=db_id,
+                        top_k=top_k,
+                        similarity_threshold=similarity_threshold
+                    )
+                    
+                    result_count = schema_result.get("result_count", 0)
+                    schema_slice = schema_result.get("schema_slice", {})
+                    tables = schema_slice.get("tables", [])
+                    
+                    # Count actual tables found
+                    table_count = len(tables) if tables else 0
+                    
+                    # If we found relevant tables in this category, use it (priority-based)
+                    if table_count > 0:
+                        # Calculate relevance score: table count + keyword matches
+                        score = table_count
+                        
+                        # Check if table/column names contain query terms (boost score for better matches)
+                        for table in tables:
+                            table_name = table.get("name", "").lower()
+                            table_desc = table.get("description", "").lower()
+                            # Check if query terms appear in table name or description
+                            for term in query_terms:
+                                if term in table_name or term in table_desc:
+                                    score += 2  # Boost for keyword matches
+                            
+                            # Check columns too
+                            for col in table.get("columns", []):
+                                col_name = col.get("name", "").lower()
+                                col_desc = col.get("description", "").lower()
+                                for term in query_terms:
+                                    if term in col_name or term in col_desc:
+                                        score += 1  # Smaller boost for column matches
+                        
+                        logger.info(f"Found relevant schema in {category_name} database {db_id}: {table_count} tables, score: {score}")
+                        
+                        # Use the first database in this category with relevant tables
+                        # (priority order means PostgreSQL wins over CSV, CSV wins over others)
+                        best_database_id = db_id
+                        best_score = score
+                        best_schema_slice = schema_slice
+                        break  # Found a match in this category, stop searching
+                    else:
+                        logger.debug(f"{category_name} database {db_id}: No relevant tables found")
+                        
+                except Exception as e:
+                    logger.debug(f"Error searching {category_name} database {db_id}: {e}")
+                    continue
+            
+            # If we found a match in this category, stop searching other categories
+            if best_database_id:
+                break
+        
+        if best_database_id:
+            logger.info(f"Selected database: {best_database_id} with relevance score: {best_score}")
+            if best_schema_slice:
+                table_names = [t.get("name", "?") for t in best_schema_slice.get("tables", [])]
+                logger.info(f"Relevant tables: {', '.join(table_names[:5])}")
+        else:
+            logger.warning(f"No relevant schema found in any database for query: '{query[:100]}...'")
+        
+        return best_database_id
 
 
 def get_relevant_schema(

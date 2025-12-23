@@ -22,7 +22,14 @@ def extract_person_names(query: str) -> List[str]:
     # Extract capitalized words that are likely names (length > 2, starts with capital)
     names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
     # Remove common words that start with capital but aren't names
-    common_words = {'The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Who', 'Why', 'How', 'Tell', 'Show', 'Give', 'Find', 'Search', 'Get'}
+    # Expanded to include query verbs like "List", "Name", etc.
+    common_words = {
+        'The', 'This', 'That', 'These', 'Those', 
+        'What', 'When', 'Where', 'Who', 'Why', 'How', 
+        'Tell', 'Show', 'Give', 'Find', 'Search', 'Get',
+        'List', 'Name', 'Count', 'Sum', 'Calculate', 'Compute',
+        'Return', 'Display', 'Print', 'Output'
+    }
     names = [n for n in names if n not in common_words]
     return names
 
@@ -85,29 +92,44 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
             # Only first name available, require it to match
             name_match = first_name_found
         
-        # Keep if: (name matches AND similarity >= 0.3) OR similarity is very high (>= min_similarity)
-        # Lower threshold for name matches to allow more results through
-        if (name_match and similarity >= 0.3) or similarity >= min_similarity:
+        # Also check if file name contains the person's name (useful when text matching fails)
+        # This helps when the chunk text doesn't contain the name but the file name does
+        file_name_lower = file_name.lower() if file_name else ""
+        file_contains_name = False
+        if first_name and last_name:
+            # Check if file contains both names, or at least the last name (common in file names)
+            file_contains_name = (first_name in file_name_lower and last_name in file_name_lower) or \
+                                 (last_name in file_name_lower)  # Last name alone is often in file names
+        elif first_name:
+            file_contains_name = first_name in file_name_lower
+        
+        # Keep if: 
+        # 1. Name matches in text AND similarity >= 0.3, OR
+        # 2. File name contains the person's name AND similarity >= 0.4 (slightly higher for file match), OR
+        # 3. Similarity is very high (>= min_similarity)
+        if (name_match and similarity >= 0.3) or \
+           (file_contains_name and similarity >= 0.4) or \
+           similarity >= min_similarity:
             filtered.append(res)
             logger.info(
                 f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
                 f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
-                f"name_match={name_match}, file='{file_name}'"
+                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
             )
             print(
                 f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"name_match={name_match}, file='{file_name}'"
+                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
             )
         else:
             logger.info(
                 f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
                 f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
-                f"name_match={name_match}, similarity >= min_similarity={similarity >= min_similarity}, "
+                f"name_match={name_match}, file_contains_name={file_contains_name}, similarity >= min_similarity={similarity >= min_similarity}, "
                 f"file='{file_name}', text_preview='{text_preview}...'"
             )
             print(
                 f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"name_match={name_match}, file='{file_name}'"
+                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
             )
     
     logger.info(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
@@ -614,7 +636,13 @@ class AiSearchAgent:
             else:
                 source_info = file_name
             
-            findings.append(f"- {source_note} {source_info}: {text[:300]}...{metadata_str}")
+            # Use 2000 character limit to include full chunk text for detailed information
+            if len(text) > 2000:
+                findings.append(f"- {source_note} {source_info}: {text[:2000]}...{metadata_str}")
+                logger.info(f"📝 Truncated chunk text from {len(text)} to 2000 characters for file: {file_name}")
+            else:
+                findings.append(f"- {source_note} {source_info}: {text}{metadata_str}")
+                logger.info(f"📝 Included full chunk text ({len(text)} characters) for file: {file_name}")
 
         return "\n".join(findings)
 
@@ -842,7 +870,13 @@ class SQLAgent:
                 source_note = "[Document]"
             
             source_info = file_path if file_path else file_name
-            findings.append(f"- {source_note} {source_info}: {text[:300]}...")
+            # Use 2000 character limit to include full chunk text for detailed information
+            if len(text) > 2000:
+                findings.append(f"- {source_note} {source_info}: {text[:2000]}...")
+                logger.info(f"📝 Truncated chunk text from {len(text)} to 2000 characters for file: {file_name}")
+            else:
+                findings.append(f"- {source_note} {source_info}: {text}")
+                logger.info(f"📝 Included full chunk text ({len(text)} characters) for file: {file_name}")
         
         return "\n".join(findings)
 
@@ -1174,7 +1208,13 @@ class Neo4jGraphRAGAgent:
             else:
                 source_info = file_name
             
-            findings.append(f"- {source_note} {source_info}: {text[:300]}...{metadata_str}")
+            # Use 2000 character limit to include full chunk text for detailed information
+            if len(text) > 2000:
+                findings.append(f"- {source_note} {source_info}: {text[:2000]}...{metadata_str}")
+                logger.info(f"📝 Truncated chunk text from {len(text)} to 2000 characters for file: {file_name}")
+            else:
+                findings.append(f"- {source_note} {source_info}: {text}{metadata_str}")
+                logger.info(f"📝 Included full chunk text ({len(text)} characters) for file: {file_name}")
 
         return "\n".join(findings)
 

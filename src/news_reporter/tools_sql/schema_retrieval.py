@@ -278,7 +278,17 @@ class SchemaRetriever:
         
         # Extract key terms from query for relevance checking
         query_lower = query.lower()
-        query_terms = set(word for word in query_lower.split() if len(word) > 3)  # Words longer than 3 chars
+        # Extract meaningful words (longer than 2 chars, excluding common stop words)
+        stop_words = {"how", "many", "what", "where", "when", "who", "which", "are", "is", "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"}
+        words = query_lower.split()
+        query_terms = set(word for word in words if len(word) > 2 and word not in stop_words)
+        
+        # Also add the full query as a phrase for better matching
+        query_phrase = query_lower.strip()
+        if len(query_phrase) > 5:  # Only add if meaningful length
+            query_terms.add(query_phrase)
+        
+        logger.debug(f"Extracted query terms: {query_terms}")
         
         # Search in priority order: PostgreSQL -> CSV -> Others
         search_order = [
@@ -317,32 +327,57 @@ class SchemaRetriever:
                     if table_count > 0:
                         # Calculate relevance score: table count + keyword matches
                         score = table_count
+                        has_keyword_match = False
                         
                         # Check if table/column names contain query terms (boost score for better matches)
+                        query_lower = query.lower()
                         for table in tables:
                             table_name = table.get("name", "").lower()
                             table_desc = table.get("description", "").lower()
+                            
+                            # Check if full query phrase appears (strongest match)
+                            if query_lower in table_name or query_lower in table_desc:
+                                score += 5  # Strong boost for full phrase match
+                                has_keyword_match = True
+                            
                             # Check if query terms appear in table name or description
                             for term in query_terms:
                                 if term in table_name or term in table_desc:
                                     score += 2  # Boost for keyword matches
+                                    has_keyword_match = True
                             
                             # Check columns too
                             for col in table.get("columns", []):
                                 col_name = col.get("name", "").lower()
                                 col_desc = col.get("description", "").lower()
+                                
+                                # Check if full query phrase appears
+                                if query_lower in col_name or query_lower in col_desc:
+                                    score += 3  # Strong boost for full phrase match in column
+                                    has_keyword_match = True
+                                
+                                # Check individual terms
                                 for term in query_terms:
                                     if term in col_name or term in col_desc:
                                         score += 1  # Smaller boost for column matches
+                                        has_keyword_match = True
                         
-                        logger.info(f"Found relevant schema in {category_name} database {db_id}: {table_count} tables, score: {score}")
-                        
-                        # Use the first database in this category with relevant tables
-                        # (priority order means PostgreSQL wins over CSV, CSV wins over others)
-                        best_database_id = db_id
-                        best_score = score
-                        best_schema_slice = schema_slice
-                        break  # Found a match in this category, stop searching
+                        # Only accept this database if:
+                        # 1. It has keyword matches, OR
+                        # 2. It's the last category ("Other") as a fallback
+                        is_last_category = category_name == "Other"
+                        if has_keyword_match or is_last_category:
+                            logger.info(f"Found relevant schema in {category_name} database {db_id}: {table_count} tables, score: {score}, keyword_match: {has_keyword_match}")
+                            
+                            # Use the first database in this category with relevant tables
+                            # (priority order means PostgreSQL wins over CSV, CSV wins over others)
+                            best_database_id = db_id
+                            best_score = score
+                            best_schema_slice = schema_slice
+                            break  # Found a match in this category, stop searching
+                        else:
+                            table_names = [t.get("name", "?") for t in tables[:3]]
+                            logger.info(f"{category_name} database {db_id}: Found {table_count} tables ({', '.join(table_names)}) but no keyword matches with query terms {query_terms}, continuing search")
                     else:
                         logger.debug(f"{category_name} database {db_id}: No relevant tables found")
                         

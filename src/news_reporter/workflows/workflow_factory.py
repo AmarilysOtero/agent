@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List
 
 from ..config import Settings
-from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, NewsReporterAgent, ReviewAgent
+from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, NewsReporterAgent, ReviewAgent, SQLAgent
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,28 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     do_multi = ("multi" in tri.intents) or cfg.multi_route_always
     targets: List[str] = cfg.reporter_ids if do_multi else [cfg.reporter_ids[0]]
 
-    # Choose search agent based on config
-    if cfg.use_neo4j_search and cfg.agent_id_neo4j_search:
+    # Choose search agent based on TriageAgent routing or config
+    # Check if TriageAgent detected a preferred agent type
+    print(f"🔍 Workflow: Checking TriageAgent results:")
+    print(f"   - preferred_agent: {tri.preferred_agent}")
+    print(f"   - database_id: {tri.database_id}")
+    print(f"   - database_type: {getattr(tri, 'database_type', 'N/A')}")
+    print(f"   - has agent_id_aisearch_sql: {hasattr(cfg, 'agent_id_aisearch_sql')}")
+    if hasattr(cfg, 'agent_id_aisearch_sql'):
+        print(f"   - agent_id_aisearch_sql value: {cfg.agent_id_aisearch_sql}")
+    
+    search_database_id = None
+    if tri.preferred_agent == "sql" and hasattr(cfg, 'agent_id_aisearch_sql') and cfg.agent_id_aisearch_sql:
+        print(f"✅ Using SQL Agent (PostgreSQL → CSV → Vector) for database_id: {tri.database_id}")
+        search_agent = SQLAgent(cfg.agent_id_aisearch_sql)
+        search_database_id = tri.database_id  # Pass database_id to SQL agent (may be None for auto-detect)
+    elif cfg.use_neo4j_search and cfg.agent_id_neo4j_search:
         print("Using Neo4j GraphRAG Agent (cost-efficient)")
         search_agent = Neo4jGraphRAGAgent(cfg.agent_id_neo4j_search)
     else:
         print("Using Azure Search Agent (production)")
+        if tri.preferred_agent == "sql":
+            print(f"⚠️  WARNING: TriageAgent set preferred_agent='sql' but SQL agent not configured or not available")
         search_agent = AiSearchAgent(cfg.agent_id_aisearch)
     
     reviewer = ReviewAgent(cfg.agent_id_reviewer)
@@ -39,7 +55,18 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         reporter = NewsReporterAgent(reporter_id)
 
         # AI Search step (works with either agent)
-        latest = await search_agent.run(goal) if ("ai_search" in tri.intents) else ""
+        # Also handle "unknown" intents if schema detection found a database (might be misclassified search query)
+        should_search = "ai_search" in tri.intents or (
+            "unknown" in tri.intents and tri.preferred_agent and tri.database_id
+        )
+        if should_search:
+            # Pass database_id to SQLAgent if it's a SQLAgent (database_id may be None for auto-detect)
+            if isinstance(search_agent, SQLAgent):
+                latest = await search_agent.run(goal, database_id=search_database_id)
+            else:
+                latest = await search_agent.run(goal)
+        else:
+            latest = ""
 
         # Reporter step
         script = (

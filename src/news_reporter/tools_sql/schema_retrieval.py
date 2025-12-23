@@ -7,6 +7,8 @@ import requests
 import logging
 import time
 import os
+import re
+import json
 
 try:
     from ..config import Settings
@@ -274,21 +276,40 @@ class SchemaRetriever:
                 other_dbs.append(db_id)
         
         logger.info(f"Database priority order: {len(postgresql_dbs)} PostgreSQL, {len(csv_dbs)} CSV, {len(other_dbs)} other")
-        logger.info(f"Searching for best database for query: '{query[:100]}...'")
+        logger.info(f"🔍 Searching for best database for query: '{query[:100]}...'")
+        print(f"🔍 SchemaRetriever: Searching for best database for query: '{query[:100]}...'")
+        print(f"   Priority order: {len(postgresql_dbs)} PostgreSQL, {len(csv_dbs)} CSV, {len(other_dbs)} other")
         
         # Extract key terms from query for relevance checking
         query_lower = query.lower()
         # Extract meaningful words (longer than 2 chars, excluding common stop words)
-        stop_words = {"how", "many", "what", "where", "when", "who", "which", "are", "is", "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"}
+        stop_words = {"how", "many", "what", "where", "when", "who", "which", "are", "is", "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "tell", "me", "show", "list", "get"}
         words = query_lower.split()
         query_terms = set(word for word in words if len(word) > 2 and word not in stop_words)
+        
+        # Add singular/plural variations for better matching
+        # If query has "names", also check for "name"
+        expanded_terms = set(query_terms)
+        for term in query_terms:
+            # Handle plural -> singular
+            if term.endswith('s') and len(term) > 3:
+                singular = term[:-1]  # Remove 's'
+                expanded_terms.add(singular)
+            # Handle singular -> plural (less common, but useful)
+            if not term.endswith('s'):
+                plural = term + 's'
+                expanded_terms.add(plural)
+        
+        query_terms = expanded_terms
         
         # Also add the full query as a phrase for better matching
         query_phrase = query_lower.strip()
         if len(query_phrase) > 5:  # Only add if meaningful length
             query_terms.add(query_phrase)
         
-        logger.debug(f"Extracted query terms: {query_terms}")
+        logger.info(f"🔑 Extracted query terms for schema matching: {query_terms}")
+        logger.info(f"   Full query phrase: '{query_phrase}'")
+        print(f"🔑 SchemaRetriever: Extracted query terms: {query_terms}")
         
         # Search in priority order: PostgreSQL -> CSV -> Others
         search_order = [
@@ -309,6 +330,7 @@ class SchemaRetriever:
             
             for db_id in db_list:
                 try:
+                    logger.debug(f"🔎 Searching {category_name} database {db_id} for query: '{query[:100]}...'")
                     schema_result = self.get_relevant_schema(
                         query=query,
                         database_id=db_id,
@@ -323,44 +345,262 @@ class SchemaRetriever:
                     # Count actual tables found
                     table_count = len(tables) if tables else 0
                     
+                    # Log ALL schema information found
+                    logger.info(f"📋 COMPLETE SCHEMA READ for {category_name} database {db_id}:")
+                    logger.info(f"   - Result count: {result_count}")
+                    logger.info(f"   - Tables found: {table_count}")
+                    print(f"\n{'='*80}")
+                    print(f"📋 COMPLETE SCHEMA READ for {category_name} database {db_id}:")
+                    print(f"   - Result count: {result_count}")
+                    print(f"   - Tables found: {table_count}")
+                    print(f"{'='*80}")
+                    
+                    # Log the raw schema_slice structure
+                    try:
+                        schema_json = json.dumps(schema_slice, indent=2, default=str)
+                        logger.info(f"📄 Raw schema_slice JSON:\n{schema_json}")
+                        print(f"\n📄 Raw schema_slice structure:")
+                        print(schema_json[:2000])  # First 2000 chars
+                        if len(schema_json) > 2000:
+                            print(f"... (truncated, full length: {len(schema_json)} chars)")
+                    except Exception as e:
+                        logger.warning(f"Could not serialize schema_slice: {e}")
+                    
+                    if table_count > 0:
+                        for idx, table in enumerate(tables, 1):
+                            table_name = table.get("name", "?")
+                            table_desc = table.get("description", "")
+                            table_domain = table.get("domain", "")
+                            table_id = table.get("id", "?")
+                            columns = table.get("columns", [])
+                            
+                            logger.info(f"\n   📊 Table {idx}: {table_name} (ID: {table_id})")
+                            print(f"\n   📊 Table {idx}: {table_name} (ID: {table_id})")
+                            
+                            if table_desc:
+                                logger.info(f"      Description: {table_desc}")
+                                print(f"      Description: {table_desc}")
+                            else:
+                                logger.info(f"      Description: (none)")
+                                print(f"      Description: (none)")
+                            
+                            if table_domain:
+                                logger.info(f"      Domain: {table_domain}")
+                                print(f"      Domain: {table_domain}")
+                            
+                            # Log all table metadata
+                            table_metadata = {k: v for k, v in table.items() if k not in ['name', 'description', 'domain', 'id', 'columns']}
+                            if table_metadata:
+                                logger.info(f"      Other metadata: {table_metadata}")
+                                print(f"      Other metadata: {table_metadata}")
+                            
+                            logger.info(f"      Columns ({len(columns)} total):")
+                            print(f"      Columns ({len(columns)} total):")
+                            
+                            # Show ALL columns, not just first 15
+                            for col_idx, col in enumerate(columns, 1):
+                                col_name = col.get("name", "?")
+                                col_type = col.get("data_type", "")
+                                col_desc = col.get("description", "")
+                                col_id = col.get("id", "?")
+                                is_pk = col.get("is_primary_key", False)
+                                nullable = col.get("nullable", True)
+                                
+                                col_info = f"         {col_idx}. {col_name} ({col_type})"
+                                if is_pk:
+                                    col_info += " [PRIMARY KEY]"
+                                if not nullable:
+                                    col_info += " [NOT NULL]"
+                                if col_id:
+                                    col_info += f" (ID: {col_id})"
+                                
+                                logger.info(col_info)
+                                print(col_info)
+                                
+                                if col_desc:
+                                    logger.info(f"            Description: {col_desc}")
+                                    print(f"            Description: {col_desc}")
+                                
+                                # Log all column metadata
+                                col_metadata = {k: v for k, v in col.items() if k not in ['name', 'data_type', 'description', 'id', 'is_primary_key', 'nullable']}
+                                if col_metadata:
+                                    logger.info(f"            Other metadata: {col_metadata}")
+                                    print(f"            Other metadata: {col_metadata}")
+                    else:
+                        logger.info(f"   ⚠️  No tables found in schema_slice")
+                        print(f"   ⚠️  No tables found in schema_slice")
+                        # Log what was in schema_result anyway
+                        logger.info(f"   Schema result keys: {list(schema_result.keys())}")
+                        print(f"   Schema result keys: {list(schema_result.keys())}")
+                        if "results" in schema_result:
+                            results = schema_result.get("results", [])
+                            logger.info(f"   Raw results count: {len(results)}")
+                            print(f"   Raw results count: {len(results)}")
+                            if results:
+                                logger.info(f"   First result: {json.dumps(results[0], indent=2, default=str)}")
+                                print(f"   First result sample:")
+                                print(json.dumps(results[0], indent=2, default=str)[:500])
+                    
+                    print(f"{'='*80}\n")
+                    
                     # If we found relevant tables in this category, use it (priority-based)
                     if table_count > 0:
                         # Calculate relevance score: table count + keyword matches
                         score = table_count
                         has_keyword_match = False
+                        match_details = []
                         
                         # Check if table/column names contain query terms (boost score for better matches)
                         query_lower = query.lower()
-                        for table in tables:
-                            table_name = table.get("name", "").lower()
-                            table_desc = table.get("description", "").lower()
+                        logger.info(f"🔍 Starting keyword matching for {table_count} tables")
+                        logger.info(f"   Query: '{query}'")
+                        logger.info(f"   Query (lowercase): '{query_lower}'")
+                        logger.info(f"   Query terms: {query_terms}")
+                        print(f"\n🔍 Starting keyword matching for {table_count} tables")
+                        print(f"   Query: '{query}'")
+                        print(f"   Query (lowercase): '{query_lower}'")
+                        print(f"   Query terms: {query_terms}")
+                        print(f"   Tables to check: {[t.get('name', '?') for t in tables]}")
+                        
+                        try:
+                            logger.info(f"   Entering table loop with {len(tables)} tables")
+                            print(f"   Entering table loop with {len(tables)} tables", flush=True)
+                            
+                            for table_idx, table in enumerate(tables, 1):
+                                logger.info(f"   [LOOP ITERATION {table_idx}] Processing table {table_idx} of {len(tables)}")
+                                print(f"   [LOOP ITERATION {table_idx}] Processing table {table_idx} of {len(tables)}", flush=True)
+                                
+                                table_name = (table.get("name") or "").lower()
+                                table_desc = (table.get("description") or "").lower()
+                                logger.info(f"   Checking table: '{table.get('name')}' (lowercase: '{table_name}')")
+                                print(f"   Checking table: '{table.get('name')}' (lowercase: '{table_name}')", flush=True)
                             
                             # Check if full query phrase appears (strongest match)
                             if query_lower in table_name or query_lower in table_desc:
                                 score += 5  # Strong boost for full phrase match
                                 has_keyword_match = True
+                                match_details.append(f"Full phrase match in table '{table.get('name')}'")
+                                logger.info(f"      ✅ Full phrase match!")
+                                print(f"      ✅ Full phrase match!")
                             
                             # Check if query terms appear in table name or description
+                            # Use word boundary matching for better accuracy
                             for term in query_terms:
-                                if term in table_name or term in table_desc:
+                                # Check exact word match (with word boundaries) - strongest
+                                word_pattern = r'\b' + re.escape(term) + r'\b'
+                                word_match = re.search(word_pattern, table_name) or re.search(word_pattern, table_desc)
+                                if word_match:
+                                    score += 3  # Strong boost for exact word match
+                                    has_keyword_match = True
+                                    match_details.append(f"Exact word '{term}' in table '{table.get('name')}'")
+                                    logger.info(f"      ✅ Exact word match: '{term}' in table '{table.get('name')}'")
+                                    print(f"      ✅ Exact word match: '{term}' in table '{table.get('name')}'")
+                                # Check substring match (for partial matches like "name" in "first_name")
+                                elif term in table_name or term in table_desc:
                                     score += 2  # Boost for keyword matches
                                     has_keyword_match = True
+                                    match_details.append(f"Keyword '{term}' in table '{table.get('name')}'")
+                                    logger.info(f"      ✅ Substring match: '{term}' in table '{table.get('name')}'")
+                                    print(f"      ✅ Substring match: '{term}' in table '{table.get('name')}'")
                             
                             # Check columns too
-                            for col in table.get("columns", []):
-                                col_name = col.get("name", "").lower()
-                                col_desc = col.get("description", "").lower()
+                            columns = table.get("columns", [])
+                            logger.info(f"   Checking {len(columns)} columns in table '{table.get('name')}'")
+                            print(f"   Checking {len(columns)} columns in table '{table.get('name')}'")
+                            
+                            for col in columns:
+                                col_name = (col.get("name") or "").lower()
+                                col_desc = (col.get("description") or "").lower()
+                                logger.info(f"      Checking column: '{col.get('name')}' (lowercase: '{col_name}')")
+                                print(f"      Checking column: '{col.get('name')}' (lowercase: '{col_name}')")
                                 
                                 # Check if full query phrase appears
                                 if query_lower in col_name or query_lower in col_desc:
-                                    score += 3  # Strong boost for full phrase match in column
+                                    score += 4  # Strong boost for full phrase match in column
                                     has_keyword_match = True
+                                    match_details.append(f"Full phrase match in column '{col.get('name')}' of table '{table.get('name')}'")
+                                    logger.info(f"         ✅ Full phrase match in column!")
+                                    print(f"         ✅ Full phrase match in column!")
                                 
-                                # Check individual terms
+                                # Check individual terms with word boundary matching
                                 for term in query_terms:
-                                    if term in col_name or term in col_desc:
+                                    # Check exact word match (with word boundaries) - strongest
+                                    word_pattern = r'\b' + re.escape(term) + r'\b'
+                                    word_match = re.search(word_pattern, col_name) or re.search(word_pattern, col_desc)
+                                    if word_match:
+                                        score += 2  # Strong boost for exact word match in column
+                                        has_keyword_match = True
+                                        match_details.append(f"Exact word '{term}' in column '{col.get('name')}' of table '{table.get('name')}'")
+                                        logger.info(f"         ✅ Exact word match: '{term}' in column '{col.get('name')}'")
+                                        print(f"         ✅ Exact word match: '{term}' in column '{col.get('name')}'")
+                                    # Check substring match (for partial matches like "name" in "first_name")
+                                    elif term in col_name or term in col_desc:
                                         score += 1  # Smaller boost for column matches
                                         has_keyword_match = True
+                                        match_details.append(f"Keyword '{term}' in column '{col.get('name')}' of table '{table.get('name')}'")
+                                        logger.info(f"         ✅ Substring match: '{term}' in column '{col.get('name')}'")
+                                        print(f"         ✅ Substring match: '{term}' in column '{col.get('name')}'")
+                            
+                            logger.info(f"   ✅ Completed table loop - checked {len(tables)} tables")
+                            print(f"   ✅ Completed table loop - checked {len(tables)} tables", flush=True)
+                            
+                        except Exception as e:
+                            logger.error(f"   ❌ ERROR in keyword matching loop: {e}", exc_info=True)
+                            print(f"   ❌ ERROR in keyword matching loop: {e}")
+                            import traceback
+                            print(traceback.format_exc())
+                            # Continue anyway - maybe we can still use the database
+                        
+                        # Log match details and final state
+                        logger.info(f"\n📊 KEYWORD MATCHING SUMMARY:")
+                        logger.info(f"   - Total tables checked: {len(tables)}")
+                        logger.info(f"   - Total columns checked: {sum(len(t.get('columns', [])) for t in tables)}")
+                        logger.info(f"   - Query terms used: {query_terms}")
+                        logger.info(f"   - has_keyword_match: {has_keyword_match}")
+                        logger.info(f"   - Match details count: {len(match_details)}")
+                        logger.info(f"   - Final score: {score}")
+                        print(f"\n📊 KEYWORD MATCHING SUMMARY:")
+                        print(f"   - Total tables checked: {len(tables)}")
+                        print(f"   - Total columns checked: {sum(len(t.get('columns', [])) for t in tables)}")
+                        print(f"   - Query terms used: {query_terms}")
+                        print(f"   - has_keyword_match: {has_keyword_match}")
+                        print(f"   - Match details count: {len(match_details)}")
+                        print(f"   - Final score: {score}")
+                        
+                        if match_details:
+                            logger.info(f"   ✅ Keyword matches found ({len(match_details)}):")
+                            print(f"   ✅ SchemaRetriever: Keyword matches found ({len(match_details)}):")
+                            for detail in match_details[:20]:  # Show first 20 matches
+                                logger.info(f"      - {detail}")
+                                print(f"      - {detail}")
+                            if len(match_details) > 20:
+                                logger.info(f"      ... and {len(match_details) - 20} more matches")
+                                print(f"      ... and {len(match_details) - 20} more matches")
+                        else:
+                            logger.warning(f"   ❌ No keyword matches found despite having tables with columns!")
+                            logger.warning(f"   This might indicate a bug in the matching logic.")
+                            print(f"   ❌ SchemaRetriever: No keyword matches found despite having tables with columns!")
+                            print(f"   This might indicate a bug in the matching logic.")
+                            
+                            # Debug: Show what we're comparing
+                            logger.info(f"   DEBUG - Sample comparison:")
+                            if tables and tables[0].get("columns"):
+                                sample_col = tables[0]["columns"][0]
+                                sample_col_name = sample_col.get("name", "").lower()
+                                logger.info(f"      Sample column name: '{sample_col.get('name')}' (lowercase: '{sample_col_name}')")
+                                logger.info(f"      Query terms: {query_terms}")
+                                for term in list(query_terms)[:3]:
+                                    logger.info(f"      Does '{term}' in '{sample_col_name}'? {term in sample_col_name}")
+                                    word_pattern = r'\b' + re.escape(term) + r'\b'
+                                    word_match = re.search(word_pattern, sample_col_name)
+                                    logger.info(f"      Regex match '{word_pattern}' in '{sample_col_name}'? {bool(word_match)}")
+                                print(f"      Sample column name: '{sample_col.get('name')}' (lowercase: '{sample_col_name}')")
+                                print(f"      Query terms: {query_terms}")
+                                for term in list(query_terms)[:3]:
+                                    print(f"      Does '{term}' in '{sample_col_name}'? {term in sample_col_name}")
+                                    word_pattern = r'\b' + re.escape(term) + r'\b'
+                                    word_match = re.search(word_pattern, sample_col_name)
+                                    print(f"      Regex match '{word_pattern}' in '{sample_col_name}'? {bool(word_match)}")
                         
                         # Only accept this database if:
                         # 1. It has keyword matches, OR
@@ -368,6 +608,7 @@ class SchemaRetriever:
                         is_last_category = category_name == "Other"
                         if has_keyword_match or is_last_category:
                             logger.info(f"Found relevant schema in {category_name} database {db_id}: {table_count} tables, score: {score}, keyword_match: {has_keyword_match}")
+                            print(f"✅ SchemaRetriever: Found relevant schema in {category_name} database {db_id}: {table_count} tables, score: {score}, keyword_match: {has_keyword_match}")
                             
                             # Use the first database in this category with relevant tables
                             # (priority order means PostgreSQL wins over CSV, CSV wins over others)
@@ -390,12 +631,92 @@ class SchemaRetriever:
                 break
         
         if best_database_id:
-            logger.info(f"Selected database: {best_database_id} with relevance score: {best_score}")
+            logger.info(f"✅ Selected database: {best_database_id} with relevance score: {best_score}")
+            print(f"\n{'='*80}")
+            print(f"✅ FINAL SELECTED DATABASE: {best_database_id} (score: {best_score})")
+            print(f"{'='*80}")
+            
             if best_schema_slice:
-                table_names = [t.get("name", "?") for t in best_schema_slice.get("tables", [])]
-                logger.info(f"Relevant tables: {', '.join(table_names[:5])}")
+                tables = best_schema_slice.get("tables", [])
+                table_names = [t.get("name", "?") for t in tables]
+                logger.info(f"📋 Relevant tables: {', '.join(table_names)}")
+                print(f"📋 Relevant tables ({len(tables)}): {', '.join(table_names)}")
+                
+                # Show COMPLETE schema details for selected database
+                logger.info(f"\n🔍 COMPLETE FINAL SCHEMA FOR SELECTED DATABASE {best_database_id}:")
+                logger.info(f"   Total tables: {len(tables)}")
+                print(f"\n🔍 COMPLETE FINAL SCHEMA FOR SELECTED DATABASE {best_database_id}:")
+                print(f"   Total tables: {len(tables)}")
+                
+                # Log complete schema_slice as JSON
+                try:
+                    final_schema_json = json.dumps(best_schema_slice, indent=2, default=str)
+                    logger.info(f"📄 Complete final schema_slice JSON:\n{final_schema_json}")
+                    print(f"\n📄 Complete final schema_slice JSON:")
+                    print(final_schema_json)
+                except Exception as e:
+                    logger.warning(f"Could not serialize final schema_slice: {e}")
+                
+                # Show detailed table information
+                for idx, table in enumerate(tables, 1):
+                    table_name = table.get("name", "?")
+                    table_desc = table.get("description", "")
+                    table_domain = table.get("domain", "")
+                    table_id = table.get("id", "?")
+                    columns = table.get("columns", [])
+                    
+                    logger.info(f"\n   📊 Table {idx}: {table_name} (ID: {table_id})")
+                    print(f"\n   📊 Table {idx}: {table_name} (ID: {table_id})")
+                    
+                    if table_desc:
+                        logger.info(f"      Description: {table_desc}")
+                        print(f"      Description: {table_desc}")
+                    if table_domain:
+                        logger.info(f"      Domain: {table_domain}")
+                        print(f"      Domain: {table_domain}")
+                    
+                    logger.info(f"      Columns ({len(columns)} total):")
+                    print(f"      Columns ({len(columns)} total):")
+                    
+                    # Show ALL columns
+                    for col_idx, col in enumerate(columns, 1):
+                        col_name = col.get("name", "?")
+                        col_type = col.get("data_type", "")
+                        col_desc = col.get("description", "")
+                        col_id = col.get("id", "?")
+                        is_pk = col.get("is_primary_key", False)
+                        nullable = col.get("nullable", True)
+                        
+                        col_info = f"         {col_idx}. {col_name} ({col_type})"
+                        if is_pk:
+                            col_info += " [PRIMARY KEY]"
+                        if not nullable:
+                            col_info += " [NOT NULL]"
+                        if col_id:
+                            col_info += f" (ID: {col_id})"
+                        
+                        logger.info(col_info)
+                        print(col_info)
+                        
+                        if col_desc:
+                            logger.info(f"            Description: {col_desc}")
+                            print(f"            Description: {col_desc}")
+                    
+                    # Log all table metadata
+                    table_metadata = {k: v for k, v in table.items() if k not in ['name', 'description', 'domain', 'id', 'columns']}
+                    if table_metadata:
+                        logger.info(f"      Other table metadata: {table_metadata}")
+                        print(f"      Other table metadata: {table_metadata}")
+                
+                print(f"{'='*80}\n")
+            else:
+                logger.warning(f"⚠️  Selected database {best_database_id} but schema_slice is empty!")
+                print(f"⚠️  Selected database {best_database_id} but schema_slice is empty!")
         else:
-            logger.warning(f"No relevant schema found in any database for query: '{query[:100]}...'")
+            logger.warning(f"❌ No relevant schema found in any database for query: '{query[:100]}...'")
+            print(f"\n{'='*80}")
+            print(f"❌ No relevant schema found in any database for query: '{query[:100]}...'")
+            print(f"{'='*80}\n")
         
         return best_database_id
 

@@ -22,6 +22,7 @@ class Settings:
     
     # === Optional agent settings ===
     agent_id_neo4j_search: str | None = None  # Optional Neo4j GraphRAG agent
+    agent_id_aisearch_sql: str | None = None  # Optional SQL agent (PostgreSQL → CSV → Vector)
     multi_route_always: bool = False
     use_neo4j_search: bool = False  # Toggle to use Neo4j instead of Azure Search
 
@@ -60,6 +61,7 @@ class Settings:
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
         aisearch = os.getenv("AGENT_ID_AISEARCH") or ""
         neo4j_search = os.getenv("AGENT_ID_NEO4J_SEARCH")  # Optional
+        aisearch_sql = os.getenv("AGENT_ID_AISEARCHSQL")  # Optional SQL agent
         reviewer = os.getenv("AGENT_ID_REVIEWER") or ""
         reporters = _split_list(os.getenv("AGENT_ID_REPORTER_LIST"))
         if not reporters:
@@ -130,6 +132,7 @@ class Settings:
             agent_id_triage=triage,
             agent_id_aisearch=aisearch,
             agent_id_neo4j_search=neo4j_search,
+            agent_id_aisearch_sql=aisearch_sql,
             reporter_ids=reporters,
             agent_id_reviewer=reviewer,
             multi_route_always=multi_flag,

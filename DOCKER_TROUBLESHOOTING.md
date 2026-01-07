@@ -75,3 +75,6 @@ docker exec rag-agent python -c "import requests; r = requests.get('http://host.
 
 **Test Foundry:**
 Check logs for Foundry connection errors after making a chat request.
+
+
+

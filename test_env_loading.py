@@ -15,3 +15,6 @@ if p.exists():
     print(f"AZURE_TENANT_ID: {'SET' if os.getenv('AZURE_TENANT_ID') else 'NOT SET'}")
 else:
     print("ERROR: .env file not found!")
+
+
+

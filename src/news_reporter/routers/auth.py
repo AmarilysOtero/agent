@@ -161,6 +161,14 @@ def get_current_user(sid: Optional[str] = Cookie(None)) -> dict:
         print(f"[AUTH] Session {sid} expired")
         raise HTTPException(status_code=401, detail="Session expired")
     
+    # Check if MongoDB is connected
+    if users_collection is None:
+        print("[AUTH] MongoDB connection unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service is unavailable. MongoDB connection failed."
+        )
+    
     # Get user
     user = users_collection.find_one({"_id": ObjectId(session["userId"])})
     if not user:
@@ -176,8 +184,13 @@ async def register(user_data: UserRegister):
     """Register a new user."""
     print("\n\n")
     print("\nregister")
-    if auth_db is None:
-        raise HTTPException(status_code=503, detail="Database connection unavailable")
+    
+    # Check if MongoDB is connected
+    if users_collection is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service is unavailable. MongoDB connection failed."
+        )
 
     # Check if user already exists
     existing_user = users_collection.find_one({"email": user_data.email})
@@ -210,6 +223,14 @@ async def login(credentials: UserLogin, response: Response):
     """Login and create a session."""
     print("\n\n")
     print("\nlogin")
+    
+    # Check if MongoDB is connected
+    if users_collection is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service is unavailable. MongoDB connection failed."
+        )
+    
     # Find user
     user = users_collection.find_one({"email": credentials.email})
     if not user:

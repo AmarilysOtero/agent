@@ -179,35 +179,78 @@ class SchemaRetriever:
             List of database configurations with their IDs and metadata
         """
         try:
-            # Try different possible endpoints
-            endpoints = [
-                f"{self.neo4j_api_url}/api/databases",
-                f"{self.neo4j_api_url}/api/v1/database/config",
-                f"{self.neo4j_api_url}/api/v1/databases"
-            ]
+            # First, test if the backend is reachable with a health check
+            health_url = f"{self.neo4j_api_url}/health"
+            try:
+                logger.info(f"🔍 SchemaRetriever: Testing backend connectivity with health check: {health_url}")
+                print(f"🔍 SchemaRetriever: Testing backend connectivity with health check: {health_url}")
+                health_response = requests.get(health_url, timeout=5.0)
+                logger.info(f"🔍 SchemaRetriever: Health check status: {health_response.status_code}")
+                print(f"🔍 SchemaRetriever: Health check status: {health_response.status_code}")
+            except Exception as e:
+                logger.warning(f"⚠️ SchemaRetriever: Health check failed (non-critical): {e}")
+                print(f"⚠️ SchemaRetriever: Health check failed (non-critical): {e}")
             
-            for url in endpoints:
-                try:
-                    logger.info(f"Trying to list databases from: {url}")
-                    response = requests.get(url, timeout=10.0)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    # Handle different response formats
-                    if isinstance(data, list):
-                        databases = data
-                    elif isinstance(data, dict):
-                        databases = data.get("databases", data.get("data", []))
-                    else:
-                        databases = []
-                    
-                    if databases:
-                        logger.info(f"Found {len(databases)} available databases from {url}")
-                        return databases
-                except requests.exceptions.RequestException:
-                    continue
+            # Primary endpoint - this is the correct one based on the API
+            url = f"{self.neo4j_api_url}/api/databases"
             
-            logger.warning("Could not list databases from any endpoint, will need database_id to be provided")
+            logger.info(f"🔍 SchemaRetriever: Attempting to list databases from: {url}")
+            print(f"🔍 SchemaRetriever: Attempting to list databases from: {url}")
+            
+            try:
+                # Increase timeout to 60 seconds for slow Neo4j queries
+                response = requests.get(url, timeout=60.0)
+                logger.info(f"🔍 SchemaRetriever: Response status: {response.status_code}")
+                print(f"🔍 SchemaRetriever: Response status: {response.status_code}")
+                
+                response.raise_for_status()
+                data = response.json()
+                
+                logger.info(f"🔍 SchemaRetriever: Response data type: {type(data)}, length: {len(data) if isinstance(data, list) else 'N/A'}")
+                print(f"🔍 SchemaRetriever: Response data type: {type(data)}")
+                
+                # Handle different response formats
+                if isinstance(data, list):
+                    databases = data
+                elif isinstance(data, dict):
+                    databases = data.get("databases", data.get("data", []))
+                else:
+                    databases = []
+                
+                if databases:
+                    logger.info(f"✅ SchemaRetriever: Found {len(databases)} available databases from {url}")
+                    print(f"✅ SchemaRetriever: Found {len(databases)} available databases")
+                    for db in databases[:5]:  # Show first 5
+                        db_id = db.get("id") or db.get("database_id") or db.get("_id")
+                        db_name = db.get("name", "Unknown")
+                        db_type = db.get("database_type") or db.get("databaseType", "Unknown")
+                        logger.info(f"   - Database: {db_name} (ID: {db_id}, Type: {db_type})")
+                        print(f"   - Database: {db_name} (ID: {db_id}, Type: {db_type})")
+                    return databases
+                else:
+                    logger.warning(f"⚠️ SchemaRetriever: Endpoint returned empty list")
+                    print(f"⚠️ SchemaRetriever: Endpoint returned empty list")
+                    return []
+                    
+            except requests.exceptions.Timeout:
+                logger.error(f"❌ SchemaRetriever: Timeout after 30s trying to list databases from {url}")
+                print(f"❌ SchemaRetriever: Timeout after 30s trying to list databases from {url}")
+                return []
+            except requests.exceptions.ConnectionError as e:
+                logger.error(f"❌ SchemaRetriever: Connection error to {url}: {e}")
+                print(f"❌ SchemaRetriever: Connection error to {url}: {e}")
+                return []
+            except requests.exceptions.HTTPError as e:
+                logger.error(f"❌ SchemaRetriever: HTTP error from {url}: {e}")
+                print(f"❌ SchemaRetriever: HTTP error from {url}: {e}")
+                if hasattr(e.response, 'text'):
+                    logger.error(f"   Response body: {e.response.text[:500]}")
+                    print(f"   Response body: {e.response.text[:500]}")
+                return []
+            
+        except Exception as e:
+            logger.error(f"❌ SchemaRetriever: Error listing databases: {e}", exc_info=True)
+            print(f"❌ SchemaRetriever: Error listing databases: {e}")
             return []
             
         except Exception as e:

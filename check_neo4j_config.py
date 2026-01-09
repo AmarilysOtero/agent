@@ -69,3 +69,4 @@ else:
     print("   USE_NEO4J_SEARCH=true  # Optional: enable Neo4j search")
 
 print("\n" + "=" * 80)
+

@@ -48,10 +48,10 @@ def get_credential():
                 )
     else:
         # Outside Docker, try AzureCliCredential first (for local development)
-        try:
-            return AzureCliCredential()
-        except Exception:
-            return DefaultAzureCredential()
+    try:
+        return AzureCliCredential()
+    except Exception:
+        return DefaultAzureCredential()
 
 
 def _require_env(name: str) -> str:

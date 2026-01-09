@@ -244,7 +244,9 @@ class TriageAgent:
                     # Fall back to default behavior (no schema routing)
             
             result = IntentResult(**data)
-            print(f"📋 TriageAgent IntentResult: intents={result.intents}, preferred_agent={result.preferred_agent}, database_id={result.database_id}, database_type={getattr(result, 'database_type', 'N/A')}")
+            logger.info(f"📋 TriageAgent: Final IntentResult - intents={result.intents}, preferred_agent={result.preferred_agent}, database_id={result.database_id}, database_type={getattr(result, 'database_type', 'N/A')}, confidence={result.confidence}")
+            print(f"📋 TriageAgent: Final IntentResult - intents={result.intents}, preferred_agent={result.preferred_agent}, database_id={result.database_id}, database_type={getattr(result, 'database_type', 'N/A')}, confidence={result.confidence}")
+            print(f"📋 TriageAgent: Full result dump: {result.model_dump()}")
             return result
         except (json.JSONDecodeError, ValidationError) as e:
             logger.error("Triage parse error: %s", e)
@@ -684,12 +686,20 @@ class SQLAgent:
                 )
                 
                 # Check if SQL query was successful and has results
+                logger.info(f"🔍 SQLAgent: SQL query result - success: {sql_result.get('success')}, has_results: {bool(sql_result.get('results'))}, generated_sql: {sql_result.get('generated_sql', 'N/A')[:100]}")
+                print(f"🔍 SQLAgent: SQL query result - success: {sql_result.get('success')}, has_results: {bool(sql_result.get('results'))}")
+                print(f"🔍 SQLAgent: Generated SQL: {sql_result.get('generated_sql', 'N/A')}")
+                
                 if sql_result.get("success") and sql_result.get("results"):
                     results_data = sql_result.get("results", {})
                     row_count = results_data.get("row_count", 0)
                     
+                    logger.info(f"🔍 SQLAgent: Results data - row_count: {row_count}, columns: {results_data.get('columns', [])}")
+                    print(f"🔍 SQLAgent: Results data - row_count: {row_count}, columns: {results_data.get('columns', [])}")
+                    
                     if row_count > 0:
                         logger.info(f"✅ SQLAgent: PostgreSQL SQL query successful with {row_count} rows")
+                        print(f"✅ SQLAgent: PostgreSQL SQL query successful with {row_count} rows")
                         # Format SQL results
                         findings = []
                         findings.append(
@@ -720,14 +730,18 @@ class SQLAgent:
                         
                         return "\n".join(findings)
                     else:
-                        logger.info(f"SQLAgent: PostgreSQL SQL returned 0 rows, falling back to CSV")
+                        logger.warning(f"⚠️ SQLAgent: PostgreSQL SQL returned 0 rows, falling back to CSV")
+                        print(f"⚠️ SQLAgent: PostgreSQL SQL returned 0 rows, falling back to CSV")
                 else:
                     error_msg = sql_result.get("error", "Unknown error")
-                    logger.info(f"SQLAgent: PostgreSQL SQL failed: {error_msg}, falling back to CSV")
+                    logger.warning(f"⚠️ SQLAgent: PostgreSQL SQL failed: {error_msg}, falling back to CSV")
+                    print(f"⚠️ SQLAgent: PostgreSQL SQL failed: {error_msg}, falling back to CSV")
             except Exception as e:
-                logger.warning(f"SQLAgent: PostgreSQL SQL query failed: {e}, falling back to CSV", exc_info=True)
+                logger.warning(f"⚠️ SQLAgent: PostgreSQL SQL query failed: {e}, falling back to CSV", exc_info=True)
+                print(f"⚠️ SQLAgent: PostgreSQL SQL query failed: {e}, falling back to CSV")
         else:
-            logger.info("SQLAgent: No database_id provided, skipping SQL and trying CSV")
+            logger.warning(f"⚠️ SQLAgent: No database_id provided, skipping SQL and trying CSV")
+            print(f"⚠️ SQLAgent: No database_id provided, skipping SQL and trying CSV")
         
         # Step 2: Try CSV query (reuse AiSearchAgent CSV logic)
         try:

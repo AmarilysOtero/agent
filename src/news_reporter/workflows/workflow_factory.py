@@ -27,12 +27,15 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     # Choose search agent based on TriageAgent routing or config
     # Check if TriageAgent detected a preferred agent type
     print(f"🔍 Workflow: Checking TriageAgent results:")
+    print(f"   - intents: {tri.intents}")
     print(f"   - preferred_agent: {tri.preferred_agent}")
     print(f"   - database_id: {tri.database_id}")
     print(f"   - database_type: {getattr(tri, 'database_type', 'N/A')}")
     print(f"   - has agent_id_aisearch_sql: {hasattr(cfg, 'agent_id_aisearch_sql')}")
+    logger.info(f"🔍 Workflow: TriageAgent results - intents={tri.intents}, preferred_agent={tri.preferred_agent}, database_id={tri.database_id}, database_type={getattr(tri, 'database_type', 'N/A')}")
     if hasattr(cfg, 'agent_id_aisearch_sql'):
         print(f"   - agent_id_aisearch_sql value: {cfg.agent_id_aisearch_sql}")
+        logger.info(f"   - agent_id_aisearch_sql value: {cfg.agent_id_aisearch_sql}")
     
     search_database_id = None
     if tri.preferred_agent == "sql" and hasattr(cfg, 'agent_id_aisearch_sql') and cfg.agent_id_aisearch_sql:
@@ -69,12 +72,18 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             latest = ""
 
         # Reporter step
+        logger.info(f"🔍 Workflow: Reporter step - news_script in intents: {'news_script' in tri.intents}, latest length: {len(latest) if latest else 0}")
+        print(f"🔍 Workflow: Reporter step - news_script in intents: {'news_script' in tri.intents}, latest length: {len(latest) if latest else 0}")
         script = (
             await reporter.run(goal, latest or "No ai-search content")
             if ("news_script" in tri.intents)
             else latest
         )
+        logger.info(f"🔍 Workflow: Final script length: {len(script) if script else 0}")
+        print(f"🔍 Workflow: Final script length: {len(script) if script else 0}")
         if not script:
+            logger.warning(f"🔍 Workflow: No script generated - returning 'No action taken.'")
+            print(f"⚠️ Workflow: No script generated - returning 'No action taken.'")
             return "No action taken."
 
         # Review step (max 3 passes)

@@ -1,3 +1,4 @@
+# routers/auth.py
 from fastapi import APIRouter, HTTPException, Response, Cookie, Depends
 from typing import Optional
 from datetime import datetime, timedelta
@@ -6,9 +7,11 @@ import secrets
 from pymongo import MongoClient
 from bson import ObjectId
 import os
+from datetime import timezone  # Consistency patch: for timezone-aware timestamps
 
 from ..models.auth import UserRegister, UserLogin, UserResponse
 from ..config import Settings
+from ..dependencies.auth import UserPrincipal, get_current_user  # Canonical auth dependencies
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -54,50 +57,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_session(user_id: str) -> dict:
     """Create a new session for the user."""
     session_id = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(days=SESSION_EXPIRY_DAYS)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_EXPIRY_DAYS)  # Consistency patch: timezone-aware
     
     session = {
         "_id": session_id,
         "userId": user_id,
-        "createdAt": datetime.utcnow(),
+        "createdAt": datetime.now(timezone.utc),  # Consistency patch: timezone-aware
         "expiresAt": expires_at
     }
     
     sessions_collection.insert_one(session)
     return session
-
-
-def get_current_user(sid: Optional[str] = Cookie(None)) -> dict:
-    """Dependency to get the current user from session cookie."""
-    print(f"[AUTH] get_current_user called with sid: {sid}")
-    
-    if not sid:
-        print("[AUTH] No session cookie found - returning 401")
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    if sessions_collection is None:
-        print("[AUTH] Sessions collection unavailable")
-        raise HTTPException(status_code=503, detail="Database unavailable")
-    
-    session = sessions_collection.find_one({"_id": sid})
-    if not session:
-        print(f"[AUTH] Session {sid} not found in database")
-        raise HTTPException(status_code=401, detail="Invalid session")
-    
-    # Check if session is expired
-    if session["expiresAt"] < datetime.utcnow():
-        sessions_collection.delete_one({"_id": sid})
-        print(f"[AUTH] Session {sid} expired")
-        raise HTTPException(status_code=401, detail="Session expired")
-    
-    # Get user
-    user = users_collection.find_one({"_id": ObjectId(session["userId"])})
-    if not user:
-        print(f"[AUTH] User {session['userId']} not found")
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    print(f"[AUTH] User authenticated: {user['email']}")
-    return user
 
 
 @router.post("/register", response_model=UserResponse)
@@ -122,7 +92,7 @@ async def register(user_data: UserRegister):
     new_user = {
         "email": user_data.email,
         "passwordHash": hashed_pw,
-        "createdAt": datetime.utcnow()
+        "createdAt": datetime.now(timezone.utc)  # Consistency patch: timezone-aware
     }
     
     result = users_collection.insert_one(new_user)
@@ -177,17 +147,18 @@ async def logout(response: Response, sid: Optional[str] = Cookie(None)):
     if sid:
         sessions_collection.delete_one({"_id": sid})
     
-    # Clear cookie
     response.delete_cookie(key="sid", path="/")
+    return {"message": "Logged out successfully"}
+
+
+@router.get("/me")
+async def get_current_user_info(user: UserPrincipal = Depends(get_current_user)):
+    """
+    Get current authenticated user information.
     
-    return {"message": "Logout successful"}
-
-
-@router.get("/me", response_model=UserResponse)
-async def get_me(user: dict = Depends(get_current_user)):
-    """Get current user info."""
-    return UserResponse(
-        id=str(user["_id"]),
-        email=user["email"],
-        created_at=user["createdAt"]
-    )
+    PR5 Fix 2: Works with UserPrincipal auth contract.
+    """
+    return {
+        "id": user.id,
+        "email": user.email
+    }

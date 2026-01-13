@@ -34,6 +34,17 @@ class Settings:
     ai_chat_deployment: str = "gpt-4o-mini"
     ai_embedding_deployment: str = "text-embedding-3-large"
 
+    # === Neo4j (optional) ===
+    neo4j_uri: str | None = None
+    neo4j_user: str | None = None
+    neo4j_password: str | None = None
+    neo4j_database: str = "neo4j"
+
+    # === MongoDB URIs (for auth and workflows) ===
+    # Note: Despite the "api" naming, these are MongoDB connection strings
+    auth_api_url: str | None = None      # MongoDB URI for authentication database
+    workflow_api_url: str | None = None  # MongoDB URI for workflow database
+
     # === Hybrid storage ===
     azure_search_endpoint: str | None = None
     azure_search_api_key: str | None = None
@@ -52,9 +63,12 @@ class Settings:
     # === Neo4j GraphRAG ===
     neo4j_api_url: str | None = None  # Neo4j backend API URL (e.g., "http://localhost:8000")
 
-    # === Auth API ===
+    # === Auth API (MongoDB) ===
     auth_api_url: str | None = None
-    
+
+    # === Workflow API (MongoDB) ===
+    workflow_api_url: str | None = None
+
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
@@ -101,8 +115,11 @@ class Settings:
         # Neo4j GraphRAG
         neo4j_url = os.getenv("NEO4J_API_URL")  # e.g., "http://localhost:8000"
 
-        # Auth
+        # Auth (MongoDB)
         auth_url = os.getenv("MONGO_AUTH_URL")
+
+        # Workflow (MongoDB)
+        workflow_url = os.getenv("MONGO_WORKFLOW_URL")
 
         # minimal validation (you likely already have these set)
         missing = []
@@ -153,7 +170,8 @@ class Settings:
             blob_container_raw=blob_raw,
             blob_container_chunks=blob_chunks,
             neo4j_api_url=neo4j_url,
-            auth_api_url=auth_url,
+            auth_api_url=auth_url,  # Fix: use auth_url variable
+            workflow_api_url=workflow_url,  # Fix: use workflow_url variable
         )
 
     @classmethod

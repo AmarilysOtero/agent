@@ -45,7 +45,22 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 async def lifespan(app: FastAPI):
     try:
         logging.info("[lifespan] Loading configuration...")
-        _ = Settings.load()
+        cfg = Settings.load()
+
+        # Initialize workflow repository (MongoDB)
+        try:
+            from .workflows.workflow_repository import WorkflowRepository
+            
+            logging.info("[lifespan] Initializing workflow repository...")
+            workflow_repo = WorkflowRepository(cfg.workflow_api_url)
+            
+            # Store in app state for access in routes
+            app.state.workflow_repository = workflow_repo
+            logging.info("[lifespan] Workflow repository initialized successfully")
+        except Exception as e:
+            logging.exception("[lifespan] Workflow repository initialization failed: %s", e)
+            # Don't fail startup if workflows aren't critical
+            app.state.workflow_repository = None
 
         if _UPLOAD_AVAILABLE:
             logging.info("[lifespan] Ensuring Azure Search pipeline...")
@@ -68,7 +83,16 @@ async def lifespan(app: FastAPI):
         logging.exception("[lifespan] Startup provisioning failed: %s", e)
 
     yield
+
+    # Cleanup on shutdown
     logging.info("[lifespan] API shutting down.")
+    
+    if hasattr(app.state, "workflow_repository") and app.state.workflow_repository:
+        try:
+            await app.state.workflow_repository.close()
+            logging.info("[lifespan] Workflow repository closed")
+        except Exception as e:
+            logging.error(f"[lifespan] Error closing workflow repository: {e}")
 
 
 app = FastAPI(

@@ -78,3 +78,8 @@ Check logs for Foundry connection errors after making a chat request.
 
 
 
+
+
+
+
+

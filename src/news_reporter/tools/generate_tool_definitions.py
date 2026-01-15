@@ -10,6 +10,7 @@ from typing import Dict, Any
 
 try:
     from ..tools_sql.text_to_sql_tool import query_database
+    from ..tools_sql.sql_generator import generate_sql_query
     from .csv_schema_tool import get_file_schema
 except ImportError:
     import sys
@@ -17,6 +18,7 @@ except ImportError:
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     sys.path.append(str(repo_root.parent))
     from src.news_reporter.tools_sql.text_to_sql_tool import query_database
+    from src.news_reporter.tools_sql.sql_generator import generate_sql_query
     from src.news_reporter.tools.csv_schema_tool import get_file_schema
 
 
@@ -68,6 +70,7 @@ def main():
     
     tools = [
         ("query_database", query_database),
+        ("generate_sql_query", generate_sql_query),
         ("get_file_schema", get_file_schema),
     ]
     
@@ -75,9 +78,13 @@ def main():
     schema1 = get_function_schema(query_database)
     print(json.dumps(schema1, indent=2))
     
-    print("\n## Tool 2: get_file_schema\n")
-    schema2 = get_function_schema(get_file_schema)
+    print("\n## Tool 2: generate_sql_query\n")
+    schema2 = get_function_schema(generate_sql_query)
     print(json.dumps(schema2, indent=2))
+    
+    print("\n## Tool 3: get_file_schema\n")
+    schema3 = get_function_schema(get_file_schema)
+    print(json.dumps(schema3, indent=2))
     
     print("\n" + "=" * 60)
     print("Manual Registration Instructions")

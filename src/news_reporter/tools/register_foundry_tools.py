@@ -46,6 +46,7 @@ except ImportError as e:
 # Import tool functions
 try:
     from ..tools_sql.text_to_sql_tool import query_database
+    from ..tools_sql.sql_generator import generate_sql_query
     from .csv_schema_tool import get_file_schema
 except ImportError:
     # Fallback for direct execution
@@ -53,6 +54,7 @@ except ImportError:
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     sys.path.append(str(repo_root.parent))
     from src.news_reporter.tools_sql.text_to_sql_tool import query_database
+    from src.news_reporter.tools_sql.sql_generator import generate_sql_query
     from src.news_reporter.tools.csv_schema_tool import get_file_schema
 
 # Try to import FunctionTool and ToolSet
@@ -166,9 +168,9 @@ def create_toolset() -> Optional[ToolSet]:
         return None
     
     try:
-        # Create FunctionTool with both tools
-        print("[INFO] Creating FunctionTool with query_database and get_file_schema...")
-        function_tool = FunctionTool(functions={query_database, get_file_schema})
+        # Create FunctionTool with all tools
+        print("[INFO] Creating FunctionTool with query_database, generate_sql_query, and get_file_schema...")
+        function_tool = FunctionTool(functions={query_database, generate_sql_query, get_file_schema})
         
         # Create ToolSet and add FunctionTool
         toolset = ToolSet()
@@ -606,7 +608,7 @@ def main():
         print("   a. Click on the agent name")
         print("   b. Click 'Edit' or go to 'Tools' section")
         print("   c. Click 'Add Tool' or 'Add Function'")
-        print("   d. Add the following two functions:\n")
+        print("   d. Add the following three functions:\n")
         print("   Function 1: query_database")
         print("   - Name: query_database")
         print("   - Description: Converts natural language to SQL, executes it, and returns results")
@@ -614,7 +616,16 @@ def main():
         print("     * natural_language_query (string, required)")
         print("     * database_id (string, required)")
         print("   - Returns: JSON string with SQL query, execution results, and metadata\n")
-        print("   Function 2: get_file_schema")
+        print("   Function 2: generate_sql_query")
+        print("   - Name: generate_sql_query")
+        print("   - Description: Converts natural language to SQL query (generation only, no execution)")
+        print("   - Parameters:")
+        print("     * natural_language_query (string, required)")
+        print("     * database_id (string, required)")
+        print("     * top_k (integer, optional, default: 10): Number of schema elements to retrieve")
+        print("     * similarity_threshold (number, optional, default: 0.7): Minimum similarity for schema retrieval")
+        print("   - Returns: JSON string with generated SQL query, explanation, confidence, and schema metadata\n")
+        print("   Function 3: get_file_schema")
         print("   - Name: get_file_schema")
         print("   - Description: Gets schema information from CSV or Excel files")
         print("   - Parameters:")

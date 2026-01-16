@@ -85,6 +85,7 @@ class WorkflowExecutor:
         self.completed: Set[str] = set()
         self.node_results: Dict[str, NodeResult] = {}
         self.ready_queue: List[str] = []
+        self.schedule_counter = 0  # For deterministic execution ordering
         
     async def execute(self) -> WorkflowRun:
         """
@@ -255,103 +256,194 @@ class WorkflowExecutor:
         self.ready_queue = [root_id]
     
     async def _execute_loop(self):
-        """Main execution loop with sequential scheduling and fan-in gating"""
-        # FIX 2: Add no-progress counter to prevent infinite loops
-        no_progress_iterations = 0
-        MAX_NO_PROGRESS = 100  # Safety guard
+        """Main execution loop with parallel batch scheduling and fan-in gating"""
+        import asyncio
         
         while self.ready_queue:
-            # Sort ready queue deterministically (lexicographic by nodeId)
-            self.ready_queue.sort()
+            # Build batch of all runnable nodes (deterministic admission)
+            batch = self._build_execution_batch()
             
-            # Pop first node
-            current_node_id = self.ready_queue.pop(0)
+            if not batch:
+                # No nodes are ready despite queue not empty - likely deadlock
+                raise RuntimeError(
+                    f"Executor stuck: ready_queue has {len(self.ready_queue)} nodes but none are runnable. "
+                    f"Possible dependency deadlock."
+                )
             
-            # Check fan-in: all parents must be completed
-            parents = self.incoming.get(current_node_id, [])  # FIX 2: Use self.incoming for consistency
-            if not all(p in self.completed for p in parents):
-                # FIX 2: Requeue node instead of dropping it
-                logger.warning(f"Node {current_node_id} not ready (parents not complete), requeueing")
-                self.ready_queue.append(current_node_id)
+            # Execute batch in parallel with scheduleIndex tracking
+            tasks = []
+            for node_id in sorted(batch):  # Deterministic order
+                schedule_index = self.schedule_counter
+                self.schedule_counter += 1
+                tasks.append(self._execute_node_with_schedule(node_id, schedule_index))
+            
+            # Execute in parallel (fail-fast with persistence)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Process results (persist, check failures, enqueue children)
+            failed_node_id, failed_error_msg = await self._process_batch_results(sorted(batch), results)
+            if failed_node_id:
+                raise RuntimeError(f"Node {failed_node_id} failed: {failed_error_msg}")
+    
+    def _build_execution_batch(self) -> List[str]:
+        """
+        Build batch of all runnable nodes from ready_queue.
+        Nodes are runnable if all their parents are completed.
+        
+        Returns:
+            Sorted list of node IDs ready for execution
+        """
+        batch = []
+        remaining = []
+        
+        for node_id in self.ready_queue:
+            parents = self.incoming.get(node_id, [])
+            if all(p in self.completed for p in parents):
+                batch.append(node_id)
+            else:
+                remaining.append(node_id)
+        
+        self.ready_queue = remaining
+        return sorted(batch)  # Deterministic order
+    
+    async def _execute_node_with_schedule(self, node_id: str, schedule_index: int) -> Tuple[str, NodeResult]:
+        """
+        Execute a node and inject scheduleIndex into logs.
+        
+        Args:
+            node_id: Node ID to execute
+            schedule_index: Monotonic schedule index for deterministic ordering
+            
+        Returns:
+            Tuple of (node_id, NodeResult)
+        """
+        node = self.node_map[node_id]
+        start_time = datetime.now(timezone.utc)
+        
+        try:
+            node_result = await self._execute_node(node)
+            
+            # Inject scheduleIndex into logs (for deterministic execution order)
+            if not node_result.logs:
+                node_result.logs = []
+            node_result.logs.insert(0, f"scheduleIndex={schedule_index}")
+            
+            return (node_id, node_result)
+            
+        except Exception as node_err:
+            # Node execution failed - create failed result
+            end_time = datetime.now(timezone.utc)
+            execution_ms = (end_time - start_time).total_seconds() * 1000
+            
+            logger.error(f"Node {node_id} execution failed: {node_err}", exc_info=True)
+            
+            node_result = NodeResult(
+                status="failed",
+                inputs=self._build_inputs_dict(node_id),
+                output="",
+                outputTruncated=False,
+                outputPreview=None,
+                executionMs=execution_ms,
+                startedAt=start_time,
+                completedAt=end_time,
+                logs=[
+                    f"scheduleIndex={schedule_index}",
+                    "Node execution failed",
+                    f"nodeId={node_id}",
+                    f"errorType={type(node_err).__name__}"
+                ],
+                error=NodeError(
+                    message=str(node_err),
+                    details=type(node_err).__name__
+                )
+            )
+            
+            return (node_id, node_result)
+    
+    async def _process_batch_results(self, batch: List[str], results: List) -> Tuple[Optional[str], str]:
+        """
+        Process results from parallel batch execution.
+        Persists all results, marks nodes complete, enqueues children.
+        
+        Args:
+            batch: Sorted list of node IDs that were executed
+            results: Results from asyncio.gather (same order as batch)
+            
+        Returns:
+            Tuple of (failed_node_id, error_message) if any node failed, otherwise (None, "")
+        """
+        for i, node_id in enumerate(batch):
+            result_data = results[i]
+            
+            # Handle exceptions from gather
+            if isinstance(result_data, Exception):
+                # Unexpected exception from gather itself
+                logger.error(f"Batch execution exception for {node_id}: {result_data}", exc_info=result_data)
                 
-                # Increment no-progress counter
-                no_progress_iterations += 1
-                if no_progress_iterations > MAX_NO_PROGRESS:
-                    raise RuntimeError(
-                        f"Executor stuck: {no_progress_iterations} iterations with no progress. "
-                        f"Possible dependency deadlock or graph issue."
-                    )
-                continue
-            
-            # Reset no-progress counter (we're making progress)
-            no_progress_iterations = 0
-            
-            # FIX 2: Capture start time for telemetry
-            node_start = datetime.now(timezone.utc)
-            
-            # Execute node
-            node = self.node_map[current_node_id]
-            try:
-                node_result = await self._execute_node(node)
-            except Exception as node_err:
-                # FIX 2: Compute proper execution time and add telemetry
-                end_time = datetime.now(timezone.utc)
-                execution_ms = (end_time - node_start).total_seconds() * 1000
-                
-                # Node execution failed - persist failed result with proper telemetry
-                logger.error(f"Node {current_node_id} execution failed: {node_err}", exc_info=True)
-                
-                # FIX 2 & 3: Ensure consistent NodeResult shape with proper timestamps and logs
+                error_msg = str(result_data)
                 node_result = NodeResult(
                     status="failed",
-                    inputs=self._build_inputs_dict(current_node_id),
+                    inputs=self._build_inputs_dict(node_id),
                     output="",
                     outputTruncated=False,
-                    outputPreview=None,  # FIX 3: Explicit for shape consistency
-                    executionMs=execution_ms,  # FIX 2: Real execution time
-                    startedAt=node_start,  # FIX 2: Actual start time
-                    completedAt=end_time,  # FIX 2: Actual completion time
-                    logs=[  # FIX 2: Add telemetry logs
-                        "Node execution failed",
-                        f"nodeId={current_node_id}",
-                        f"errorType={type(node_err).__name__}"
-                    ],
+                    outputPreview=None,
+                    executionMs=0,
+                    startedAt=datetime.now(timezone.utc),
+                    completedAt=datetime.now(timezone.utc),
+                    logs=[f"Batch exception: {type(result_data).__name__}"],
                     error=NodeError(
-                        message=str(node_err),
-                        details=type(node_err).__name__
+                        message=error_msg,
+                        details=type(result_data).__name__
                     )
                 )
                 
-                # Persist failed node result
-                await self.repo.persist_node_result(self.run.id, self.run.userId, current_node_id, node_result)  # PR5 Fix 1: userId
-                
-                # FIX 1: Normalize fail-fast error propagation
-                error_msg = node_result.error.message if node_result.error else str(node_err)
-                raise RuntimeError(f"Node {current_node_id} failed: {error_msg}")
-
+                await self.repo.persist_node_result(self.run.id, self.run.userId, node_id, node_result)
+                return (node_id, error_msg)  # Fail-fast with error message
+            
+            # Normal result: (node_id, NodeResult)
+            result_node_id, node_result = result_data
             
             # Persist node result
-            await self.repo.persist_node_result(self.run.id, self.run.userId, current_node_id, node_result)  # PR5 Fix 1: userId
+            await self.repo.persist_node_result(self.run.id, self.run.userId, node_id, node_result)
             
-            # FIX A: Fail-fast if node execution failed
+            # Update heartbeat
+            await self.repo.update_run_heartbeat(self.run.id, self.run.userId)
+            
+            # Check for failure (fail-fast)
             if node_result.status == "failed":
                 error_msg = node_result.error.message if node_result.error else "unknown error"
-                raise RuntimeError(f"Node {current_node_id} failed: {error_msg}")
-            
-            # Update heartbeat periodically
-            await self.repo.update_run_heartbeat(self.run.id, self.run.userId)  # PR5 Fix 1: userId
+                logger.error(f"Node {node_id} failed: {error_msg}")
+                return (node_id, error_msg)  # Stop processing with error message
             
             # Mark completed
-            self.completed.add(current_node_id)
-            self.node_results[current_node_id] = node_result
+            self.completed.add(node_id)
+            self.node_results[node_id] = node_result
             
-            # Enqueue children whose parents are all completed (fan-in gating)
-            for child_id in self.outgoing.get(current_node_id, []):
-                if child_id not in self.ready_queue:
-                    # Check if all parents of child are completed
-                    child_parents = self.incoming.get(child_id, [])
-                    if all(p in self.completed for p in child_parents):
-                        self.ready_queue.append(child_id)
+            # Enqueue children
+            self._enqueue_children(node_id)
+        
+        return (None, "")  # No failures
+    
+    def _enqueue_children(self, node_id: str):
+        """
+        Enqueue children of a completed node if all their parents are complete.
+        Uses set membership to avoid duplicate enqueueing.
+        
+        Args:
+            node_id: ID of completed node
+        """
+        ready_set = set(self.ready_queue)
+        
+        for child_id in self.outgoing.get(node_id, []):
+            if child_id in ready_set or child_id in self.completed:
+                continue  # Already queued or completed
+            
+            # Check if all parents of child are completed (fan-in gating)
+            child_parents = self.incoming.get(child_id, [])
+            if all(p in self.completed for p in child_parents):
+                self.ready_queue.append(child_id)
+                ready_set.add(child_id)  # Keep set in sync
+
     
     def _build_inputs_dict(self, node_id: str) -> Dict[str, str]:
         """
@@ -436,6 +528,54 @@ class WorkflowExecutor:
             message = config.get("message", "")
             output_str, truncated, preview = truncate_output(message)
             
+        elif node_type == "fan_out":
+            # FanOut: pass-through control node (forwards upstream payload)
+            # Build upstream input text from parent outputs
+            upstream_parts = []
+            for parent_id in sorted(inputs_dict.keys()):
+                upstream_parts.append(inputs_dict[parent_id])
+            
+            # Use upstream payload as output (pass-through)
+            if upstream_parts:
+                input_text = "\n".join(upstream_parts)
+            else:
+                input_text = ""  # No upstream input
+            
+            children = self.children.get(node_id, [])
+            output_str, truncated, preview = truncate_output(input_text)
+            logs = [
+                f"[FanOut] Launching {len(children)} branches",
+                f"payload_length={len(input_text)} chars"
+            ]
+            
+        elif node_type == "fan_in":
+            # FanIn: aggregate parent outputs
+            parents = sorted(self.parents.get(node_id, []))  # Deterministic order
+            
+            if not parents:
+                raise RuntimeError(f"FanIn node {node_id} has no parents")
+            
+            # Collect parent outputs
+            parent_outputs = []
+            for parent_id in parents:
+                parent_result = self.node_results.get(parent_id)
+                if not parent_result:
+                    raise RuntimeError(f"FanIn node {node_id} missing parent result: {parent_id}")
+                parent_outputs.append(parent_result.output)
+            
+            # Apply aggregation mode
+            agg_mode = config.get("aggregationMode", "json_object")
+            
+            if agg_mode == "concat":
+                separator = config.get("separator", "\n---\n")
+                aggregated = separator.join(parent_outputs)
+            else:  # json_object (default)
+                output_dict = {parent_id: self.node_results[parent_id].output for parent_id in parents}
+                aggregated = json.dumps(output_dict, ensure_ascii=False, indent=2)
+            
+            output_str, truncated, preview = truncate_output(aggregated)
+            logs = [f"[FanIn] Aggregated {len(parents)} results", f"aggregationMode={agg_mode}"]
+            
         elif node_type == "invoke_agent":
             # FIX 2: Require agentId (no silent default)
             # Support both agentId and selectedAgent (frontend compatibility)
@@ -503,7 +643,7 @@ class WorkflowExecutor:
             executionMs=execution_ms,
             startedAt=start_time,
             completedAt=end_time,
-            logs=logs if node_type == "invoke_agent" else [],  # PR4: Include logs for InvokeAgent
+            logs=logs if (node_type in ["invoke_agent", "fan_out", "fan_in"]) else [],
             error=None
         )
         

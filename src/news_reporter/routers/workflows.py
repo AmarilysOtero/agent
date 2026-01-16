@@ -146,7 +146,8 @@ async def list_foundry_agents():
     """
     try:
         from ..agent_manager import list_agents
-        agents = list_agents()
+        import asyncio
+        agents = await asyncio.to_thread(list_agents)
         
         print(f"Returned {len(agents)} workflow agents: {[a.get('name') for a in agents]}")
         return agents
@@ -394,7 +395,7 @@ async def get_run_results(
     Get node execution results for a run.
     
     - Returns results grouped by nodeId
-    - Includes executionOrder array (sorted by startedAt)
+    - Includes executionOrder array (sorted by scheduleIndex, fallback to startedAt/nodeId)
     - Returns 404 if run not found or doesn't belong to user/workflow
     """
     # Get run
@@ -409,13 +410,38 @@ async def get_run_results(
     # Get node results (Consistency patch: use already-loaded run instead of double-fetch)
     results_by_node = run.nodeResults if run.nodeResults else {}
     
-    # Build execution order (sorted by startedAt)
-    # UI correctness: nodes with None startedAt appear LAST
+    # Helper: parse scheduleIndex from logs
+    def get_schedule_index(node_result):
+        """Extract scheduleIndex from logs, return None if not found"""
+        if not node_result.logs:
+            return None
+        for log in node_result.logs:
+            if log.startswith("scheduleIndex="):
+                try:
+                    return int(log.split("=", 1)[1])
+                except (ValueError, IndexError):
+                    pass
+        return None
+    
+    # Precompute scheduleIndex for single-pass sorting
+    # Build list of (node_id, node_result, schedule_index)
+    items_with_schedule = [
+        (node_id, node_result, get_schedule_index(node_result))
+        for node_id, node_result in results_by_node.items()
+    ]
+    
+    # Sort with precomputed scheduleIndex
+    # Sort key: (has_schedule_index, schedule_index, started_at, nodeId)
     execution_order = sorted(
-        results_by_node.items(),
-        key=lambda x: (x[1].startedAt is None, x[1].startedAt or datetime.max.replace(tzinfo=timezone.utc))
+        items_with_schedule,
+        key=lambda x: (
+            x[2] is None,  # Nodes without scheduleIndex go last
+            x[2] or 999999,  # Sort by scheduleIndex
+            x[1].startedAt or datetime.max.replace(tzinfo=timezone.utc),  # Fallback to startedAt
+            x[0]  # Final fallback to nodeId
+        )
     )
-    execution_order = [node_id for node_id, _ in execution_order]
+    execution_order = [node_id for node_id, _, _ in execution_order]
     
     return RunResultsResponse(
         resultsByNodeId=results_by_node,

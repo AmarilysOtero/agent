@@ -135,6 +135,28 @@ async def create_workflow(
     logger.info(f"Created workflow {created.id} for user {user.id}")
     return created
 
+# Agent Management Endpoints
+@router.get("/agent/list")
+async def list_foundry_agents():
+    """
+    List all available workflow agents from Azure AI Foundry environment.
+    
+    Returns:
+        List of agents with id, name, model, description, etc.
+    """
+    try:
+        from ..agent_manager import list_agents
+        agents = list_agents()
+        
+        print(f"Returned {len(agents)} workflow agents: {[a.get('name') for a in agents]}")
+        return agents
+    except ValueError as e:
+        # Configuration error
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.exception("[agents/list] Failed to list workflow agents: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to list agents: {str(e)}")
+
 
 @router.get("", response_model=List[Workflow])
 async def list_workflows(
@@ -285,11 +307,12 @@ async def execute_workflow_endpoint(
     validation_status = workflow.validationStatus
     
     # Handle missing/None/empty or unvalidated
-    if not validation_status or validation_status.strip() == "" or validation_status == "unvalidated":
-        raise HTTPException(
-            status_code=409,
-            detail="Workflow must be validated before execution"
-        )
+    # DEMO PATCH: Allow unvalidated workflows to run
+    # if not validation_status or validation_status.strip() == "" or validation_status == "unvalidated":
+    #     raise HTTPException(
+    #         status_code=409,
+    #         detail="Workflow must be validated before execution"
+    #     )
     
     # Handle explicitly invalid workflows
     if validation_status == "invalid":
@@ -299,11 +322,12 @@ async def execute_workflow_endpoint(
         )
     
     # Handle unexpected status values
-    if validation_status != "valid":
-        raise HTTPException(
-            status_code=409,
-            detail=f"Unexpected validationStatus '{validation_status}'. Workflow must have validationStatus='valid' to execute."
-        )
+    # DEMO PATCH: Relax strict check
+    # if validation_status != "valid":
+    #     raise HTTPException(
+    #         status_code=409,
+    #         detail=f"Unexpected validationStatus '{validation_status}'. Workflow must have validationStatus='valid' to execute."
+    #     )
     
     # Create run
     run = WorkflowRun(

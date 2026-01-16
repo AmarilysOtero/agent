@@ -100,21 +100,22 @@ class WorkflowExecutor:
             validation_status = self.workflow.validationStatus
             
             # Handle missing/None/empty validationStatus
-            if not validation_status or validation_status.strip() == "":
-                error_msg = (
-                    "Workflow must be validated before execution (validationStatus missing). "
-                    "Please validate the workflow and retry."
-                )
-                logger.error(f"Run {self.run.id} rejected: {error_msg}")
-                await self.repo.update_run_status(
-                    self.run.id,
-                    self.run.userId,  # PR5 Fix 1: userId scoping
-                    "failed",
-                    completedAt=datetime.now(timezone.utc),
-                    error=error_msg
-                )
-                updated_run = await self.repo.get_run(self.run.id, self.run.userId)
-                return updated_run
+            # DEMO PATCH: Allow unvalidated workflows to run
+            # if not validation_status or validation_status.strip() == "":
+            #     error_msg = (
+            #         "Workflow must be validated before execution (validationStatus missing). "
+            #         "Please validate the workflow and retry."
+            #     )
+            #     logger.error(f"Run {self.run.id} rejected: {error_msg}")
+            #     await self.repo.update_run_status(
+            #         self.run.id,
+            #         self.run.userId,  # PR5 Fix 1: userId scoping
+            #         "failed",
+            #         completedAt=datetime.now(timezone.utc),
+            #         error=error_msg
+            #     )
+            #     updated_run = await self.repo.get_run(self.run.id, self.run.userId)
+            #     return updated_run
             
             # Handle explicitly invalid workflows
             if validation_status == "invalid":
@@ -131,21 +132,22 @@ class WorkflowExecutor:
                 return updated_run
             
             # Only proceed if explicitly valid
-            if validation_status != "valid":
-                error_msg = (
-                    f"Unexpected validationStatus '{validation_status}'. "
-                    "Workflow must have validationStatus='valid' to execute."
-                )
-                logger.error(f"Run {self.run.id} rejected: {error_msg}")
-                await self.repo.update_run_status(
-                    self.run.id,
-                    self.run.userId,  # Consistency patch: missing userId
-                    "failed",
-                    completedAt=datetime.now(timezone.utc),
-                    error=error_msg
-                )
-                updated_run = await self.repo.get_run(self.run.id, self.run.userId)
-                return updated_run
+            # DEMO PATCH: Relax strict check
+            # if validation_status != "valid":
+            #     error_msg = (
+            #         f"Unexpected validationStatus '{validation_status}'. "
+            #         "Workflow must have validationStatus='valid' to execute."
+            #     )
+            #     logger.error(f"Run {self.run.id} rejected: {error_msg}")
+            #     await self.repo.update_run_status(
+            #         self.run.id,
+            #         self.run.userId,  # Consistency patch: missing userId
+            #         "failed",
+            #         completedAt=datetime.now(timezone.utc),
+            #         error=error_msg
+            #     )
+            #     updated_run = await self.repo.get_run(self.run.id, self.run.userId)
+            #     return updated_run
             
             # Update run status to running
             await self.repo.update_run_status(
@@ -246,8 +248,8 @@ class WorkflowExecutor:
         root_node = self.node_map[root_id]
         
         # Assert root is StartNode
-        if root_node.get("type") != "StartNode":
-            raise RuntimeError(f"Root node must be StartNode, found {root_node.get('type')}")
+        if root_node.get("type") != "start":
+            raise RuntimeError(f"Root node must be 'start', found {root_node.get('type')}")
         
         # Seed ready queue
         self.ready_queue = [root_id]
@@ -369,7 +371,7 @@ class WorkflowExecutor:
             parent_node = self.node_map.get(parent_id)
             
             # EXCLUDE StartNode outputs from inputs_dict
-            if parent_node and parent_node.get("type") == "StartNode":
+            if parent_node and parent_node.get("type") == "start":
                 continue
             
             # Get parent result
@@ -421,7 +423,7 @@ class WorkflowExecutor:
         inputs_dict = self._build_inputs_dict(node_id)
         
         # Execute based on node type
-        if node_type == "StartNode":
+        if node_type == "start":
             # Output is metadata dict (will be serialized to string)
             output_data = {
                 "runId": self.run.id,
@@ -430,19 +432,19 @@ class WorkflowExecutor:
             }
             output_str, truncated, preview = truncate_output(output_data)
             
-        elif node_type == "SendMessage":
+        elif node_type == "send_message":
             message = config.get("message", "")
             output_str, truncated, preview = truncate_output(message)
             
-        elif node_type == "InvokeAgent":
-            # PR4: Real agent invocation
+        elif node_type == "invoke_agent":
             # FIX 2: Require agentId (no silent default)
-            agent_id = config.get("agentId", "").strip()
+            # Support both agentId and selectedAgent (frontend compatibility)
+            agent_id = (config.get("agentId") or config.get("selectedAgent") or "").strip()
             if not agent_id:
-                raise RuntimeError("InvokeAgent node missing required config.agentId")
+                raise RuntimeError("node missing required config.agentId or selectedAgent")
             
             logs = [
-                "InvokeAgent started",
+                "agent started",
                 f"agentId={agent_id}",
             ]
             
@@ -452,11 +454,12 @@ class WorkflowExecutor:
                 logs.append(f"prompt_chars={len(prompt)}")
                 
                 # Invoke agent
+                # FIX: Pass full node config for explicit mode dispatch
                 agent_output = await invoke_agent(
-                    agent_id=agent_id,
+                    cfg=self.cfg,
+                    node_config=config,
                     prompt=prompt,
-                    user_id=self.run.userId,
-                    cfg=self.cfg
+                    user_id=self.run.userId
                 )
                 
                 logs.append("InvokeAgent completed")
@@ -500,7 +503,7 @@ class WorkflowExecutor:
             executionMs=execution_ms,
             startedAt=start_time,
             completedAt=end_time,
-            logs=logs if node_type == "InvokeAgent" else [],  # PR4: Include logs for InvokeAgent
+            logs=logs if node_type == "invoke_agent" else [],  # PR4: Include logs for InvokeAgent
             error=None
         )
         

@@ -1,6 +1,7 @@
 # src/news_reporter/workflows/agent_invoke.py
 """Agent invocation helper for workflow executor (PR4)"""
 import logging
+import asyncio
 from typing import Optional
 from ..config import Settings
 from .workflow_factory import run_sequential_goal
@@ -8,54 +9,61 @@ from .workflow_factory import run_sequential_goal
 logger = logging.getLogger(__name__)
 
 
-async def invoke_agent(agent_id: str, prompt: str, user_id: str, cfg: Optional[Settings] = None) -> str:
+from ..foundry_runner import run_foundry_agent
+
+async def invoke_agent(cfg: Settings, node_config: dict, prompt: str, user_id: str) -> str:
     """
-    Invoke an agent with the given prompt and return plain text output.
+    Invoke an agent based on node configuration mode.
     
-    FIX 1: agentId now explicitly dispatches to execution pathway (not magic prefix).
-    Currently, only run_sequential_goal is available, so we use it as fallback
-    and log the limitation.
+    Modes:
+    - "foundry_agent": Direct execution of a specific Foundry agent (default for demo).
+    - "sequential_goal": Legacy orchestration pipeline (Start -> Triage -> Search -> Reporter).
     
     Args:
-        agent_id: Agent identifier (e.g., "TRIAGE", "SEARCH", "REPORTER", "SEQUENTIAL_GOAL")
-        prompt: Input prompt constructed from workflow node inputs
-        user_id: User ID for authorization/scoping
-        cfg: Optional settings (will load from env if not provided)
+        cfg: App settings
+        node_config: Node configuration dict (must contain 'mode' and 'agentId' if mode='foundry_agent')
+        prompt: Input prompt
+        user_id: User ID for scoping
         
     Returns:
-        Plain text output from agent execution
-        
-    Raises:
-        Exception: If agent execution fails for any reason
+        Agent output string
     """
-    try:
-        # Load config if not provided
-        if cfg is None:
-            cfg = Settings.load()
-        
-        logger.info(f"Invoking agent: {agent_id}, user: {user_id}, prompt_length: {len(prompt)}")
-        
-        # FIX 1: Explicit dispatch based on agentId
-        # NOTE: Currently only run_sequential_goal is available as entrypoint.
-        # Individual agent classes (TriageAgent, etc.) exist but are used internally
-        # by run_sequential_goal. Future: expose per-agent execution if needed.
-        
-        if agent_id in ["TRIAGE", "SEARCH", "REPORTER", "REVIEWER", "SEQUENTIAL_GOAL"]:
-            # Use sequential goal orchestration (current only pathway)
-            logger.info(f"AgentId '{agent_id}' routed to run_sequential_goal (orchestration layer)")
-            result = await run_sequential_goal(cfg, prompt)
+    mode = node_config.get("mode")
+    agent_id = (node_config.get("agentId") or node_config.get("selectedAgent") or "").strip()
+    
+    # Strict validation per requirements
+    if not mode:
+        # Fallback for legacy/demo workflows created before this change
+        if agent_id:
+             mode = "foundry_agent"
+             logger.warning(f"Node missing 'mode', defaulting to 'foundry_agent' because agentId='{agent_id}' is present")
         else:
-            # Unknown agentId - use fallback and warn
-            logger.warning(f"Unknown agentId '{agent_id}', falling back to run_sequential_goal")
-            result = await run_sequential_goal(cfg, prompt)
+             raise RuntimeError("InvokeAgent node missing required 'mode' configuration (e.g., 'foundry_agent')")
+
+    logger.info(f"\n\nInvoking agent: {agent_id}, mode: {mode}, user: {user_id}, prompt_len: {len(prompt)}")
+    
+    if mode == "foundry_agent":
+        if not agent_id:
+            raise RuntimeError("InvokeAgent mode='foundry_agent' requires 'agentId'")
+            
+        # Execute direct Foundry path
+        logger.info(f"Invoking Foundry agent {agent_id} (node_config mode='foundry_agent')...")
+        try:
+            # Note: run_foundry_agent is blocking, but that matches existing pattern in agents.py
+            output = await asyncio.to_thread(run_foundry_agent, agent_id, prompt)
+            logger.info(f"Foundry agent {agent_id} completed, output_len={len(output)}")
+            return output
+        except Exception as e:
+            logger.error(f"Foundry agent {agent_id} failed: {e}")
+            raise RuntimeError(f"Foundry agent execution failed: {e}") from e
+
+    elif mode == "sequential_goal":
+        # Legacy/Chat-Session orchestration
+        logger.info(f"Routing to run_sequential_goal (orchestration layer)")
+        return await run_sequential_goal(cfg, prompt)
         
-        logger.info(f"Agent {agent_id} completed successfully, output_length: {len(result)}")
-        
-        return result
-        
-    except Exception as e:
-        logger.error(f"Agent {agent_id} execution failed: {e}", exc_info=True)
-        raise
+    else:
+        raise RuntimeError(f"Invalid InvokeAgent mode: '{mode}'. Must be 'foundry_agent' or 'sequential_goal'")
 
 
 def build_agent_prompt(

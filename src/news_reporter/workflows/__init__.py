@@ -1,4 +1,4 @@
-"""Workflow execution - Graph-based and sequential (Phase 5)"""
+"""Workflow execution - Graph-based and sequential (Phase 6)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
@@ -17,6 +17,11 @@ from .workflow_visualizer import WorkflowVisualizer
 from .workflow_versioning import WorkflowVersionManager
 from .execution_monitor import ExecutionMonitor, ExecutionEvent, ExecutionEventType, EventStream, get_execution_monitor
 from .workflow_templates import WorkflowTemplate, WorkflowTemplateRegistry, get_template_registry
+from .workflow_optimizer import WorkflowOptimizer, WorkflowAnalysis, OptimizationSuggestion
+from .workflow_scheduler import WorkflowScheduler, ScheduleConfig, ScheduleType, get_workflow_scheduler
+from .workflow_analytics import WorkflowAnalyticsEngine, WorkflowAnalytics, WorkflowInsight, get_analytics_engine
+from .workflow_tester import WorkflowTester, TestCase, TestResult, TestStatus
+from .workflow_composer import WorkflowComposer
 
 __all__ = [
     "run_graph_workflow",
@@ -58,4 +63,21 @@ __all__ = [
     "WorkflowTemplate",
     "WorkflowTemplateRegistry",
     "get_template_registry",
+    # Phase 6
+    "WorkflowOptimizer",
+    "WorkflowAnalysis",
+    "OptimizationSuggestion",
+    "WorkflowScheduler",
+    "ScheduleConfig",
+    "ScheduleType",
+    "get_workflow_scheduler",
+    "WorkflowAnalyticsEngine",
+    "WorkflowAnalytics",
+    "WorkflowInsight",
+    "get_analytics_engine",
+    "WorkflowTester",
+    "TestCase",
+    "TestResult",
+    "TestStatus",
+    "WorkflowComposer",
 ]

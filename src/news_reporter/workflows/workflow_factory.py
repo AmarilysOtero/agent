@@ -30,7 +30,19 @@ async def run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = 
         executor = GraphExecutor(graph_def, cfg)
         
         # Execute
-        return await executor.execute(goal)
+        result = await executor.execute(goal)
+        
+        # Phase 6: Collect metrics for analytics (simplified - would get run_id properly)
+        try:
+            analytics_engine = get_analytics_engine()
+            # Get the most recent metrics
+            all_metrics = executor.metrics_collector.get_all_metrics()
+            if all_metrics:
+                analytics_engine.add_metrics(all_metrics[-1])
+        except Exception as e:
+            logger.warning(f"Failed to add metrics to analytics: {e}")
+        
+        return result
     except Exception as e:
         logger.error(f"Graph workflow failed: {e}", exc_info=True)
         logger.warning("Falling back to sequential workflow")

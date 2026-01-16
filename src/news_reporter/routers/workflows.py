@@ -307,3 +307,158 @@ async def compare_workflow_versions(
         "version2": version2,
         "differences": differences
     }
+
+
+# Phase 6: Workflow optimization, scheduling, analytics, testing, composition
+
+@router.get("/analyze/{workflow_id}")
+async def analyze_workflow(workflow_id: str) -> Dict[str, Any]:
+    """Analyze workflow for optimization opportunities"""
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    
+    optimizer = WorkflowOptimizer(graph_def)
+    analysis = optimizer.analyze()
+    
+    return analysis.to_dict()
+
+
+@router.get("/schedules")
+async def list_schedules() -> Dict[str, Any]:
+    """List all scheduled workflows"""
+    scheduler = get_workflow_scheduler()
+    return {"schedules": scheduler.list_schedules()}
+
+
+@router.post("/schedules")
+async def create_schedule(
+    schedule_id: str = Body(...),
+    workflow_id: str = Body(...),
+    schedule_type: str = Body(...),
+    interval_seconds: Optional[float] = Body(None),
+    time_of_day: Optional[str] = Body(None),
+    days_of_week: Optional[List[int]] = Body(None)
+) -> Dict[str, Any]:
+    """Create a new workflow schedule"""
+    scheduler = get_workflow_scheduler()
+    
+    schedule_type_enum = ScheduleType(schedule_type)
+    config = scheduler.add_schedule(
+        schedule_id=schedule_id,
+        workflow_id=workflow_id,
+        schedule_type=schedule_type_enum,
+        interval_seconds=interval_seconds,
+        time_of_day=time_of_day,
+        days_of_week=days_of_week
+    )
+    
+    return {
+        "schedule_id": config.schedule_id,
+        "workflow_id": config.workflow_id,
+        "schedule_type": config.schedule_type.value,
+        "next_run": config.next_run
+    }
+
+
+@router.post("/schedules/{schedule_id}/enable")
+async def enable_schedule(schedule_id: str) -> Dict[str, str]:
+    """Enable a schedule"""
+    scheduler = get_workflow_scheduler()
+    success = scheduler.enable_schedule(schedule_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Schedule {schedule_id} not found")
+    
+    return {"status": "enabled"}
+
+
+@router.post("/schedules/{schedule_id}/disable")
+async def disable_schedule(schedule_id: str) -> Dict[str, str]:
+    """Disable a schedule"""
+    scheduler = get_workflow_scheduler()
+    success = scheduler.disable_schedule(schedule_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Schedule {schedule_id} not found")
+    
+    return {"status": "disabled"}
+
+
+@router.get("/analytics/{workflow_id}")
+async def get_workflow_analytics(
+    workflow_id: str,
+    time_range_days: Optional[int] = Query(30)
+) -> Dict[str, Any]:
+    """Get analytics for a workflow"""
+    analytics_engine = get_analytics_engine()
+    analytics = analytics_engine.analyze_workflow(workflow_id, time_range_days)
+    
+    return analytics.to_dict()
+
+
+@router.post("/tests/{workflow_id}/add")
+async def add_test_case(
+    workflow_id: str,
+    test_id: str = Body(...),
+    name: str = Body(...),
+    goal: str = Body(...),
+    expected_output: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Add a test case for a workflow"""
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    
+    tester = WorkflowTester(graph_def)
+    test_case = TestCase(
+        test_id=test_id,
+        name=name,
+        description=name,
+        goal=goal,
+        expected_output=expected_output
+    )
+    tester.add_test_case(test_case)
+    
+    return {"test_id": test_id, "status": "added"}
+
+
+@router.post("/tests/{workflow_id}/run")
+async def run_workflow_tests(workflow_id: str) -> Dict[str, Any]:
+    """Run all tests for a workflow"""
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    
+    tester = WorkflowTester(graph_def)
+    
+    async def execute_workflow(goal: str):
+        return await run_graph_workflow(config, goal)
+    
+    results = await tester.run_all_tests(execute_workflow)
+    summary = tester.get_test_summary(results)
+    
+    return {
+        "summary": summary,
+        "results": {test_id: r.to_dict() for test_id, r in results.items()}
+    }
+
+
+@router.post("/compose")
+async def compose_workflows(
+    workflow_ids: List[str] = Body(...),
+    strategy: str = Body("sequential")
+) -> Dict[str, Any]:
+    """Compose multiple workflows into one"""
+    config = Settings.load()
+    
+    # Load all workflows (simplified - would load from storage in production)
+    workflows = []
+    for _ in workflow_ids:
+        graph_def = load_graph_definition(None, config)
+        workflows.append(graph_def)
+    
+    composed = WorkflowComposer.compose(workflows, strategy)
+    
+    return {
+        "composed_workflow": composed.model_dump(),
+        "strategy": strategy,
+        "source_workflows": workflow_ids
+    }

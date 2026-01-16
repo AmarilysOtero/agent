@@ -9,11 +9,16 @@ This document traces the actual code flow for chat sessions and agent interactio
 3. [Chat Session Management](#chat-session-management)
 4. [Message Processing](#message-processing)
 5. [Agent Workflow Execution](#agent-workflow-execution)
-   - [Triage Agent](#triage-agent)
-   - [Search Agent Selection](#search-agent-selection)
-   - [Search Execution](#search-execution)
-   - [Reporter Agent](#reporter-agent)
-   - [Review Agent](#review-agent)
+   - [Graph-Based Workflow Executor](#graph-based-workflow-executor)
+     - [Graph Definition](#graph-definition)
+     - [Node Types](#node-types)
+     - [Execution Flow](#execution-flow)
+   - [Sequential Workflow (Legacy)](#sequential-workflow-legacy)
+     - [Triage Agent](#triage-agent)
+     - [Search Agent Selection](#search-agent-selection)
+     - [Search Execution](#search-execution)
+     - [Reporter Agent](#reporter-agent)
+     - [Review Agent](#review-agent)
 6. [Neo4j GraphRAG Search](#neo4j-graphrag-search)
    - [Keyword Search Details](#keyword-search-details)
 7. [Response Generation](#response-generation)
@@ -53,7 +58,7 @@ async def add_message(
 
 - `from .auth import get_current_user`
 - `from ..config import Settings`
-- `from ..workflows.workflow_factory import run_sequential_goal`
+- `from ..workflows.workflow_factory import run_graph_workflow, run_sequential_goal`
 - `from ..tools.neo4j_graphrag import graphrag_search`
 
 ---
@@ -291,7 +296,143 @@ def filter_results_by_exact_match(results: List[dict], query: str, min_similarit
 
 ### Location: `routers/chat_sessions.py` → `add_message()` → `workflows/workflow_factory.py`
 
-**Function**: `run_sequential_goal(cfg: Settings, goal: str)` (lines 11-120)
+The Agent service supports two workflow execution modes:
+
+1. **Graph-Based Workflow** (Primary) - `run_graph_workflow()` - Uses a graph executor with nodes and edges
+2. **Sequential Workflow** (Legacy/Fallback) - `run_sequential_goal()` - Original sequential execution
+
+**Note**: Currently, `chat_sessions.py` uses `run_sequential_goal()`, but the graph executor is available and can be enabled.
+
+---
+
+## Graph-Based Workflow Executor
+
+### Overview
+
+The graph-based workflow executor (`GraphExecutor`) provides a flexible, declarative way to define and execute agent workflows using a graph structure with nodes and edges.
+
+**File**: `workflows/graph_executor.py`
+
+**Function**: `run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = None)` (lines 13-49)
+
+### Graph Definition
+
+Workflows are defined as JSON graphs with:
+
+- **Nodes**: Represent agents, conditionals, loops, fanouts, and merges
+- **Edges**: Define the flow between nodes with optional conditions
+- **Entry Node**: Explicit entry point (`entry_node_id`)
+
+**Default Graph**: `workflows/default_workflow.json`
+
+**Graph Structure**:
+
+```json
+{
+  "name": "Default News Reporter Workflow",
+  "entry_node_id": "triage",
+  "nodes": [...],
+  "edges": [...],
+  "limits": {
+    "max_steps": 100,
+    "timeout_ms": 300000,
+    "max_iters": 3,
+    "max_parallel": 10
+  }
+}
+```
+
+### Node Types
+
+1. **Agent Node** (`type: "agent"`)
+
+   - Executes a single agent (TriageAgent, SQLAgent, NewsReporterAgent, etc.)
+   - Maps inputs/outputs to workflow state
+   - Example: `triage`, `search_sql`, `report_branch`, `review`
+
+2. **Conditional Node** (`type: "conditional"`)
+
+   - Routes execution based on condition evaluation
+   - Uses safe expression evaluator (no `eval()`)
+   - Example: `select_search`, `should_search`
+
+3. **Fanout Node** (`type: "fanout"`)
+
+   - Executes multiple branches in parallel
+   - Creates isolated execution contexts per branch
+   - Example: `report_fanout` - runs reporter for each reporter_id
+
+4. **Loop Node** (`type: "loop"`)
+
+   - Iterative execution with max iterations
+   - Re-enqueues body node until termination condition
+   - Example: `review_loop` - reviews until accepted (max 3 passes)
+
+5. **Merge Node** (`type: "merge"`)
+   - Combines multiple inputs with explicit strategy
+   - Acts as join barrier (waits for all branches)
+   - Example: `stitch` - merges final outputs from all reporters
+
+### Execution Flow
+
+**Graph Workflow Flow** (from `default_workflow.json`):
+
+```
+TRIAGE → SELECT_SEARCH → [SQL | NEO4J | AISEARCH] → SHOULD_SEARCH →
+REPORT_FANOUT → REVIEW_LOOP → [REVIEW → REPORTER_IMPROVE] → STITCH
+```
+
+**Step-by-Step**:
+
+1. **TRIAGE Node**: Runs `TriageAgent`, writes to `state.triage`, `state.selected_search`, `state.database_id`
+
+2. **SELECT_SEARCH Node** (Conditional): Routes based on `triage.preferred_agent`:
+
+   - If `"sql"` → `search_sql` node
+   - If Neo4j enabled → `search_neo4j` node
+   - Otherwise → `search_aisearch` node
+
+3. **SEARCH Nodes**: Execute selected search agent, write to `state.latest`
+
+4. **SHOULD_SEARCH Node** (Conditional): Checks if search should run:
+
+   - Condition: `"ai_search" in triage.intents or ...`
+
+5. **REPORT_FANOUT Node**: Fan-out execution:
+
+   - Creates branch per `reporter_id` from config
+   - Each branch runs `report_branch` node in parallel
+   - Writes to `state.drafts[reporter_id]`
+
+6. **REVIEW_LOOP Node**: Loop with max 3 iterations:
+
+   - Body: `review` → `reporter_improve` (if not accepted)
+   - Terminates when: `verdicts[reporter_id][-1].decision == "accept"` OR `max_iters` reached
+   - Writes to `state.verdicts[reporter_id]` and `state.final[reporter_id]`
+
+7. **STITCH Node**: Merges all `state.final[reporter_id]` values using "stitch" strategy (markdown concatenation)
+
+**Key Features**:
+
+- **Queue-Based Execution**: Uses token/queue system instead of topological sort (supports cycles, conditionals, dynamic fanout)
+- **Branch Isolation**: Each fanout branch gets isolated `ExecutionContext` to prevent output collisions
+- **State Management**: `WorkflowState` tracks goal, triage, drafts, final, verdicts, logs, execution_trace
+- **Condition Evaluation**: Safe parser-based evaluator (no `eval()`) for routing conditions
+- **Metrics Collection**: Tracks performance metrics per node and overall workflow
+
+**Code Location**: `workflows/graph_executor.py` → `GraphExecutor.execute(goal: str)`
+
+**Fallback**: If graph execution fails, automatically falls back to `run_sequential_goal()`
+
+---
+
+## Sequential Workflow (Legacy)
+
+### Location: `routers/chat_sessions.py` → `add_message()` → `workflows/workflow_factory.py`
+
+**Function**: `run_sequential_goal(cfg: Settings, goal: str)` (lines 52-161)
+
+**Note**: This is the legacy sequential workflow. The graph-based workflow (`run_graph_workflow`) is the primary method, but `chat_sessions.py` currently still uses this for backward compatibility.
 
 **Workflow Flow**:
 
@@ -1325,3 +1466,50 @@ The Agent flow follows this exact code path:
 8. **Response**: Serializes and returns JSON response with response and sources
 
 All code references are based on the actual implementation in the codebase.
+
+---
+
+## Graph Workflow Implementation Details
+
+### Architecture
+
+The graph-based workflow system was implemented in Phases 1-9:
+
+- **Phase 1**: Graph schema definition (`graph_schema.py`)
+- **Phase 2**: WorkflowState model (`workflow_state.py`)
+- **Phase 3**: AgentRunner compatibility layer (`agent_runner.py`)
+- **Phase 4**: Node implementations (`nodes/` directory)
+- **Phase 5**: Graph executor (`graph_executor.py`)
+- **Phase 6**: Default workflow conversion (`default_workflow.json`)
+- **Phase 7-9**: Advanced features (persistence, security, cost management, marketplace, etc.)
+
+### Key Files
+
+- **Graph Executor**: `workflows/graph_executor.py`
+- **Graph Schema**: `workflows/graph_schema.py`
+- **Graph Loader**: `workflows/graph_loader.py`
+- **Workflow State**: `workflows/workflow_state.py`
+- **Node Types**: `workflows/nodes/` (agent_node.py, conditional_node.py, fanout_node.py, loop_node.py, merge_node.py)
+- **Default Workflow**: `workflows/default_workflow.json`
+- **Workflow Factory**: `workflows/workflow_factory.py`
+
+### Migration from Sequential to Graph
+
+The graph workflow is functionally equivalent to the sequential workflow but provides:
+
+- **Declarative Definition**: Workflow structure defined in JSON
+- **Better Observability**: Execution trace, metrics, state tracking
+- **Flexibility**: Easy to modify workflow without code changes
+- **Advanced Features**: Cost tracking, debugging, governance, etc.
+
+To enable graph workflow in `chat_sessions.py`, change:
+
+```python
+# Current (sequential):
+assistant_response = await run_sequential_goal(cfg, user_message_content)
+
+# To (graph-based):
+assistant_response = await run_graph_workflow(cfg, user_message_content)
+```
+
+The graph executor will automatically fall back to sequential if graph execution fails.

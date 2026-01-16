@@ -1,18 +1,20 @@
-"""Graph Executor - Queue-based execution with NodeResult and ExecutionContext (Phase 2)"""
+"""Graph Executor - Queue-based execution with NodeResult and ExecutionContext (Phase 3)"""
 
 from __future__ import annotations
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Set, Optional, Any, Tuple
 from collections import deque
 import asyncio
 import time
 import logging
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from .workflow_state import WorkflowState
 from .agent_runner import AgentRunner
 from .condition_evaluator import ConditionEvaluator
 from .execution_context import ExecutionContext
 from .node_result import NodeResult, NodeStatus
+from .execution_tracker import ExecutionTracker, FanoutTracker, LoopTracker
+from .state_checkpoint import StateCheckpoint
 from .nodes import create_node
 from .agent_adapter import AgentAdapterRegistry
 from ..config import Settings
@@ -63,6 +65,16 @@ class GraphExecutor:
         
         # Build execution graph
         self._build_execution_graph()
+        
+        # Get execution limits from graph definition
+        self.limits = graph_def.limits or GraphLimits()
+        self.max_steps = self.limits.max_steps or 1000
+        self.timeout_ms = self.limits.timeout_ms
+        self.max_parallel = self.limits.max_parallel
+        
+        # Phase 3: State checkpointing (optional)
+        checkpoint_dir = getattr(config, 'checkpoint_dir', None)
+        self.checkpoint_manager = StateCheckpoint(checkpoint_dir) if checkpoint_dir else None
     
     def _build_execution_graph(self) -> None:
         """Build internal data structures for efficient execution"""
@@ -91,6 +103,10 @@ class GraphExecutor:
         
         Returns:
             Final output string
+        
+        Raises:
+            TimeoutError: If execution exceeds timeout
+            RuntimeError: If execution fails or exceeds max steps
         """
         # Initialize state
         state = WorkflowState(goal=goal)
@@ -103,10 +119,43 @@ class GraphExecutor:
         
         # Initialize execution context
         root_context = ExecutionContext(node_id=entry_nodes[0])
+        run_id = root_context.run_id
         
-        # Execute graph
+        # Phase 3: Try to restore from checkpoint if available
+        if self.checkpoint_manager:
+            restored_state = self.checkpoint_manager.restore_state(run_id)
+            if restored_state:
+                state = restored_state
+                state.append_log("INFO", f"Resumed execution from checkpoint for run {run_id}")
+                logger.info(f"Resumed execution from checkpoint for run {run_id}")
+        
+        # Execute graph with timeout
+        start_time = time.time()
+        
+        # Phase 3: Save initial checkpoint
+        if self.checkpoint_manager:
+            try:
+                self.checkpoint_manager.save_checkpoint(
+                    run_id=run_id,
+                    state=state,
+                    metadata={"goal": goal, "start_time": start_time}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to save initial checkpoint: {e}")
         try:
-            await self._execute_queue_based(state, entry_nodes, root_context)
+            if self.timeout_ms:
+                await asyncio.wait_for(
+                    self._execute_queue_based(state, entry_nodes, root_context),
+                    timeout=self.timeout_ms / 1000.0
+                )
+            else:
+                await self._execute_queue_based(state, entry_nodes, root_context)
+        except asyncio.TimeoutError:
+            duration = time.time() - start_time
+            error_msg = f"Graph execution timed out after {duration:.2f}s (limit: {self.timeout_ms}ms)"
+            state.append_log("ERROR", error_msg)
+            logger.error(error_msg)
+            raise TimeoutError(error_msg)
         except Exception as e:
             state.append_log("ERROR", f"Graph execution failed: {str(e)}")
             logger.error(f"Graph execution failed: {e}", exc_info=True)
@@ -121,18 +170,25 @@ class GraphExecutor:
         entry_nodes: List[str],
         root_context: ExecutionContext
     ) -> None:
-        """Execute graph using queue-based system"""
+        """Execute graph using queue-based system with Phase 3 enhancements"""
         # Execution queue
         queue: deque[ExecutionToken] = deque()
         
         # Track execution state
-        executed: Set[str] = set()  # Nodes that have completed
+        executed: Set[Tuple[str, int]] = set()  # (node_id, iteration) tuples
         executing: Set[str] = set()  # Nodes currently executing
         node_results: Dict[str, NodeResult] = {}  # Results by node_id
         
         # Branch tracking
         branch_contexts: Dict[str, ExecutionContext] = {}  # branch_id -> context
         branch_results: Dict[str, List[NodeResult]] = {}  # branch_id -> results
+        
+        # Phase 3: Execution tracker for fanout/loop coordination
+        tracker = ExecutionTracker()
+        
+        # Step counter for limits
+        step_count = 0
+        run_id = root_context.run_id  # Store for checkpointing
         
         # Add entry nodes to queue
         for node_id in entry_nodes:
@@ -142,17 +198,24 @@ class GraphExecutor:
             queue.append(ExecutionToken(node_id=node_id, context=context))
         
         # Process queue
-        max_iterations = 1000  # Safety limit
-        iteration = 0
-        
-        while queue and iteration < max_iterations:
-            iteration += 1
+        while queue and step_count < self.max_steps:
+            step_count += 1
+            
+            # Check for parallel execution limit
+            if self.max_parallel and len(executing) >= self.max_parallel:
+                # Wait a bit if we're at parallel limit
+                await asyncio.sleep(0.01)
+                continue
+            
             token = queue.popleft()
             node_id = token.node_id
             context = token.context
             
+            # Create execution key (node_id, iteration)
+            exec_key = (node_id, context.iteration)
+            
             # Skip if already executed (unless it's a loop iteration)
-            if node_id in executed and context.iteration == 0:
+            if exec_key in executed and context.iteration == 0:
                 continue
             
             # Check if node is already executing (prevent duplicate execution)
@@ -176,20 +239,37 @@ class GraphExecutor:
                     branch_results[context.branch_id] = []
                 branch_results[context.branch_id].append(result)
                 
-                # Handle different statuses
-                if result.status == NodeStatus.SKIPPED:
-                    logger.info(f"Node {node_id} was skipped: {result.metrics.get('skip_reason')}")
-                    # Continue to next nodes anyway
-                elif result.status == NodeStatus.FAILED:
-                    logger.error(f"Node {node_id} failed: {result.error}")
-                    # Decide whether to continue or stop
-                    # For now, we'll continue (could be configurable)
+                # Phase 3: Mark branch as complete if it's part of a fanout
+                tracker.mark_branch_complete(context.branch_id, result)
                 
-                # Determine next nodes
-                next_nodes = self._determine_next_nodes(node_id, result, state)
+                # Phase 3: Check if fanout is complete and trigger merge
+                await self._check_fanout_completion(node_id, state, tracker, queue)
+                
+                # Phase 3: Handle special node types
+                next_nodes = await self._handle_special_nodes(
+                    node_id, result, state, context, tracker, queue
+                )
+                
+                # If next_nodes not set by special handler, determine normally
+                if next_nodes is None:
+                    next_nodes = self._determine_next_nodes(node_id, result, state)
+                
+                # Phase 3: Check for loop back (body node completing, needs to loop back to loop node)
+                # Find if any outgoing edge goes to a loop node
+                outgoing = self.outgoing_edges.get(node_id, [])
+                for edge in outgoing:
+                    next_node_config = self.nodes.get(edge.to_node)
+                    if next_node_config and next_node_config.type == "loop":
+                        # This is a loop back - check if loop should continue
+                        loop_tracker = tracker.get_loop_tracker(edge.to_node)
+                        if loop_tracker and loop_tracker.should_continue:
+                            # Loop back to loop node for next iteration check
+                            next_nodes = [edge.to_node]
+                            break
                 
                 # Add next nodes to queue
                 for next_node_id in next_nodes:
+                    # Create child branch (loop iteration handling is done in _handle_loop_node)
                     next_context = context.create_child_branch(next_node_id)
                     next_context.node_id = next_node_id
                     branch_contexts[next_context.branch_id] = next_context
@@ -199,23 +279,281 @@ class GraphExecutor:
                         parent_result=result
                     ))
                 
-                executed.add(node_id)
+                executed.add(exec_key)
+                
+                # Phase 3: Periodic checkpointing (every 10 steps)
+                if self.checkpoint_manager and step_count % 10 == 0:
+                    self.checkpoint_manager.save_checkpoint(
+                        run_id=run_id,  # Use stored run_id
+                        state=state,
+                        metadata={"step_count": step_count, "executed_nodes": len(executed)}
+                    )
                 
             except Exception as e:
                 logger.error(f"Node {node_id} execution error: {e}", exc_info=True)
                 result = NodeResult.failed(str(e))
                 node_results[node_id] = result
                 state.append_log("ERROR", f"Node {node_id} failed: {str(e)}", node_id=node_id)
+                
+                # Phase 3: Error recovery - continue or stop based on config
+                # Note: config is Settings, not a dict, so we check graph_def limits
+                error_strategy = getattr(self.graph_def, 'error_strategy', 'continue')
+                if error_strategy == "stop":
+                    raise RuntimeError(f"Node {node_id} failed and error_strategy is 'stop': {e}")
             finally:
                 executing.discard(node_id)
         
-        if iteration >= max_iterations:
-            logger.warning(f"Graph execution reached max iterations ({max_iterations})")
-            state.append_log("WARNING", f"Execution stopped after {max_iterations} iterations")
+        if step_count >= self.max_steps:
+            logger.warning(f"Graph execution reached max steps ({self.max_steps})")
+            state.append_log("WARNING", f"Execution stopped after {self.max_steps} steps")
+            raise RuntimeError(f"Execution exceeded max steps limit: {self.max_steps}")
         
         # Check for stuck execution
         if executing:
             logger.warning(f"Some nodes are still executing: {executing}")
+        
+        # Check for incomplete fanouts
+        incomplete_fanouts = [
+            fanout_id for fanout_id, fanout in tracker.fanouts.items()
+            if not fanout.all_branches_complete()
+        ]
+        if incomplete_fanouts:
+            logger.warning(f"Incomplete fanouts: {incomplete_fanouts}")
+    
+    async def _handle_special_nodes(
+        self,
+        node_id: str,
+        result: NodeResult,
+        state: WorkflowState,
+        context: ExecutionContext,
+        tracker: ExecutionTracker,
+        queue: deque[ExecutionToken]
+    ) -> Optional[List[str]]:
+        """Handle special node types (fanout, loop, merge) - Phase 3"""
+        node_config = self.nodes[node_id]
+        
+        # Handle fanout nodes
+        if node_config.type == "fanout":
+            return await self._handle_fanout_node(node_id, result, state, context, tracker, queue)
+        
+        # Handle loop nodes
+        elif node_config.type == "loop":
+            return await self._handle_loop_node(node_id, result, state, context, tracker, queue)
+        
+        # Handle merge nodes
+        elif node_config.type == "merge":
+            return await self._handle_merge_node(node_id, result, state, context, tracker, queue)
+        
+        return None
+    
+    async def _handle_fanout_node(
+        self,
+        node_id: str,
+        result: NodeResult,
+        state: WorkflowState,
+        context: ExecutionContext,
+        tracker: ExecutionTracker,
+        queue: deque[ExecutionToken]
+    ) -> List[str]:
+        """Handle fanout node - create branches for each item"""
+        node_config = self.nodes[node_id]
+        fanout_items = result.artifacts.get("fanout_items", [])
+        branch_node_ids = result.artifacts.get("branches", [])
+        
+        if not fanout_items or not branch_node_ids:
+            logger.warning(f"Fanout node {node_id} has no items or branches")
+            return []
+        
+        # Find merge node (next node after fanout)
+        merge_node_id = None
+        outgoing = self.outgoing_edges.get(node_id, [])
+        for edge in outgoing:
+            next_node = self.nodes.get(edge.to_node)
+            if next_node and next_node.type == "merge":
+                merge_node_id = edge.to_node
+                break
+        
+        # Register fanout in tracker
+        fanout_tracker = tracker.register_fanout(
+            fanout_node_id=node_id,
+            items=fanout_items,
+            branch_node_ids=branch_node_ids,
+            merge_node_id=merge_node_id
+        )
+        
+        # Create branches for each item
+        for item in fanout_items:
+            # Set current item in state for branch nodes
+            state.set("current_fanout_item", item)
+            
+            # For each branch node, create a branch
+            for branch_node_id in branch_node_ids:
+                branch_context = context.create_child_branch(branch_node_id)
+                branch_context.node_id = branch_node_id
+                
+                # Register branch in tracker
+                tracker.register_branch(
+                    fanout_node_id=node_id,
+                    item=item,
+                    branch_id=branch_context.branch_id,
+                    branch_node_id=branch_node_id
+                )
+                
+                # Add to queue
+                queue.append(ExecutionToken(
+                    node_id=branch_node_id,
+                    context=branch_context,
+                    parent_result=result
+                ))
+        
+        # Don't continue to merge node yet - wait for all branches
+        # Merge node will be triggered when all branches complete
+        return []
+    
+    async def _handle_loop_node(
+        self,
+        node_id: str,
+        result: NodeResult,
+        state: WorkflowState,
+        context: ExecutionContext,
+        tracker: ExecutionTracker,
+        queue: deque[ExecutionToken]
+    ) -> List[str]:
+        """Handle loop node - loop back to body or continue"""
+        node_config = self.nodes[node_id]
+        artifacts = result.artifacts
+        
+        should_continue = artifacts.get("should_continue", False)
+        body_node_id = artifacts.get("body_node_id")
+        
+        if not should_continue:
+            # Loop is done, continue to next nodes
+            return self._determine_next_nodes(node_id, result, state)
+        
+        # Loop should continue
+        if body_node_id:
+            # Use explicit body node
+            loop_tracker = tracker.get_loop_tracker(node_id)
+            if not loop_tracker:
+                # Register loop
+                loop_tracker = tracker.register_loop(
+                    loop_node_id=node_id,
+                    max_iters=node_config.max_iters or 10,
+                    body_node_id=body_node_id
+                )
+            
+            # Increment iteration
+            new_iter = tracker.increment_loop_iteration(node_id)
+            tracker.set_loop_should_continue(node_id, should_continue)
+            
+            # Create iteration context and loop back to body
+            body_context = context.create_iteration(body_node_id)
+            body_context.node_id = body_node_id
+            
+            queue.append(ExecutionToken(
+                node_id=body_node_id,
+                context=body_context,
+                parent_result=result
+            ))
+            
+            # After body completes, it should loop back to loop node
+            # This is handled by the executor checking if body's next node is the loop node
+            return []
+        else:
+            # Use outgoing edges to find body
+            outgoing = self.outgoing_edges.get(node_id, [])
+            body_nodes = [edge.to_node for edge in outgoing]
+            if body_nodes:
+                # Loop back to first body node
+                body_context = context.create_iteration(body_nodes[0])
+                body_context.node_id = body_nodes[0]
+                
+                queue.append(ExecutionToken(
+                    node_id=body_nodes[0],
+                    context=body_context,
+                    parent_result=result
+                ))
+                return []
+        
+        # No body found, just continue
+        return self._determine_next_nodes(node_id, result, state)
+    
+    async def _handle_merge_node(
+        self,
+        node_id: str,
+        result: NodeResult,
+        state: WorkflowState,
+        context: ExecutionContext,
+        tracker: ExecutionTracker,
+        queue: deque[ExecutionToken]
+    ) -> List[str]:
+        """Handle merge node - check join barrier"""
+        node_config = self.nodes[node_id]
+        expected_keys = node_config.params.get("expected_keys")
+        
+        if not expected_keys:
+            # No join barrier, proceed normally
+            return self._determine_next_nodes(node_id, result, state)
+        
+        # Check if all expected keys are present
+        merge_key = node_config.params.get("merge_key", "final")
+        items = state.get(merge_key, {})
+        
+        if not isinstance(expected_keys, list):
+            expected_keys = [expected_keys]
+        
+        missing_keys = set(expected_keys) - set(items.keys())
+        
+        if missing_keys:
+            # Join barrier not met - wait for branches to complete
+            timeout = node_config.params.get("timeout", 60.0)
+            start_wait = time.time()
+            max_wait_time = timeout / 1000.0  # Convert ms to seconds
+            
+            # Check if we're waiting for a fanout
+            fanout_tracker = None
+            for fanout in tracker.fanouts.values():
+                if fanout.merge_node_id == node_id:
+                    fanout_tracker = fanout
+                    break
+            
+            if fanout_tracker:
+                # Wait for fanout branches to complete
+                wait_count = 0
+                max_waits = int(max_wait_time * 10)  # Check every 0.1s
+                
+                while not fanout_tracker.all_branches_complete() and wait_count < max_waits:
+                    await asyncio.sleep(0.1)  # Wait a bit
+                    wait_count += 1
+                    # Re-check items
+                    items = state.get(merge_key, {})
+                    missing_keys = set(expected_keys) - set(items.keys())
+                    if not missing_keys:
+                        break
+                
+                if missing_keys and wait_count >= max_waits:
+                    logger.warning(
+                        f"MergeNode {node_id}: Join barrier timeout after {max_wait_time}s. "
+                        f"Missing keys: {missing_keys}. Proceeding with available keys."
+                    )
+            else:
+                # No fanout tracker, check if we should wait or proceed
+                # Re-queue merge node to check again later (executor will handle retries)
+                logger.info(
+                    f"MergeNode {node_id}: Join barrier not met. Missing: {missing_keys}. "
+                    f"Will retry later."
+                )
+                # Re-queue with a small delay
+                await asyncio.sleep(0.5)
+                queue.append(ExecutionToken(
+                    node_id=node_id,
+                    context=context,
+                    parent_result=result
+                ))
+                return []  # Don't proceed yet
+        
+        # All keys present (or timeout), proceed
+        return self._determine_next_nodes(node_id, result, state)
     
     async def _execute_node(
         self,

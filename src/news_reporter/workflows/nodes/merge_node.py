@@ -47,9 +47,25 @@ class MergeNode(BaseNode):
                     f"MergeNode {self.config.id}: Waiting for keys: {missing_keys}. "
                     f"Found: {list(items.keys())}"
                 )
-                # In a real implementation, this would wait for async updates
-                # For now, we'll proceed with available items and log a warning
-                # TODO: Implement actual join barrier with async waiting
+                # Phase 3: Join barrier - wait for expected keys
+                # The executor will handle async waiting by re-queuing this node
+                # until all expected keys are present or timeout is reached
+                # For now, we'll return a result indicating we need to wait
+                # The executor's _handle_merge_node will handle the actual waiting
+                logger.info(
+                    f"MergeNode {self.config.id}: Join barrier active. "
+                    f"Waiting for keys: {missing_keys}. Found: {list(items.keys())}"
+                )
+                # Return result that will trigger executor to wait
+                return NodeResult.success(
+                    state_updates={},
+                    artifacts={
+                        "waiting_for_keys": list(missing_keys),
+                        "found_keys": list(items.keys()),
+                        "strategy": strategy,
+                        "item_count": len(items)
+                    }
+                )
         
         if not items:
             logger.warning(f"MergeNode {self.config.id}: No items to merge from '{merge_key}'")

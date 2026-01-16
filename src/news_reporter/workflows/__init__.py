@@ -1,4 +1,4 @@
-"""Workflow execution - Graph-based and sequential (Phase 7)"""
+"""Workflow execution - Graph-based and sequential (Phase 8)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
@@ -28,6 +28,12 @@ from .workflow_collaboration import WorkflowCollaboration, Team, WorkflowShare, 
 from .workflow_notifications import WorkflowNotificationManager, Notification, NotificationType, NotificationChannel, NotificationRule, get_notification_manager
 from .workflow_integrations import WorkflowIntegrations, WebhookConfig, EventSubscription, IntegrationType, get_workflow_integrations
 from .workflow_deployment import WorkflowDeployment, Deployment, Migration, DeploymentStatus, get_workflow_deployment
+from .workflow_cost import WorkflowCostManager, CostEntry, CostBudget, CostReport, CostType, get_workflow_cost_manager
+from .workflow_backup import WorkflowBackupManager, Backup, BackupType, get_workflow_backup_manager
+from .workflow_debugger import WorkflowDebugger, Breakpoint, BreakpointType, DebugTrace, get_workflow_debugger
+from .workflow_governance import WorkflowGovernance, Policy, PolicyType, PolicySeverity, PolicyViolation, get_workflow_governance
+from .workflow_ai import WorkflowAI, AIPrediction, AIRecommendation, AITaskType, get_workflow_ai
+from .workflow_documentation import WorkflowDocumentation, Documentation, DocumentationType, KnowledgeBaseEntry, get_workflow_documentation
 
 __all__ = [
     "run_graph_workflow",
@@ -119,4 +125,47 @@ __all__ = [
     "Migration",
     "DeploymentStatus",
     "get_workflow_deployment",
+    # Phase 8
+    "WorkflowDebugger",
+    "Breakpoint",
+    "BreakpointType",
+    "DebugTrace",
+    "get_workflow_debugger",
+    "WorkflowGovernance",
+    "Policy",
+    "PolicyType",
+    "PolicySeverity",
+    "PolicyViolation",
+    "get_workflow_governance",
+    "WorkflowCostManager",
+    "CostEntry",
+    "CostBudget",
+    "CostReport",
+    "CostType",
+    "get_workflow_cost_manager",
+    "WorkflowBackupManager",
+    "Backup",
+    "BackupType",
+    "get_workflow_backup_manager",
+    "WorkflowDebugger",
+    "Breakpoint",
+    "BreakpointType",
+    "DebugTrace",
+    "get_workflow_debugger",
+    "WorkflowGovernance",
+    "Policy",
+    "PolicyType",
+    "PolicySeverity",
+    "PolicyViolation",
+    "get_workflow_governance",
+    "WorkflowAI",
+    "AIPrediction",
+    "AIRecommendation",
+    "AITaskType",
+    "get_workflow_ai",
+    "WorkflowDocumentation",
+    "Documentation",
+    "DocumentationType",
+    "KnowledgeBaseEntry",
+    "get_workflow_documentation",
 ]

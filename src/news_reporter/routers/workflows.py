@@ -20,6 +20,12 @@ from ..workflows.workflow_collaboration import get_workflow_collaboration, Share
 from ..workflows.workflow_notifications import get_notification_manager, NotificationType, NotificationChannel
 from ..workflows.workflow_integrations import get_workflow_integrations, WebhookConfig, EventSubscription
 from ..workflows.workflow_deployment import get_workflow_deployment, DeploymentStatus
+from ..workflows.workflow_cost import get_workflow_cost_manager, CostType
+from ..workflows.workflow_backup import get_workflow_backup_manager, BackupType
+from ..workflows.workflow_debugger import get_workflow_debugger, BreakpointType
+from ..workflows.workflow_governance import get_workflow_governance, PolicyType, PolicySeverity
+from ..workflows.workflow_ai import get_workflow_ai
+from ..workflows.workflow_documentation import get_workflow_documentation, DocumentationType
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
@@ -694,3 +700,242 @@ async def get_deployment_history(
         }
         for d in deployments
     ]
+
+
+# ========== Phase 8: Cost Management, Backup, Debugger, Governance, AI, Documentation ==========
+
+@router.post("/cost/record")
+async def record_cost(
+    workflow_id: str = Body(...),
+    cost_type: str = Body(...),
+    amount: Optional[float] = Body(None),
+    units: float = Body(1.0)
+) -> Dict[str, Any]:
+    """Record a cost entry"""
+    cost_manager = get_workflow_cost_manager()
+    entry = cost_manager.record_cost(workflow_id, CostType(cost_type), amount=amount, units=units)
+    return {"entry_id": entry.entry_id, "amount": entry.amount}
+
+
+@router.post("/cost/budgets")
+async def add_budget(
+    budget_id: str = Body(...),
+    amount: float = Body(...),
+    workflow_id: Optional[str] = Body(None),
+    period: str = Body("monthly")
+) -> Dict[str, Any]:
+    """Add a cost budget"""
+    cost_manager = get_workflow_cost_manager()
+    budget = cost_manager.add_budget(budget_id, amount, workflow_id, period)
+    return {"budget_id": budget_id, "amount": amount}
+
+
+@router.get("/cost/report")
+async def get_cost_report(
+    workflow_id: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None)
+) -> Dict[str, Any]:
+    """Generate a cost report"""
+    from datetime import datetime
+    cost_manager = get_workflow_cost_manager()
+    start = datetime.fromisoformat(start_date) if start_date else None
+    end = datetime.fromisoformat(end_date) if end_date else None
+    report = cost_manager.generate_cost_report(workflow_id, start, end)
+    return {
+        "total_cost": report.total_cost,
+        "cost_by_type": report.cost_by_type,
+        "execution_count": report.execution_count,
+        "avg_cost_per_execution": report.avg_cost_per_execution
+    }
+
+
+@router.post("/backup/create")
+async def create_backup(
+    backup_type: str = Body("full"),
+    workflow_ids: Optional[List[str]] = Body(None)
+) -> Dict[str, Any]:
+    """Create a workflow backup"""
+    from ..workflows.workflow_persistence import get_workflow_persistence
+    backup_manager = get_workflow_backup_manager()
+    backup_manager.set_persistence(get_workflow_persistence())
+    backup = backup_manager.create_backup(backup_type=BackupType(backup_type), workflow_ids=workflow_ids)
+    return {
+        "backup_id": backup.backup_id,
+        "backup_type": backup.backup_type.value,
+        "workflow_count": len(backup.workflow_ids)
+    }
+
+
+@router.post("/backup/{backup_id}/restore")
+async def restore_backup(
+    backup_id: str,
+    overwrite: bool = Body(False)
+) -> Dict[str, Any]:
+    """Restore a backup"""
+    backup_manager = get_workflow_backup_manager()
+    result = backup_manager.restore_backup(backup_id, overwrite)
+    return result
+
+
+@router.post("/debugger/breakpoints")
+async def add_breakpoint(
+    breakpoint_id: str = Body(...),
+    type: str = Body(...),
+    node_id: Optional[str] = Body(None),
+    condition: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Add a debugger breakpoint"""
+    debugger = get_workflow_debugger()
+    bp = debugger.add_breakpoint(breakpoint_id, BreakpointType(type), node_id, condition)
+    return {"breakpoint_id": bp.breakpoint_id, "type": bp.type.value}
+
+
+@router.get("/debugger/traces")
+async def get_traces(
+    node_id: Optional[str] = Query(None),
+    event_type: Optional[str] = Query(None),
+    limit: int = Query(100)
+) -> List[Dict[str, Any]]:
+    """Get debug traces"""
+    debugger = get_workflow_debugger()
+    traces = debugger.get_traces(node_id, event_type, limit)
+    return [
+        {
+            "trace_id": t.trace_id,
+            "node_id": t.node_id,
+            "event_type": t.event_type,
+            "timestamp": t.timestamp.isoformat()
+        }
+        for t in traces
+    ]
+
+
+@router.post("/governance/validate/{workflow_id}")
+async def validate_workflow_governance(workflow_id: str) -> Dict[str, Any]:
+    """Validate a workflow against governance policies"""
+    from ..workflows.graph_loader import load_graph_definition
+    from ..config import Settings
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    governance = get_workflow_governance()
+    violations = governance.validate_workflow(graph_def, workflow_id)
+    return {
+        "workflow_id": workflow_id,
+        "violation_count": len(violations),
+        "violations": [
+            {
+                "policy_id": v.policy_id,
+                "severity": v.severity.value,
+                "message": v.message
+            }
+            for v in violations
+        ]
+    }
+
+
+@router.get("/governance/compliance/{workflow_id}")
+async def get_compliance_report(workflow_id: str) -> Dict[str, Any]:
+    """Get compliance report for a workflow"""
+    from ..workflows.graph_loader import load_graph_definition
+    from ..config import Settings
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    governance = get_workflow_governance()
+    report = governance.get_compliance_report(workflow_id, graph_def)
+    return report
+
+
+@router.post("/ai/predict/{workflow_id}")
+async def predict_execution(
+    workflow_id: str,
+    prediction_type: str = Body("execution_time")
+) -> Dict[str, Any]:
+    """Get AI predictions for a workflow"""
+    from ..workflows.graph_loader import load_graph_definition
+    from ..config import Settings
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    ai = get_workflow_ai()
+    
+    if prediction_type == "execution_time":
+        prediction = ai.predict_execution_time(workflow_id, graph_def)
+    elif prediction_type == "cost":
+        prediction = ai.predict_cost(workflow_id, graph_def)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid prediction type")
+    
+    return {
+        "prediction_id": prediction.prediction_id,
+        "prediction": prediction.prediction,
+        "confidence": prediction.confidence
+    }
+
+
+@router.get("/ai/recommendations/{workflow_id}")
+async def get_ai_recommendations(workflow_id: str) -> List[Dict[str, Any]]:
+    """Get AI recommendations for a workflow"""
+    from ..workflows.graph_loader import load_graph_definition
+    from ..config import Settings
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    ai = get_workflow_ai()
+    recommendations = ai.generate_recommendations(workflow_id, graph_def)
+    return [
+        {
+            "recommendation_id": r.recommendation_id,
+            "type": r.type,
+            "description": r.description,
+            "expected_improvement": r.expected_improvement,
+            "confidence": r.confidence
+        }
+        for r in recommendations
+    ]
+
+
+@router.post("/documentation")
+async def add_documentation(
+    doc_id: str = Body(...),
+    type: str = Body(...),
+    title: str = Body(...),
+    content: str = Body(...),
+    workflow_id: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Add documentation"""
+    docs = get_workflow_documentation()
+    doc = docs.add_documentation(
+        doc_id,
+        DocumentationType(type),
+        title,
+        content,
+        workflow_id=workflow_id
+    )
+    return {"doc_id": doc.doc_id, "title": doc.title}
+
+
+@router.get("/documentation/{workflow_id}")
+async def get_workflow_documentation(workflow_id: str) -> List[Dict[str, Any]]:
+    """Get documentation for a workflow"""
+    docs = get_workflow_documentation()
+    documentation = docs.get_documentation(workflow_id=workflow_id)
+    return [
+        {
+            "doc_id": d.doc_id,
+            "title": d.title,
+            "type": d.type.value,
+            "content": d.content[:200]  # First 200 chars
+        }
+        for d in documentation
+    ]
+
+
+@router.post("/documentation/{workflow_id}/generate")
+async def generate_workflow_docs(workflow_id: str) -> Dict[str, Any]:
+    """Auto-generate documentation for a workflow"""
+    from ..workflows.graph_loader import load_graph_definition
+    from ..config import Settings
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    docs = get_workflow_documentation()
+    doc = docs.generate_workflow_docs(workflow_id, graph_def)
+    return {"doc_id": doc.doc_id, "title": doc.title}

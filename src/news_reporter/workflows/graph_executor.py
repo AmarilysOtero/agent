@@ -1,4 +1,4 @@
-"""Graph Executor - Queue-based execution with NodeResult and ExecutionContext (Phase 3)"""
+"""Graph Executor - Queue-based execution with NodeResult and ExecutionContext (Phase 5)"""
 
 from __future__ import annotations
 from typing import Dict, List, Set, Optional, Any, Tuple
@@ -48,6 +48,10 @@ class GraphExecutor:
     - Structured outputs with NodeResult
     - Join barriers for fanout/merge
     - Skip semantics
+    - Performance metrics (Phase 4)
+    - Retry mechanisms (Phase 4)
+    - Caching (Phase 4)
+    - Real-time monitoring (Phase 5)
     """
     
     def __init__(self, graph_def: GraphDefinition, config: Settings):
@@ -86,6 +90,23 @@ class GraphExecutor:
             initial_delay_ms=getattr(config, 'retry_delay_ms', 1000.0)
         )
         self.retry_handler = RetryHandler(retry_config)
+        
+        # Phase 5: Execution monitoring
+        self.monitor = get_execution_monitor()
+        
+        # Phase 4: Performance metrics, retry, and caching
+        self.metrics_collector = get_metrics_collector()
+        self.cache_manager = get_cache_manager()
+        
+        # Retry configuration
+        retry_config = RetryConfig(
+            max_retries=getattr(config, 'max_retries', 3),
+            initial_delay_ms=getattr(config, 'retry_delay_ms', 1000.0)
+        )
+        self.retry_handler = RetryHandler(retry_config)
+        
+        # Phase 5: Execution monitoring
+        self.monitor = get_execution_monitor()
     
     def _build_execution_graph(self) -> None:
         """Build internal data structures for efficient execution"""
@@ -172,13 +193,21 @@ class GraphExecutor:
             logger.error(f"Graph execution failed: {e}", exc_info=True)
             # Phase 4: End metrics collection on error
             self.metrics_collector.end_workflow()
+            # Phase 5: Emit workflow failed event
+            self.monitor.workflow_failed(run_id, str(e))
             raise
         finally:
             # Phase 4: End metrics collection
             self.metrics_collector.end_workflow()
         
         # Get final output
-        return self._get_final_output(state)
+        final_output = self._get_final_output(state)
+        
+        # Phase 5: Emit workflow completed event
+        duration_ms = (time.time() - start_time) * 1000
+        self.monitor.workflow_completed(run_id, final_output, duration_ms)
+        
+        return final_output
     
     async def _execute_queue_based(
         self,
@@ -629,6 +658,9 @@ class GraphExecutor:
         
         state.append_log("INFO", f"Executing node: {node_id} (type: {node_config.type})", node_id=node_id)
         
+        # Phase 5: Emit node started event
+        self.monitor.node_started(context.run_id, node_id, node_config.type, context)
+        
         # Phase 4: Execute with retry
         async def execute_node():
             return await node.execute()
@@ -670,6 +702,14 @@ class GraphExecutor:
             error=result.error,
             cache_hit=False
         )
+        
+        # Phase 5: Emit node completion event
+        if result.status == NodeStatus.SUCCESS:
+            self.monitor.node_completed(context.run_id, node_id, result, context)
+        elif result.status == NodeStatus.FAILED:
+            self.monitor.node_failed(context.run_id, node_id, result.error or "Unknown error", context)
+        elif result.status == NodeStatus.SKIPPED:
+            self.monitor.node_completed(context.run_id, node_id, result, context)  # Use completed for skipped
         
         state.append_log("INFO", f"Node {node_id} completed with status: {result.status.value}", node_id=node_id)
         

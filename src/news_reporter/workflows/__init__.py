@@ -1,4 +1,4 @@
-"""Workflow execution - Graph-based and sequential (Phase 4)"""
+"""Workflow execution - Graph-based and sequential (Phase 5)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
@@ -13,6 +13,10 @@ from .state_checkpoint import StateCheckpoint
 from .performance_metrics import PerformanceCollector, WorkflowMetrics, NodeMetrics, get_metrics_collector
 from .retry_handler import RetryHandler, RetryConfig, with_retry
 from .cache_manager import CacheManager, CacheEntry, get_cache_manager
+from .workflow_visualizer import WorkflowVisualizer
+from .workflow_versioning import WorkflowVersionManager
+from .execution_monitor import ExecutionMonitor, ExecutionEvent, ExecutionEventType, EventStream, get_execution_monitor
+from .workflow_templates import WorkflowTemplate, WorkflowTemplateRegistry, get_template_registry
 
 __all__ = [
     "run_graph_workflow",
@@ -43,4 +47,15 @@ __all__ = [
     "CacheManager",
     "CacheEntry",
     "get_cache_manager",
+    # Phase 5
+    "WorkflowVisualizer",
+    "WorkflowVersionManager",
+    "ExecutionMonitor",
+    "ExecutionEvent",
+    "ExecutionEventType",
+    "EventStream",
+    "get_execution_monitor",
+    "WorkflowTemplate",
+    "WorkflowTemplateRegistry",
+    "get_template_registry",
 ]

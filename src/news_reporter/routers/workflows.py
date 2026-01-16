@@ -9,6 +9,11 @@ from ..config import Settings
 from ..workflows.workflow_factory import run_graph_workflow, run_sequential_goal
 from ..workflows.performance_metrics import get_metrics_collector
 from ..workflows.state_checkpoint import StateCheckpoint
+from ..workflows.workflow_visualizer import WorkflowVisualizer
+from ..workflows.workflow_versioning import WorkflowVersionManager
+from ..workflows.execution_monitor import get_execution_monitor, EventStream
+from ..workflows.workflow_templates import get_template_registry
+from ..workflows.graph_loader import load_graph_definition
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
@@ -166,3 +171,139 @@ async def clear_cache() -> Dict[str, str]:
     cache_manager.clear()
     
     return {"status": "cache_cleared"}
+
+
+# Phase 5: Workflow visualization and management endpoints
+
+@router.get("/visualize/{workflow_id}")
+async def visualize_workflow(workflow_id: str, format: str = Query("mermaid", regex="^(dot|mermaid|json)$")) -> Dict[str, Any]:
+    """Visualize a workflow in various formats"""
+    # Load workflow (in real implementation, would load from storage)
+    # For now, use default workflow
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    
+    visualizer = WorkflowVisualizer(graph_def)
+    
+    if format == "dot":
+        return {"format": "dot", "content": visualizer.to_dot()}
+    elif format == "mermaid":
+        return {"format": "mermaid", "content": visualizer.to_mermaid()}
+    else:  # json
+        return {"format": "json", "graph": visualizer.to_json_graph()}
+
+
+@router.get("/summary/{workflow_id}")
+async def get_workflow_summary(workflow_id: str) -> Dict[str, Any]:
+    """Get workflow summary"""
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    
+    visualizer = WorkflowVisualizer(graph_def)
+    return visualizer.to_summary()
+
+
+@router.get("/templates")
+async def list_templates() -> Dict[str, Any]:
+    """List all available workflow templates"""
+    registry = get_template_registry()
+    return {"templates": registry.list_all()}
+
+
+@router.post("/templates/{template_id}/instantiate")
+async def instantiate_template(
+    template_id: str,
+    parameters: Dict[str, Any] = Body(...)
+) -> Dict[str, Any]:
+    """Instantiate a workflow template"""
+    registry = get_template_registry()
+    template = registry.get(template_id)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template {template_id} not found")
+    
+    graph_def = template.instantiate(**parameters)
+    return {
+        "template_id": template_id,
+        "graph": graph_def.model_dump()
+    }
+
+
+@router.get("/monitor/stream/{run_id}")
+async def stream_execution_events(run_id: str):
+    """Stream execution events for a workflow run (Server-Sent Events)"""
+    from fastapi.responses import StreamingResponse
+    import json
+    
+    monitor = get_execution_monitor()
+    
+    async def event_generator():
+        async with EventStream(monitor, run_id) as stream:
+            async for event in stream.stream():
+                if event:
+                    yield f"data: {json.dumps(event.to_dict())}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        }
+    )
+
+
+@router.get("/monitor/runs")
+async def list_active_runs() -> Dict[str, Any]:
+    """List all active workflow runs"""
+    monitor = get_execution_monitor()
+    return {"active_runs": monitor.get_active_runs()}
+
+
+@router.get("/monitor/runs/{run_id}/events")
+async def get_run_events(run_id: str) -> Dict[str, Any]:
+    """Get event history for a workflow run"""
+    monitor = get_execution_monitor()
+    events = monitor.get_event_history(run_id)
+    return {
+        "run_id": run_id,
+        "events": [e.to_dict() for e in events],
+        "count": len(events)
+    }
+
+
+@router.get("/versions/{workflow_id}")
+async def list_workflow_versions(workflow_id: str) -> Dict[str, Any]:
+    """List all versions of a workflow"""
+    version_manager = WorkflowVersionManager()
+    versions = version_manager.list_versions(workflow_id)
+    return {"workflow_id": workflow_id, "versions": versions}
+
+
+@router.get("/versions/{workflow_id}/{version}")
+async def get_workflow_version(workflow_id: str, version: str) -> Dict[str, Any]:
+    """Get a specific workflow version"""
+    version_manager = WorkflowVersionManager()
+    graph_def = version_manager.load_version(workflow_id, version)
+    
+    if not graph_def:
+        raise HTTPException(status_code=404, detail=f"Version {version} not found for workflow {workflow_id}")
+    
+    return {"workflow_id": workflow_id, "version": version, "graph": graph_def.model_dump()}
+
+
+@router.get("/versions/{workflow_id}/compare")
+async def compare_workflow_versions(
+    workflow_id: str,
+    version1: str = Query(...),
+    version2: str = Query(...)
+) -> Dict[str, Any]:
+    """Compare two workflow versions"""
+    version_manager = WorkflowVersionManager()
+    differences = version_manager.compare_versions(workflow_id, version1, version2)
+    return {
+        "workflow_id": workflow_id,
+        "version1": version1,
+        "version2": version2,
+        "differences": differences
+    }

@@ -14,6 +14,12 @@ from ..workflows.workflow_versioning import WorkflowVersionManager
 from ..workflows.execution_monitor import get_execution_monitor, EventStream
 from ..workflows.workflow_templates import get_template_registry
 from ..workflows.graph_loader import load_graph_definition
+from ..workflows.workflow_persistence import get_workflow_persistence, WorkflowRecord, ExecutionRecord, WorkflowStatus
+from ..workflows.workflow_security import get_workflow_security, Permission, Role
+from ..workflows.workflow_collaboration import get_workflow_collaboration, ShareLevel
+from ..workflows.workflow_notifications import get_notification_manager, NotificationType, NotificationChannel
+from ..workflows.workflow_integrations import get_workflow_integrations, WebhookConfig, EventSubscription
+from ..workflows.workflow_deployment import get_workflow_deployment, DeploymentStatus
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
@@ -462,3 +468,229 @@ async def compose_workflows(
         "strategy": strategy,
         "source_workflows": workflow_ids
     }
+
+
+# ========== Phase 7: Persistence, Security, Collaboration, Notifications, Integrations, Deployment ==========
+
+@router.post("/persist")
+async def save_workflow(
+    workflow_id: str = Body(...),
+    name: str = Body(...),
+    graph_definition: Dict[str, Any] = Body(...),
+    description: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Save a workflow definition"""
+    persistence = get_workflow_persistence()
+    workflow = WorkflowRecord(
+        workflow_id=workflow_id,
+        name=name,
+        description=description,
+        graph_definition=graph_definition
+    )
+    persistence.save_workflow(workflow)
+    return {"workflow_id": workflow_id, "status": "saved"}
+
+
+@router.get("/persist/{workflow_id}")
+async def get_persisted_workflow(workflow_id: str) -> Dict[str, Any]:
+    """Get a persisted workflow"""
+    persistence = get_workflow_persistence()
+    workflow = persistence.get_workflow(workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow.to_dict()
+
+
+@router.get("/persist")
+async def list_persisted_workflows(
+    tags: Optional[List[str]] = Query(None),
+    is_active: Optional[bool] = Query(None)
+) -> List[Dict[str, Any]]:
+    """List persisted workflows"""
+    persistence = get_workflow_persistence()
+    workflows = persistence.list_workflows(tags=tags, is_active=is_active)
+    return [w.to_dict() for w in workflows]
+
+
+@router.get("/executions/{execution_id}")
+async def get_execution(execution_id: str) -> Dict[str, Any]:
+    """Get execution record"""
+    persistence = get_workflow_persistence()
+    execution = persistence.get_execution(execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    return execution.to_dict()
+
+
+@router.get("/executions")
+async def list_executions(
+    workflow_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    limit: int = Query(100)
+) -> List[Dict[str, Any]]:
+    """List execution records"""
+    persistence = get_workflow_persistence()
+    exec_status = WorkflowStatus(status) if status else None
+    executions = persistence.list_executions(workflow_id=workflow_id, status=exec_status, limit=limit)
+    return [e.to_dict() for e in executions]
+
+
+@router.post("/security/users")
+async def create_user(
+    user_id: str = Body(...),
+    username: str = Body(...),
+    email: Optional[str] = Body(None),
+    roles: Optional[List[str]] = Body(None)
+) -> Dict[str, Any]:
+    """Create a user"""
+    security = get_workflow_security()
+    role_objs = [Role(r) for r in (roles or [])]
+    user = security.create_user(user_id, username, email, role_objs)
+    return {"user_id": user.user_id, "username": user.username}
+
+
+@router.post("/security/tokens")
+async def create_token(
+    user_id: str = Body(...),
+    expires_in_hours: int = Body(24)
+) -> Dict[str, Any]:
+    """Create an access token"""
+    security = get_workflow_security()
+    token = security.create_token(user_id, expires_in_hours)
+    return {"token": token.token, "expires_at": token.expires_at.isoformat()}
+
+
+@router.post("/security/permissions/{workflow_id}")
+async def grant_permission(
+    workflow_id: str,
+    user_id: str = Body(...),
+    permission: str = Body(...)
+) -> Dict[str, Any]:
+    """Grant permission to a user"""
+    security = get_workflow_security()
+    perm = Permission(permission)
+    success = security.grant_permission(user_id, workflow_id, perm)
+    return {"success": success}
+
+
+@router.post("/collaboration/teams")
+async def create_team(
+    team_id: str = Body(...),
+    name: str = Body(...),
+    description: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Create a team"""
+    collaboration = get_workflow_collaboration()
+    team = collaboration.create_team(team_id, name, description)
+    return {"team_id": team.team_id, "name": team.name}
+
+
+@router.post("/collaboration/share/{workflow_id}")
+async def share_workflow(
+    workflow_id: str,
+    owner_id: str = Body(...),
+    share_level: str = Body("private"),
+    shared_with_users: Optional[List[str]] = Body(None)
+) -> Dict[str, Any]:
+    """Share a workflow"""
+    collaboration = get_workflow_collaboration()
+    share = collaboration.share_workflow(
+        workflow_id,
+        owner_id,
+        ShareLevel(share_level),
+        shared_with_users=shared_with_users or []
+    )
+    return {"workflow_id": workflow_id, "share_level": share_level}
+
+
+@router.post("/notifications/rules")
+async def add_notification_rule(
+    rule_id: str = Body(...),
+    name: str = Body(...),
+    event_type: str = Body(...),
+    workflow_id: Optional[str] = Body(None),
+    channels: Optional[List[str]] = Body(None),
+    recipients: Optional[List[str]] = Body(None)
+) -> Dict[str, Any]:
+    """Add a notification rule"""
+    from ..workflows.workflow_notifications import NotificationRule
+    manager = get_notification_manager()
+    rule = NotificationRule(
+        rule_id=rule_id,
+        name=name,
+        workflow_id=workflow_id,
+        event_type=event_type,
+        channels=[NotificationChannel(c) for c in (channels or [])],
+        recipients=recipients or []
+    )
+    manager.add_rule(rule)
+    return {"rule_id": rule_id, "status": "added"}
+
+
+@router.post("/integrations/webhooks")
+async def register_webhook(
+    webhook_id: str = Body(...),
+    url: str = Body(...),
+    method: str = Body("POST")
+) -> Dict[str, Any]:
+    """Register a webhook"""
+    integrations = get_workflow_integrations()
+    config = WebhookConfig(webhook_id=webhook_id, url=url, method=method)
+    integrations.register_webhook(config)
+    return {"webhook_id": webhook_id, "status": "registered"}
+
+
+@router.post("/integrations/events")
+async def subscribe_event(
+    subscription_id: str = Body(...),
+    event_type: str = Body(...),
+    workflow_id: Optional[str] = Body(None),
+    webhook_url: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Subscribe to workflow events"""
+    integrations = get_workflow_integrations()
+    subscription = EventSubscription(
+        subscription_id=subscription_id,
+        event_type=event_type,
+        workflow_id=workflow_id,
+        webhook_url=webhook_url
+    )
+    integrations.subscribe_event(subscription)
+    return {"subscription_id": subscription_id, "status": "subscribed"}
+
+
+@router.post("/deploy/{workflow_id}")
+async def deploy_workflow(
+    workflow_id: str,
+    target_environment: str = Body(...),
+    source_environment: str = Body("dev")
+) -> Dict[str, Any]:
+    """Deploy a workflow to an environment"""
+    deployment = get_workflow_deployment()
+    deploy = deployment.deploy_workflow(workflow_id, target_environment, source_environment)
+    return {
+        "deployment_id": deploy.deployment_id,
+        "status": deploy.status.value,
+        "workflow_id": workflow_id
+    }
+
+
+@router.get("/deploy/history")
+async def get_deployment_history(
+    workflow_id: Optional[str] = Query(None),
+    environment: Optional[str] = Query(None)
+) -> List[Dict[str, Any]]:
+    """Get deployment history"""
+    deployment = get_workflow_deployment()
+    deployments = deployment.get_deployment_history(workflow_id, environment)
+    return [
+        {
+            "deployment_id": d.deployment_id,
+            "workflow_id": d.workflow_id,
+            "version": d.version,
+            "status": d.status.value,
+            "target_environment": d.target_environment,
+            "created_at": d.created_at.isoformat() if d.created_at else None
+        }
+        for d in deployments
+    ]

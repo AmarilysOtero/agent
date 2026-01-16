@@ -1,4 +1,4 @@
-"""Workflow execution - Graph-based and sequential (Phase 6)"""
+"""Workflow execution - Graph-based and sequential (Phase 7)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
@@ -22,6 +22,12 @@ from .workflow_scheduler import WorkflowScheduler, ScheduleConfig, ScheduleType,
 from .workflow_analytics import WorkflowAnalyticsEngine, WorkflowAnalytics, WorkflowInsight, get_analytics_engine
 from .workflow_tester import WorkflowTester, TestCase, TestResult, TestStatus
 from .workflow_composer import WorkflowComposer
+from .workflow_persistence import WorkflowPersistence, WorkflowRecord, ExecutionRecord, WorkflowStatus, get_workflow_persistence
+from .workflow_security import WorkflowSecurity, User, AccessToken, Permission, Role, get_workflow_security
+from .workflow_collaboration import WorkflowCollaboration, Team, WorkflowShare, ShareLevel, get_workflow_collaboration
+from .workflow_notifications import WorkflowNotificationManager, Notification, NotificationType, NotificationChannel, NotificationRule, get_notification_manager
+from .workflow_integrations import WorkflowIntegrations, WebhookConfig, EventSubscription, IntegrationType, get_workflow_integrations
+from .workflow_deployment import WorkflowDeployment, Deployment, Migration, DeploymentStatus, get_workflow_deployment
 
 __all__ = [
     "run_graph_workflow",
@@ -80,4 +86,37 @@ __all__ = [
     "TestResult",
     "TestStatus",
     "WorkflowComposer",
+    # Phase 7
+    "WorkflowPersistence",
+    "WorkflowRecord",
+    "ExecutionRecord",
+    "WorkflowStatus",
+    "get_workflow_persistence",
+    "WorkflowSecurity",
+    "User",
+    "AccessToken",
+    "Permission",
+    "Role",
+    "get_workflow_security",
+    "WorkflowCollaboration",
+    "Team",
+    "WorkflowShare",
+    "ShareLevel",
+    "get_workflow_collaboration",
+    "WorkflowNotificationManager",
+    "Notification",
+    "NotificationType",
+    "NotificationChannel",
+    "NotificationRule",
+    "get_notification_manager",
+    "WorkflowIntegrations",
+    "WebhookConfig",
+    "EventSubscription",
+    "IntegrationType",
+    "get_workflow_integrations",
+    "WorkflowDeployment",
+    "Deployment",
+    "Migration",
+    "DeploymentStatus",
+    "get_workflow_deployment",
 ]

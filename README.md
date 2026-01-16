@@ -7,39 +7,10 @@ This project uses **Microsoft Agent Framework** (Python) with:
 - LLM-based **intent triage** → sequential or concurrent routing
 - Keeps `print()` for quick local feedback + adds structured logging
 
-## Python Requirements
-
-**Python 3.9+ is required** (Python 3.11 recommended to match project target).
-
-The Azure AI Projects SDK requires Python 3.9+ due to subscriptable generics support. The Docker container uses Python 3.11, and local development should match this version.
-
-### Creating/Upgrading Virtual Environment
-
-**Windows (using Python Launcher):**
-```bash
-# Check available Python versions
-py -0
-
-# Create venv with Python 3.11 (recommended)
-py -3.11 -m venv .venv
-
-# Or use Python 3.9+ if 3.11 not available
-py -3.9 -m venv .venv
-```
-
-**macOS/Linux:**
-```bash
-# Ensure Python 3.9+ is installed
-python3 --version
-
-# Create venv
-python3 -m venv .venv
-```
-
 ## Quick start
 
 ```bash
-# 1) Create venv & install deps (see Python Requirements above)
+# 1) Create venv & install deps
 python -m venv .venv
 # Windows
 .venv\Scripts\python -m pip install -r requirements.txt
@@ -62,72 +33,6 @@ python -m src.news_reporter.app
 
 
 ```
-
-## Tool Registration
-
-The Agent service uses **registered Foundry tools** for SQL generation and execution. Tools are registered with Foundry agents to enable configuration-based tool assignment.
-
-### Available Tools
-
-1. **`query_database`** - SQL generation + execution (used by `SQLAgent`)
-2. **`generate_sql_query`** - SQL generation only (no execution)
-3. **`get_file_schema`** - CSV/Excel schema retrieval
-
-### Registering Tools
-
-**Programmatic Registration (Recommended):**
-
-```bash
-# Activate venv (Python 3.9+ required)
-.venv\Scripts\activate  # Windows
-# or
-. .venv/bin/activate    # macOS/Linux
-
-# Run registration script
-python -m src.news_reporter.tools.register_foundry_tools
-```
-
-**Prerequisites:**
-- Python 3.9+ (required for Azure SDK compatibility)
-- `AI_PROJECT_CONNECTION_STRING` set in `.env`
-- Agent IDs configured in `.env`:
-  - `AGENT_ID_TRIAGE`
-  - `AGENT_ID_AISEARCH`
-  - `AGENT_ID_NEO4J_SEARCH` (optional)
-
-**Manual Registration (if programmatic fails):**
-
-If the SDK doesn't support programmatic registration, register tools manually in Azure AI Foundry Studio:
-
-1. Go to Azure AI Foundry Studio → Your Hub → Project → Agents
-2. Edit each agent (AiSearchAgent, TriageAgent, etc.)
-3. Add tools using definitions from:
-   ```bash
-   python -m src.news_reporter.tools.generate_tool_definitions
-   ```
-
-### Code Usage
-
-**SQLAgent** uses registered tool functions directly:
-
-```python
-from ..tools_sql.text_to_sql_tool import query_database
-
-# Tool function returns JSON string
-result_json = query_database(
-    natural_language_query=query,
-    database_id=database_id
-)
-# Parse to dict
-sql_result = json.loads(result_json)
-```
-
-This enables:
-- **Configuration-based assignment**: Tools can be assigned to agents via Foundry configuration
-- **Consistency**: Same tools used by Foundry agents and Python code
-- **Flexibility**: Change tool assignments without code changes
-
-**Note**: Tool registration is a **one-time setup**. Once registered, tools work in both Foundry chat and Python code.
 
 ## Environment
 
@@ -193,8 +98,6 @@ pip install azure-search-documents azure-storage-blob requests
 ## Docker Setup
 
 For running the Agent application in Docker (recommended for Windows to avoid MongoDB authentication issues):
-
-**Note**: The Docker container uses **Python 3.11** (see `Dockerfile`), which is compatible with all Azure SDK features including tool registration. The container is already configured correctly - no changes needed.
 
 ### Quick Start
 

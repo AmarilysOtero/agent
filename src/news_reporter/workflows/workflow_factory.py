@@ -5,8 +5,37 @@ from typing import Any, Dict, List
 
 from ..config import Settings
 from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, NewsReporterAgent, ReviewAgent, SQLAgent
+from .graph_executor import GraphExecutor
+from .graph_loader import load_graph_definition
 
 logger = logging.getLogger(__name__)
+
+async def run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = None) -> str:
+    """
+    Execute workflow using graph executor.
+    
+    Args:
+        cfg: Settings configuration
+        goal: User goal/query
+        graph_path: Optional path to graph JSON (default: default_workflow.json)
+    
+    Returns:
+        Final output string
+    """
+    try:
+        # Load graph definition
+        graph_def = load_graph_definition(graph_path=graph_path, config=cfg)
+        
+        # Create executor
+        executor = GraphExecutor(graph_def, cfg)
+        
+        # Execute
+        return await executor.execute(goal)
+    except Exception as e:
+        logger.error(f"Graph workflow failed: {e}", exc_info=True)
+        logger.warning("Falling back to sequential workflow")
+        return await run_sequential_goal(cfg, goal)
+
 
 async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     """

@@ -676,15 +676,14 @@ class SQLAgent:
         sql_result = None
         if database_id:
             try:
-                from ..tools_sql.text_to_sql_tool import query_database
+                from ..tools_sql.text_to_sql_tool import TextToSQLTool
+                sql_tool = TextToSQLTool()
                 logger.info(f"SQLAgent: Attempting PostgreSQL SQL query with database_id: {database_id}")
-                # Use registered tool function (returns JSON string, auto_detect_database is always enabled)
-                result_json = query_database(
+                sql_result = sql_tool.query_database(
                     natural_language_query=query,
-                    database_id=database_id
+                    database_id=database_id,
+                    auto_detect_database=True
                 )
-                # Parse JSON to dict (tool function returns JSON for Foundry compatibility)
-                sql_result = json.loads(result_json)
                 
                 # Check if SQL query was successful and has results
                 logger.info(f"🔍 SQLAgent: SQL query result - success: {sql_result.get('success')}, has_results: {bool(sql_result.get('results'))}, generated_sql: {sql_result.get('generated_sql', 'N/A')[:100]}")

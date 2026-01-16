@@ -1,6 +1,5 @@
 from __future__ import annotations
 import logging
-import os
 import uuid
 from contextlib import asynccontextmanager
 from typing import Optional, List, Dict
@@ -78,18 +77,13 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-# Load CORS origins from environment variable, with sensible defaults for development
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173").split(",")
-cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,  # Must be specific origins when allow_credentials=True
+    allow_origins=["*"],  # In production, specify exact origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-logging.info(f"[CORS] Allowed origins: {cors_origins}")
 
 # Include auth router
 try:

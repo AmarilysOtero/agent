@@ -622,33 +622,3 @@ def generate_sql(
         top_k=top_k,
         similarity_threshold=similarity_threshold
     )
-
-
-def generate_sql_query(natural_language_query: str, database_id: str, top_k: int = 10, similarity_threshold: float = 0.7) -> str:
-    """
-    Foundry tool function for SQL generation (without execution).
-    
-    This function is registered with Foundry agents as a callable tool.
-    It converts natural language to SQL and returns the generated SQL query as a JSON string.
-    The SQL is not executed - use query_database() if you need execution.
-    
-    Args:
-        natural_language_query: Natural language query (e.g., "list all employees")
-        database_id: Database configuration ID stored in Neo4j
-        top_k: Number of schema elements to retrieve (default: 10)
-        similarity_threshold: Minimum similarity for schema retrieval (default: 0.7)
-    
-    Returns:
-        JSON string with generated SQL query, explanation, confidence, and schema metadata
-    """
-    import json
-    generator = SQLGenerator()
-    result = generator.generate_sql(
-        query=natural_language_query,
-        database_id=database_id,
-        top_k=top_k,
-        similarity_threshold=similarity_threshold
-    )
-    
-    # Format as JSON string for Foundry
-    return json.dumps(result, indent=2)

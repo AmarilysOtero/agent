@@ -75,6 +75,17 @@ class GraphExecutor:
         # Phase 3: State checkpointing (optional)
         checkpoint_dir = getattr(config, 'checkpoint_dir', None)
         self.checkpoint_manager = StateCheckpoint(checkpoint_dir) if checkpoint_dir else None
+        
+        # Phase 4: Performance metrics, retry, and caching
+        self.metrics_collector = get_metrics_collector()
+        self.cache_manager = get_cache_manager()
+        
+        # Retry configuration
+        retry_config = RetryConfig(
+            max_retries=getattr(config, 'max_retries', 3),
+            initial_delay_ms=getattr(config, 'retry_delay_ms', 1000.0)
+        )
+        self.retry_handler = RetryHandler(retry_config)
     
     def _build_execution_graph(self) -> None:
         """Build internal data structures for efficient execution"""
@@ -159,7 +170,12 @@ class GraphExecutor:
         except Exception as e:
             state.append_log("ERROR", f"Graph execution failed: {str(e)}")
             logger.error(f"Graph execution failed: {e}", exc_info=True)
+            # Phase 4: End metrics collection on error
+            self.metrics_collector.end_workflow()
             raise
+        finally:
+            # Phase 4: End metrics collection
+            self.metrics_collector.end_workflow()
         
         # Get final output
         return self._get_final_output(state)
@@ -562,9 +578,45 @@ class GraphExecutor:
         context: ExecutionContext,
         parent_result: Optional[NodeResult]
     ) -> NodeResult:
-        """Execute a single node"""
+        """Execute a single node with Phase 4 enhancements (caching, retry, metrics)"""
         node_config = self.nodes[node_id]
         start_time = time.time()
+        
+        # Phase 4: Check cache
+        node_inputs = self._get_node_inputs(node_config, state)
+        cached_result = self.cache_manager.get(node_id, node_inputs)
+        cache_hit = cached_result is not None
+        
+        if cache_hit:
+            logger.info(f"Cache hit for node {node_id}")
+            # Convert cached result to NodeResult if needed
+            if isinstance(cached_result, dict):
+                result = NodeResult(
+                    state_updates=cached_result.get("state_updates", {}),
+                    artifacts=cached_result.get("artifacts", {}),
+                    status=NodeStatus.SUCCESS
+                )
+            else:
+                result = NodeResult.success(
+                    state_updates={},
+                    artifacts={"cached_result": cached_result}
+                )
+            end_time = time.time()
+            duration_ms = (end_time - start_time) * 1000
+            
+            # Record metrics
+            self.metrics_collector.record_node_execution(
+                node_id=node_id,
+                node_type=node_config.type,
+                status="success",
+                duration_ms=duration_ms,
+                start_time=start_time,
+                end_time=end_time,
+                cache_hit=True
+            )
+            
+            state.append_log("INFO", f"Node {node_id} completed from cache", node_id=node_id)
+            return result
         
         # Create node instance
         node = create_node(
@@ -577,17 +629,46 @@ class GraphExecutor:
         
         state.append_log("INFO", f"Executing node: {node_id} (type: {node_config.type})", node_id=node_id)
         
-        # Execute node
-        result = await node.execute()
+        # Phase 4: Execute with retry
+        async def execute_node():
+            return await node.execute()
+        
+        result, retry_count = await self.retry_handler.execute_with_retry(
+            node_id=node_id,
+            execute_fn=execute_node
+        )
+        
+        # Phase 4: Cache successful results
+        if result.status == NodeStatus.SUCCESS:
+            self.cache_manager.set(
+                node_id=node_id,
+                inputs=node_inputs,
+                value=result.to_dict()
+            )
         
         # Add trace
         end_time = time.time()
+        duration_ms = (end_time - start_time) * 1000
+        
         state.add_trace(
             node_id=node_id,
             start_time=start_time,
             end_time=end_time,
-            inputs=self._get_node_inputs(node_config, state),
+            inputs=node_inputs,
             outputs=result.to_dict()
+        )
+        
+        # Phase 4: Record metrics
+        self.metrics_collector.record_node_execution(
+            node_id=node_id,
+            node_type=node_config.type,
+            status=result.status.value,
+            duration_ms=duration_ms,
+            start_time=start_time,
+            end_time=end_time,
+            retry_count=retry_count,
+            error=result.error,
+            cache_hit=False
         )
         
         state.append_log("INFO", f"Node {node_id} completed with status: {result.status.value}", node_id=node_id)

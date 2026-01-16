@@ -109,6 +109,18 @@ except ImportError as e:
 except Exception as e:
     logging.error(f"Failed to mount chat sessions router: {e}", exc_info=True)
 
+# Include workflows router (Phase 4)
+try:
+    logging.info("Attempting to import workflows router...")
+    from .routers.workflows import router as workflows_router
+    logging.info(f"Workflows router imported successfully. Prefix: {workflows_router.prefix}, Routes: {len(workflows_router.routes)}")
+    app.include_router(workflows_router)
+    logging.info("Workflows router mounted successfully")
+except ImportError as e:
+    logging.warning(f"Workflows router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount workflows router: {e}", exc_info=True)
+
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
     return """

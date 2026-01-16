@@ -1,4 +1,4 @@
-"""Workflow execution - Graph-based and sequential (Phase 3)"""
+"""Workflow execution - Graph-based and sequential (Phase 4)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
@@ -10,6 +10,9 @@ from .node_result import NodeResult, NodeStatus
 from .agent_adapter import AgentAdapterRegistry, AgentAdapter
 from .execution_tracker import ExecutionTracker, FanoutTracker, LoopTracker
 from .state_checkpoint import StateCheckpoint
+from .performance_metrics import PerformanceCollector, WorkflowMetrics, NodeMetrics, get_metrics_collector
+from .retry_handler import RetryHandler, RetryConfig, with_retry
+from .cache_manager import CacheManager, CacheEntry, get_cache_manager
 
 __all__ = [
     "run_graph_workflow",
@@ -29,4 +32,15 @@ __all__ = [
     "FanoutTracker",
     "LoopTracker",
     "StateCheckpoint",
+    # Phase 4
+    "PerformanceCollector",
+    "WorkflowMetrics",
+    "NodeMetrics",
+    "get_metrics_collector",
+    "RetryHandler",
+    "RetryConfig",
+    "with_retry",
+    "CacheManager",
+    "CacheEntry",
+    "get_cache_manager",
 ]

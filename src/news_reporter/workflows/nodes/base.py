@@ -8,6 +8,7 @@ import logging
 from ..graph_schema import NodeConfig
 from ..workflow_state import WorkflowState
 from ..agent_runner import AgentRunner
+from ..node_result import NodeResult
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +29,12 @@ class BaseNode(ABC):
         self.settings = settings
     
     @abstractmethod
-    async def execute(self) -> Dict[str, Any]:
+    async def execute(self) -> NodeResult:
         """
         Execute the node's logic.
         
         Returns:
-            Dictionary of outputs (keys should match config.outputs)
+            NodeResult with state_updates, artifacts, next_nodes, status, metrics
         """
         pass
     

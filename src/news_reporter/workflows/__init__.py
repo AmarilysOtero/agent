@@ -1,10 +1,13 @@
-"""Workflow execution - Graph-based and sequential"""
+"""Workflow execution - Graph-based and sequential (Phase 2)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
 from .workflow_state import WorkflowState
 from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from .execution_context import ExecutionContext
+from .node_result import NodeResult, NodeStatus
+from .agent_adapter import AgentAdapterRegistry, AgentAdapter
 
 __all__ = [
     "run_graph_workflow",
@@ -15,4 +18,9 @@ __all__ = [
     "GraphDefinition",
     "NodeConfig",
     "EdgeConfig",
+    "ExecutionContext",
+    "NodeResult",
+    "NodeStatus",
+    "AgentAdapterRegistry",
+    "AgentAdapter",
 ]

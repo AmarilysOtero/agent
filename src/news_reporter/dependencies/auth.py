@@ -1,3 +1,4 @@
+# dependencies/auth.py
 """
 Canonical auth dependencies for FastAPI routers.
 

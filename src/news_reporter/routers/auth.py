@@ -4,13 +4,39 @@ from typing import Optional
 from datetime import datetime, timedelta, timezone
 import bcrypt
 import secrets
+from pymongo import MongoClient
 from bson import ObjectId
+import os
 
 from ..models.auth import UserRegister, UserLogin, UserResponse
 from ..config import Settings
 from ..dependencies.auth import UserPrincipal, get_current_user, get_auth_collections
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+# MongoDB connection
+try:
+    settings = Settings.load()
+    MONGO_AUTH_URL = settings.auth_api_url
+    if not MONGO_AUTH_URL:
+        raise RuntimeError("MONGO_AUTH_URL is not set in environment or .env")
+    
+    client = MongoClient(MONGO_AUTH_URL)
+    auth_db = client.get_database()  # Uses database from URI
+except Exception as e:
+    print(f"Failed to connect to MongoDB: {e}")
+    # We don't raise here to avoid crashing the whole app on import, 
+    # but endpoints will fail if called.
+    auth_db = None
+    print(f"Failed to connect to MongoDB: {e}")
+
+# Collections
+if auth_db is not None:
+    users_collection = auth_db["users"]
+    sessions_collection = auth_db["sessions"]
+else:
+    users_collection = None
+    sessions_collection = None
 
 # Session TTL (7 days)
 SESSION_EXPIRY_DAYS = 7
@@ -22,9 +48,9 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
-def verify_password(plain: str, hashed: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 @router.post("/register", response_model=UserResponse)

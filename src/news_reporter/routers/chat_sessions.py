@@ -7,7 +7,7 @@ from bson import ObjectId
 import os
 import logging
 
-from .auth import get_current_user
+from ..dependencies.auth import get_current_user, UserPrincipal
 from ..config import Settings
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -137,12 +137,13 @@ async def test_chat_router():
 
 
 @router.get("/sessions")
-async def get_sessions(user: dict = Depends(get_current_user)):
+async def get_sessions(user: UserPrincipal = Depends(get_current_user)):
     """Get all chat sessions for the current user."""
     if sessions_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = str(user["_id"])
+    # user_id = str(user["_id"])
+    user_id = user.id  # UserPrincipal.id is already a string
     sessions = list(sessions_collection.find({"userId": user_id}).sort("updatedAt", -1))
     
     # Convert ObjectId to string and format response
@@ -160,7 +161,7 @@ async def get_sessions(user: dict = Depends(get_current_user)):
 
 
 @router.post("/sessions")
-async def create_session(user: dict = Depends(get_current_user)):
+async def create_session(user: UserPrincipal = Depends(get_current_user)):
     """Create a new chat session."""
     if sessions_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
@@ -168,7 +169,8 @@ async def create_session(user: dict = Depends(get_current_user)):
     print(f"[create_session] User: {user}")
     
     try:
-        user_id = str(user["_id"])
+        # user_id = str(user["_id"])
+        user_id = user.id  # UserPrincipal.id is already a string
         print(f"User ID: {user_id}")
         
         now = datetime.utcnow()
@@ -200,12 +202,12 @@ async def create_session(user: dict = Depends(get_current_user)):
 
 
 @router.get("/sessions/{session_id}")
-async def get_session(session_id: str, user: dict = Depends(get_current_user)):
+async def get_session(session_id: str, user: UserPrincipal = Depends(get_current_user)):
     """Get a specific session with its messages."""
     if sessions_collection is None or messages_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = str(user["_id"])
+    user_id = user.id
     
     # Verify session exists and belongs to user
     try:
@@ -246,12 +248,12 @@ async def get_session(session_id: str, user: dict = Depends(get_current_user)):
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_session(session_id: str, user: dict = Depends(get_current_user)):
+async def delete_session(session_id: str, user: UserPrincipal = Depends(get_current_user)):
     """Delete a chat session and all its messages."""
     if sessions_collection is None or messages_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = str(user["_id"])
+    user_id = user.id
     
     # Verify session exists and belongs to user
     try:
@@ -275,13 +277,13 @@ async def delete_session(session_id: str, user: dict = Depends(get_current_user)
 async def update_session(
     session_id: str,
     body: dict,
-    user: dict = Depends(get_current_user)
+    user: UserPrincipal = Depends(get_current_user)
 ):
     """Update a chat session (e.g., title)."""
     if sessions_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = str(user["_id"])
+    user_id = user.id
     
     # Verify session exists and belongs to user
     try:
@@ -318,14 +320,14 @@ async def update_session(
 async def add_message(
     session_id: str,
     message: dict,
-    user: dict = Depends(get_current_user)
+    user: UserPrincipal = Depends(get_current_user)
 ):
     """Add a message to a session (user message + get AI response)."""
     print(f"[add_message] Message: {message}")
     if sessions_collection is None or messages_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
-    user_id = str(user["_id"])
+    user_id = user.id  # UserPrincipal.id is already a string
     
     # Verify session exists and belongs to user
     try:
@@ -437,6 +439,7 @@ async def add_message(
         import logging
         logging.exception("[add_message] Failed to process query: %s", e)
 
+        error_msg = str(e)
         _persist_and_raise_chat_error(
             session_id=session_id,
             user_id=user_id,

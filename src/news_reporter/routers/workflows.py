@@ -40,6 +40,8 @@ class WorkflowRequest(BaseModel):
     """Request model for workflow execution"""
     goal: str = Field(..., description="User goal/query")
     graph_path: Optional[str] = Field(None, description="Optional path to graph JSON file")
+    workflow_definition: Optional[Dict[str, Any]] = Field(None, description="Optional workflow definition (JSON)")
+    workflow_id: Optional[str] = Field(None, description="Optional workflow ID to load from persistence")
     use_graph: bool = Field(True, description="Use graph executor (True) or sequential (False)")
     checkpoint_dir: Optional[str] = Field(None, description="Directory for state checkpoints")
 
@@ -83,12 +85,40 @@ async def execute_workflow(
     metrics_collector.start_workflow(run_id, request.goal)
     
     try:
+        # Determine graph source: workflow_definition > workflow_id > graph_path
+        graph_path = request.graph_path
+        
+        if request.workflow_definition:
+            # Use provided workflow definition - save to temp file
+            import tempfile
+            import json
+            from pathlib import Path
+            
+            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            json.dump(request.workflow_definition, temp_file)
+            temp_file.close()
+            graph_path = temp_file.name
+        elif request.workflow_id:
+            # Load from persistence
+            persistence = get_workflow_persistence()
+            workflow = persistence.get_workflow(request.workflow_id)
+            if workflow:
+                import tempfile
+                import json
+                
+                temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+                json.dump(workflow.graph_definition, temp_file)
+                temp_file.close()
+                graph_path = temp_file.name
+            else:
+                raise HTTPException(status_code=404, detail=f"Workflow {request.workflow_id} not found")
+        
         # Execute workflow
         if request.use_graph:
             result = await run_graph_workflow(
                 cfg=config,
                 goal=request.goal,
-                graph_path=request.graph_path
+                graph_path=graph_path
             )
         else:
             result = await run_sequential_goal(cfg=config, goal=request.goal)
@@ -503,6 +533,87 @@ async def save_workflow(
     return {"workflow_id": workflow_id, "status": "saved"}
 
 
+# Frontend-compatible endpoints for workflow definitions
+@router.get("/definitions")
+async def get_workflow_definition(
+    graph_path: Optional[str] = Query(None),
+    workflow_id: Optional[str] = Query(None)
+) -> Dict[str, Any]:
+    """Get workflow definition by path or ID"""
+    config = Settings.load()
+    
+    # If workflow_id is provided, try to load from persistence
+    if workflow_id:
+        persistence = get_workflow_persistence()
+        workflow = persistence.get_workflow(workflow_id)
+        if workflow:
+            return workflow.graph_definition
+    
+    # Otherwise, load from graph_path or default
+    try:
+        graph_def = load_graph_definition(graph_path, config)
+        return graph_def.model_dump()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Workflow definition not found: {graph_path or 'default'}")
+
+
+@router.post("/definitions")
+async def save_workflow_definition(
+    definition: Dict[str, Any] = Body(...),
+    name: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Save a workflow definition"""
+    from ..workflows.graph_schema import GraphDefinition
+    import uuid
+    
+    # Validate the definition structure
+    try:
+        graph_def = GraphDefinition(**definition)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid workflow definition: {str(e)}")
+    
+    # Generate workflow_id if not provided
+    workflow_id = definition.get("workflow_id") or str(uuid.uuid4())
+    
+    # Save using persistence
+    persistence = get_workflow_persistence()
+    workflow = WorkflowRecord(
+        workflow_id=workflow_id,
+        name=name or definition.get("name") or "Untitled Workflow",
+        description=definition.get("description"),
+        graph_definition=definition
+    )
+    persistence.save_workflow(workflow)
+    
+    return {
+        "success": True,
+        "workflow_id": workflow_id,
+        "path": f"/workflows/{workflow_id}",
+    }
+
+
+@router.post("/definitions/validate")
+async def validate_workflow_definition(
+    definition: Dict[str, Any] = Body(...)
+) -> Dict[str, Any]:
+    """Validate a workflow definition"""
+    from ..workflows.graph_schema import GraphDefinition
+    
+    try:
+        graph_def = GraphDefinition(**definition)
+        errors = graph_def.validate()
+        
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors if errors else None
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "errors": [f"Invalid workflow definition: {str(e)}"]
+        }
+
+
 @router.get("/persist/{workflow_id}")
 async def get_persisted_workflow(workflow_id: str) -> Dict[str, Any]:
     """Get a persisted workflow"""
@@ -545,6 +656,42 @@ async def list_executions(
     exec_status = WorkflowStatus(status) if status else None
     executions = persistence.list_executions(workflow_id=workflow_id, status=exec_status, limit=limit)
     return [e.to_dict() for e in executions]
+
+
+@router.get("/executions/{run_id}/status")
+async def get_execution_status(run_id: str) -> Dict[str, Any]:
+    """Get execution status for a specific run"""
+    # Try to get from execution monitor first (for active runs)
+    monitor = get_execution_monitor()
+    run_status = monitor.get_run_status(run_id)
+    
+    if run_status:
+        # Active run - return status from monitor
+        return {
+            "run_id": run_id,
+            "status": run_status.get("status", "running"),
+            "current_node": run_status.get("current_node"),
+            "progress": run_status.get("progress", 0),
+            "state": run_status.get("state"),
+            "goal": run_status.get("goal"),
+            "duration_ms": run_status.get("duration_ms"),
+            "error": run_status.get("error"),
+        }
+    
+    # Check persistence for completed/failed runs
+    persistence = get_workflow_persistence()
+    execution = persistence.get_execution(run_id)
+    
+    if execution:
+        return {
+            "run_id": execution.run_id,
+            "status": execution.status.value if hasattr(execution.status, 'value') else str(execution.status),
+            "result": execution.result,
+            "created_at": execution.created_at.isoformat() if execution.created_at else None,
+            "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+        }
+    
+    raise HTTPException(status_code=404, detail=f"Execution {run_id} not found")
 
 
 @router.post("/security/users")

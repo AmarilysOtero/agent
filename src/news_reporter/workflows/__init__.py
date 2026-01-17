@@ -1,4 +1,4 @@
-"""Workflow execution - Graph-based and sequential (Phase 8)"""
+"""Workflow execution - Graph-based and sequential (Phase 9)"""
 
 from .workflow_factory import run_graph_workflow, run_sequential_goal
 from .graph_executor import GraphExecutor
@@ -34,6 +34,12 @@ from .workflow_debugger import WorkflowDebugger, Breakpoint, BreakpointType, Deb
 from .workflow_governance import WorkflowGovernance, Policy, PolicyType, PolicySeverity, PolicyViolation, get_workflow_governance
 from .workflow_ai import WorkflowAI, AIPrediction, AIRecommendation, AITaskType, get_workflow_ai
 from .workflow_documentation import WorkflowDocumentation, Documentation, DocumentationType, KnowledgeBaseEntry, get_workflow_documentation
+from .workflow_marketplace import WorkflowMarketplace, MarketplaceListing, MarketplaceCategory, ListingStatus, MarketplaceReview, get_workflow_marketplace
+from .workflow_patterns import WorkflowPatterns, StateMachine, StateMachineState, Event, EventHandler, PatternType, get_workflow_patterns
+from .workflow_migration import WorkflowMigration, MigrationRule, MigrationResult, MigrationType, get_workflow_migration
+from .workflow_alerting import WorkflowAlerting, AlertRule, Alert, AlertSeverity, AlertType, get_workflow_alerting
+from .workflow_multitenant import WorkflowMultiTenant, Tenant, TenantTier, TenantQuota, get_workflow_multitenant
+from .workflow_gateway import WorkflowGateway, APIKey, RateLimit, RateLimitStrategy, RequestLog, get_workflow_gateway
 
 __all__ = [
     "run_graph_workflow",
@@ -168,4 +174,40 @@ __all__ = [
     "DocumentationType",
     "KnowledgeBaseEntry",
     "get_workflow_documentation",
+    # Phase 9
+    "WorkflowMarketplace",
+    "MarketplaceListing",
+    "MarketplaceCategory",
+    "ListingStatus",
+    "MarketplaceReview",
+    "get_workflow_marketplace",
+    "WorkflowPatterns",
+    "StateMachine",
+    "StateMachineState",
+    "Event",
+    "EventHandler",
+    "PatternType",
+    "get_workflow_patterns",
+    "WorkflowMigration",
+    "MigrationRule",
+    "MigrationResult",
+    "MigrationType",
+    "get_workflow_migration",
+    "WorkflowAlerting",
+    "AlertRule",
+    "Alert",
+    "AlertSeverity",
+    "AlertType",
+    "get_workflow_alerting",
+    "WorkflowMultiTenant",
+    "Tenant",
+    "TenantTier",
+    "TenantQuota",
+    "get_workflow_multitenant",
+    "WorkflowGateway",
+    "APIKey",
+    "RateLimit",
+    "RateLimitStrategy",
+    "RequestLog",
+    "get_workflow_gateway",
 ]

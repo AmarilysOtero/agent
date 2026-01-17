@@ -26,6 +26,12 @@ from ..workflows.workflow_debugger import get_workflow_debugger, BreakpointType
 from ..workflows.workflow_governance import get_workflow_governance, PolicyType, PolicySeverity
 from ..workflows.workflow_ai import get_workflow_ai
 from ..workflows.workflow_documentation import get_workflow_documentation, DocumentationType
+from ..workflows.workflow_marketplace import get_workflow_marketplace, MarketplaceCategory, ListingStatus
+from ..workflows.workflow_patterns import get_workflow_patterns, PatternType
+from ..workflows.workflow_migration import get_workflow_migration, MigrationType
+from ..workflows.workflow_alerting import get_workflow_alerting, AlertSeverity, AlertType
+from ..workflows.workflow_multitenant import get_workflow_multitenant, TenantTier
+from ..workflows.workflow_gateway import get_workflow_gateway, RateLimitStrategy
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
@@ -939,3 +945,190 @@ async def generate_workflow_docs(workflow_id: str) -> Dict[str, Any]:
     docs = get_workflow_documentation()
     doc = docs.generate_workflow_docs(workflow_id, graph_def)
     return {"doc_id": doc.doc_id, "title": doc.title}
+
+
+# ========== Phase 9: Marketplace, Patterns, Migration, Alerting, Multi-Tenant, Gateway ==========
+
+@router.post("/marketplace/listings")
+async def create_marketplace_listing(
+    listing_id: str = Body(...),
+    workflow_id: str = Body(...),
+    title: str = Body(...),
+    description: str = Body(...),
+    category: str = Body(...),
+    author_id: str = Body(...),
+    tags: Optional[List[str]] = Body(None),
+    price: float = Body(0.0)
+) -> Dict[str, Any]:
+    """Create a marketplace listing"""
+    marketplace = get_workflow_marketplace()
+    listing = marketplace.create_listing(
+        listing_id,
+        workflow_id,
+        title,
+        description,
+        MarketplaceCategory(category),
+        author_id,
+        tags=tags,
+        price=price
+    )
+    return {"listing_id": listing.listing_id, "status": listing.status.value}
+
+
+@router.get("/marketplace/search")
+async def search_marketplace(
+    query: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    min_rating: float = Query(0.0),
+    limit: int = Query(20)
+) -> List[Dict[str, Any]]:
+    """Search marketplace listings"""
+    marketplace = get_workflow_marketplace()
+    cat = MarketplaceCategory(category) if category else None
+    listings = marketplace.search_listings(query=query, category=cat, min_rating=min_rating, limit=limit)
+    return [
+        {
+            "listing_id": l.listing_id,
+            "title": l.title,
+            "category": l.category.value,
+            "rating": l.rating,
+            "download_count": l.download_count,
+            "price": l.price
+        }
+        for l in listings
+    ]
+
+
+@router.post("/patterns/state-machines")
+async def create_state_machine(
+    machine_id: str = Body(...),
+    initial_state: str = Body(...)
+) -> Dict[str, Any]:
+    """Create a state machine"""
+    patterns = get_workflow_patterns()
+    from src.news_reporter.workflows.workflow_patterns import StateMachineState
+    states = {
+        initial_state: StateMachineState(state_id=initial_state, name=initial_state)
+    }
+    machine = patterns.create_state_machine(machine_id, initial_state, states)
+    return {"machine_id": machine.machine_id, "current_state": machine.current_state}
+
+
+@router.post("/patterns/events")
+async def emit_event(
+    event_type: str = Body(...),
+    source: str = Body(...),
+    payload: Optional[Dict[str, Any]] = Body(None)
+) -> Dict[str, Any]:
+    """Emit an event"""
+    patterns = get_workflow_patterns()
+    event = patterns.emit_event(event_type, source, payload)
+    return {"event_id": event.event_id, "event_type": event.event_type}
+
+
+@router.post("/migration/migrate/{workflow_id}")
+async def migrate_workflow(
+    workflow_id: str,
+    target_version: str = Body(...)
+) -> Dict[str, Any]:
+    """Migrate a workflow to a target version"""
+    from ..workflows.graph_loader import load_graph_definition
+    from ..config import Settings
+    config = Settings.load()
+    graph_def = load_graph_definition(None, config)
+    migration = get_workflow_migration()
+    result = migration.migrate_workflow(workflow_id, graph_def, target_version)
+    return {
+        "migration_id": result.migration_id,
+        "success": result.success,
+        "changes": result.changes,
+        "errors": result.errors
+    }
+
+
+@router.post("/alerting/rules")
+async def add_alert_rule(
+    rule_id: str = Body(...),
+    name: str = Body(...),
+    alert_type: str = Body(...),
+    severity: str = Body(...),
+    threshold: Optional[float] = Body(None)
+) -> Dict[str, Any]:
+    """Add an alert rule"""
+    alerting = get_workflow_alerting()
+    # Simplified - would need actual condition function
+    rule = alerting.add_alert_rule(
+        rule_id,
+        name,
+        AlertType(alert_type),
+        AlertSeverity(severity),
+        lambda m: m.total_duration_ms > (threshold or 0),
+        threshold=threshold
+    )
+    return {"rule_id": rule.rule_id, "name": rule.name}
+
+
+@router.get("/alerting/alerts")
+async def get_alerts(
+    workflow_id: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    resolved: Optional[bool] = Query(None)
+) -> List[Dict[str, Any]]:
+    """Get alerts"""
+    alerting = get_workflow_alerting()
+    sev = AlertSeverity(severity) if severity else None
+    alerts = alerting.get_alerts(workflow_id=workflow_id, severity=sev, resolved=resolved)
+    return [
+        {
+            "alert_id": a.alert_id,
+            "rule_id": a.rule_id,
+            "severity": a.severity.value,
+            "message": a.message,
+            "triggered_at": a.triggered_at.isoformat() if a.triggered_at else None
+        }
+        for a in alerts
+    ]
+
+
+@router.post("/multitenant/tenants")
+async def create_tenant(
+    tenant_id: str = Body(...),
+    name: str = Body(...),
+    tier: str = Body("free")
+) -> Dict[str, Any]:
+    """Create a tenant"""
+    multitenant = get_workflow_multitenant()
+    tenant = multitenant.create_tenant(tenant_id, name, TenantTier(tier))
+    return {"tenant_id": tenant.tenant_id, "tier": tenant.tier.value}
+
+
+@router.get("/multitenant/tenants/{tenant_id}/quota")
+async def get_tenant_quota(tenant_id: str) -> Dict[str, Any]:
+    """Get tenant quota status"""
+    multitenant = get_workflow_multitenant()
+    status = multitenant.get_tenant_quota_status(tenant_id)
+    return status
+
+
+@router.post("/gateway/api-keys")
+async def create_api_key(
+    key_id: str = Body(...),
+    user_id: Optional[str] = Body(None),
+    tenant_id: Optional[str] = Body(None)
+) -> Dict[str, Any]:
+    """Create an API key"""
+    gateway = get_workflow_gateway()
+    api_key = gateway.create_api_key(key_id, user_id=user_id, tenant_id=tenant_id)
+    return {"key_id": api_key.key_id, "key_value": api_key.key_value}
+
+
+@router.get("/gateway/stats")
+async def get_gateway_stats(
+    endpoint: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
+    hours: int = Query(24)
+) -> Dict[str, Any]:
+    """Get API gateway request statistics"""
+    gateway = get_workflow_gateway()
+    stats = gateway.get_request_stats(endpoint=endpoint, user_id=user_id, hours=hours)
+    return stats

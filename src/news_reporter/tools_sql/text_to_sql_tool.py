@@ -168,13 +168,43 @@ class TextToSQLTool:
             logger.info(f"Executing SQL for database_id: {actual_database_id}")
             execution_result = self._execute_sql(actual_database_id, generated_sql)
             
-            # 4. Combine results
+            # 4. Normalize results format for Agent compatibility
+            # Backend API returns list for SELECT queries, dict for DML
+            # Agent expects dict with 'rows', 'columns', 'row_count' for SELECT
+            results_data = execution_result.get("data")
+            query_type = execution_result.get("query_type", "SELECT")
+            
+            if results_data is not None:
+                if isinstance(results_data, list):
+                    # SELECT query - convert list to dict format
+                    if len(results_data) > 0:
+                        # Extract columns from first row
+                        columns = list(results_data[0].keys()) if isinstance(results_data[0], dict) else []
+                        results_data = {
+                            "rows": results_data,
+                            "columns": columns,
+                            "row_count": len(results_data)
+                        }
+                    else:
+                        # Empty result set
+                        results_data = {
+                            "rows": [],
+                            "columns": [],
+                            "row_count": 0
+                        }
+                elif isinstance(results_data, dict):
+                    # DML query or already formatted - keep as is
+                    # But ensure it has row_count if it doesn't
+                    if "row_count" not in results_data and "rows" in results_data:
+                        results_data["row_count"] = len(results_data.get("rows", []))
+            
+            # 5. Combine results
             result = {
                 "success": execution_result.get("success", False),
                 "generated_sql": generated_sql,
                 "explanation": sql_result.get("explanation"),
                 "confidence": sql_result.get("confidence", 0.0),
-                "results": execution_result.get("data"),
+                "results": results_data,
                 "error": execution_result.get("error"),
                 "database_id_used": actual_database_id
             }

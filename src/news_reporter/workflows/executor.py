@@ -364,7 +364,7 @@ class WorkflowExecutor:
         """
         Process results from parallel batch execution.
         Persists all results, marks nodes complete, enqueues children.
-        
+
         Args:
             batch: Sorted list of node IDs that were executed
             results: Results from asyncio.gather (same order as batch)

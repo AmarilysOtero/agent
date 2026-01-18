@@ -1,7 +1,7 @@
 """Workflow API Router - Endpoints for graph workflow execution"""
 
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, HTTPException, Query, Body
 from pydantic import BaseModel, Field
 

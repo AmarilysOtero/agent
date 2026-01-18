@@ -206,6 +206,66 @@ def healthz():
     return {"status": "ok"}
 
 
+# Agents endpoint for workflow builder
+@app.get("/api/agents")
+def get_agents():
+    """Get list of available agents for workflow configuration"""
+    try:
+        config = Settings.load()
+        agents = []
+        
+        # Add required agents
+        if config.agent_id_triage:
+            agents.append({
+                "id": config.agent_id_triage,
+                "name": "Triage Agent",
+                "description": "Routes and categorizes incoming requests"
+            })
+        
+        if config.agent_id_aisearch:
+            agents.append({
+                "id": config.agent_id_aisearch,
+                "name": "AI Search Agent",
+                "description": "Searches Azure AI Search for relevant content"
+            })
+        
+        if config.agent_id_reviewer:
+            agents.append({
+                "id": config.agent_id_reviewer,
+                "name": "Review Agent",
+                "description": "Reviews and validates generated content"
+            })
+        
+        # Add reporter agents
+        for i, reporter_id in enumerate(config.reporter_ids, 1):
+            agents.append({
+                "id": reporter_id,
+                "name": f"Reporter Agent {i}" if len(config.reporter_ids) > 1 else "Reporter Agent",
+                "description": "Generates news reports and content"
+            })
+        
+        # Add optional agents
+        if config.agent_id_neo4j_search:
+            agents.append({
+                "id": config.agent_id_neo4j_search,
+                "name": "Neo4j GraphRAG Agent",
+                "description": "Searches Neo4j graph database for relevant content"
+            })
+        
+        if config.agent_id_aisearch_sql:
+            agents.append({
+                "id": config.agent_id_aisearch_sql,
+                "name": "SQL Search Agent",
+                "description": "Queries PostgreSQL databases and converts to vector search"
+            })
+        
+        return agents
+    except Exception as e:
+        logging.exception("Failed to get agents list")
+        # Return empty list on error so frontend doesn't break
+        return []
+
+
 # SQL Generation Endpoints
 
 class SQLGenerationRequest(BaseModel):

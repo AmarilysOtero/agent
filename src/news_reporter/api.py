@@ -208,7 +208,7 @@ def healthz():
 
 # Agents endpoint for workflow builder
 @app.get("/api/agents")
-def get_agents():
+async def get_agents():
     """Get list of available agents for workflow configuration"""
     try:
         config = Settings.load()

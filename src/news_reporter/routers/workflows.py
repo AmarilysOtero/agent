@@ -559,12 +559,25 @@ async def get_workflow_definition(
 
 @router.post("/definitions")
 async def save_workflow_definition(
-    definition: Dict[str, Any] = Body(...),
-    name: Optional[str] = Body(None)
+    request: Dict[str, Any] = Body(...)
 ) -> Dict[str, Any]:
-    """Save a workflow definition"""
+    """Save a workflow definition
+    
+    Accepts either:
+    - {definition: {...}, name: "..."} (nested)
+    - {...workflow_definition...} (flat - workflow definition fields directly)
+    """
     from ..workflows.graph_schema import GraphDefinition
     import uuid
+    
+    # Check if request has nested 'definition' field
+    if "definition" in request:
+        definition = request["definition"]
+        name = request.get("name")
+    else:
+        # Request is the definition itself (flat structure from frontend)
+        definition = request
+        name = request.get("name")
     
     # Validate the definition structure
     try:

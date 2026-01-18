@@ -14,6 +14,14 @@ from .performance_metrics import WorkflowMetrics
 
 logger = logging.getLogger(__name__)
 
+# Optional MongoDB backend import
+try:
+    from .mongo_backend import MongoWorkflowBackend
+    _MONGO_BACKEND_AVAILABLE = True
+except ImportError:
+    MongoWorkflowBackend = None
+    _MONGO_BACKEND_AVAILABLE = False
+
 
 class WorkflowStatus(str, Enum):
     """Workflow execution status"""
@@ -97,9 +105,26 @@ class WorkflowPersistence:
         
         Args:
             storage_backend: Optional storage backend (database, file system, etc.)
-                           If None, uses in-memory storage
+                           If None, attempts to initialize MongoDB backend if available,
+                           otherwise uses in-memory storage
         """
-        self.storage_backend = storage_backend
+        # Initialize MongoDB backend if available and not explicitly provided
+        if storage_backend is None and _MONGO_BACKEND_AVAILABLE:
+            try:
+                mongo_backend = MongoWorkflowBackend()
+                if mongo_backend.connect():
+                    self.storage_backend = mongo_backend
+                    logger.info("MongoDB backend initialized successfully")
+                else:
+                    logger.warning("MongoDB backend unavailable, falling back to in-memory storage")
+                    self.storage_backend = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize MongoDB backend: {e}, falling back to in-memory storage")
+                self.storage_backend = None
+        else:
+            self.storage_backend = storage_backend
+        
+        # In-memory storage (used as cache and fallback)
         self._workflows: Dict[str, WorkflowRecord] = {}
         self._executions: Dict[str, ExecutionRecord] = {}
         self._workflow_executions: Dict[str, List[str]] = {}  # workflow_id -> [execution_id]
@@ -110,16 +135,40 @@ class WorkflowPersistence:
         if not workflow.created_at:
             workflow.created_at = datetime.now()
         
-        self._workflows[workflow.workflow_id] = workflow
-        
-        if self.storage_backend:
-            # Would persist to actual database here
-            logger.debug(f"Persisting workflow {workflow.workflow_id} to backend")
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'save_workflow'):
+            try:
+                if self.storage_backend.save_workflow(workflow):
+                    # Sync in-memory cache on success
+                    self._workflows[workflow.workflow_id] = workflow
+                    logger.debug(f"Persisted workflow {workflow.workflow_id} to MongoDB")
+                else:
+                    # MongoDB failed, fall back to in-memory
+                    logger.warning(f"MongoDB save failed for workflow {workflow.workflow_id}, using in-memory storage")
+                    self._workflows[workflow.workflow_id] = workflow
+            except Exception as e:
+                logger.error(f"Error saving workflow {workflow.workflow_id} to MongoDB: {e}, using in-memory storage")
+                self._workflows[workflow.workflow_id] = workflow
+        else:
+            # No backend, use in-memory only
+            self._workflows[workflow.workflow_id] = workflow
         
         logger.info(f"Saved workflow: {workflow.workflow_id}")
     
     def get_workflow(self, workflow_id: str) -> Optional[WorkflowRecord]:
         """Get a workflow by ID"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'get_workflow'):
+            try:
+                workflow = self.storage_backend.get_workflow(workflow_id)
+                if workflow:
+                    # Cache in memory for faster subsequent access
+                    self._workflows[workflow_id] = workflow
+                    return workflow
+            except Exception as e:
+                logger.error(f"Error getting workflow {workflow_id} from MongoDB: {e}, checking in-memory cache")
+        
+        # Fall back to in-memory cache
         return self._workflows.get(workflow_id)
     
     def list_workflows(
@@ -128,6 +177,19 @@ class WorkflowPersistence:
         is_active: Optional[bool] = None
     ) -> List[WorkflowRecord]:
         """List workflows with optional filtering"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'list_workflows'):
+            try:
+                workflows = self.storage_backend.list_workflows(tags=tags, is_active=is_active)
+                if workflows:
+                    # Cache results in memory
+                    for workflow in workflows:
+                        self._workflows[workflow.workflow_id] = workflow
+                    return workflows
+            except Exception as e:
+                logger.error(f"Error listing workflows from MongoDB: {e}, falling back to in-memory")
+        
+        # Fall back to in-memory filtering
         workflows = list(self._workflows.values())
         
         if tags:
@@ -140,6 +202,19 @@ class WorkflowPersistence:
     
     def delete_workflow(self, workflow_id: str) -> bool:
         """Delete a workflow (soft delete by setting is_active=False)"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'delete_workflow'):
+            try:
+                if self.storage_backend.delete_workflow(workflow_id):
+                    # Sync in-memory cache
+                    if workflow_id in self._workflows:
+                        self._workflows[workflow_id].is_active = False
+                    logger.info(f"Deleted workflow: {workflow_id}")
+                    return True
+            except Exception as e:
+                logger.error(f"Error deleting workflow {workflow_id} from MongoDB: {e}, trying in-memory")
+        
+        # Fall back to in-memory
         if workflow_id in self._workflows:
             self._workflows[workflow_id].is_active = False
             logger.info(f"Deleted workflow: {workflow_id}")
@@ -151,21 +226,54 @@ class WorkflowPersistence:
         if not execution.started_at:
             execution.started_at = datetime.now()
         
-        self._executions[execution.execution_id] = execution
-        
-        # Track executions per workflow
-        if execution.workflow_id not in self._workflow_executions:
-            self._workflow_executions[execution.workflow_id] = []
-        self._workflow_executions[execution.workflow_id].append(execution.execution_id)
-        
-        if self.storage_backend:
-            # Would persist to actual database here
-            logger.debug(f"Persisting execution {execution.execution_id} to backend")
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'save_execution'):
+            try:
+                if self.storage_backend.save_execution(execution):
+                    # Sync in-memory cache on success
+                    self._executions[execution.execution_id] = execution
+                    # Track executions per workflow
+                    if execution.workflow_id not in self._workflow_executions:
+                        self._workflow_executions[execution.workflow_id] = []
+                    if execution.execution_id not in self._workflow_executions[execution.workflow_id]:
+                        self._workflow_executions[execution.workflow_id].append(execution.execution_id)
+                    logger.debug(f"Persisted execution {execution.execution_id} to MongoDB")
+                else:
+                    # MongoDB failed, fall back to in-memory
+                    logger.warning(f"MongoDB save failed for execution {execution.execution_id}, using in-memory storage")
+                    self._executions[execution.execution_id] = execution
+                    if execution.workflow_id not in self._workflow_executions:
+                        self._workflow_executions[execution.workflow_id] = []
+                    self._workflow_executions[execution.workflow_id].append(execution.execution_id)
+            except Exception as e:
+                logger.error(f"Error saving execution {execution.execution_id} to MongoDB: {e}, using in-memory storage")
+                self._executions[execution.execution_id] = execution
+                if execution.workflow_id not in self._workflow_executions:
+                    self._workflow_executions[execution.workflow_id] = []
+                self._workflow_executions[execution.workflow_id].append(execution.execution_id)
+        else:
+            # No backend, use in-memory only
+            self._executions[execution.execution_id] = execution
+            if execution.workflow_id not in self._workflow_executions:
+                self._workflow_executions[execution.workflow_id] = []
+            self._workflow_executions[execution.workflow_id].append(execution.execution_id)
         
         logger.info(f"Saved execution: {execution.execution_id}")
     
     def get_execution(self, execution_id: str) -> Optional[ExecutionRecord]:
         """Get an execution by ID"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'get_execution'):
+            try:
+                execution = self.storage_backend.get_execution(execution_id)
+                if execution:
+                    # Cache in memory for faster subsequent access
+                    self._executions[execution.execution_id] = execution
+                    return execution
+            except Exception as e:
+                logger.error(f"Error getting execution {execution_id} from MongoDB: {e}, checking in-memory cache")
+        
+        # Fall back to in-memory cache
         return self._executions.get(execution_id)
     
     def list_executions(
@@ -175,6 +283,23 @@ class WorkflowPersistence:
         limit: int = 100
     ) -> List[ExecutionRecord]:
         """List executions with optional filtering"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'list_executions'):
+            try:
+                executions = self.storage_backend.list_executions(
+                    workflow_id=workflow_id,
+                    status=status,
+                    limit=limit
+                )
+                if executions:
+                    # Cache results in memory
+                    for execution in executions:
+                        self._executions[execution.execution_id] = execution
+                    return executions
+            except Exception as e:
+                logger.error(f"Error listing executions from MongoDB: {e}, falling back to in-memory")
+        
+        # Fall back to in-memory filtering
         executions = list(self._executions.values())
         
         if workflow_id:
@@ -197,6 +322,33 @@ class WorkflowPersistence:
         metrics: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Update execution status and results"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'update_execution_status'):
+            try:
+                if self.storage_backend.update_execution_status(
+                    execution_id=execution_id,
+                    status=status,
+                    result=result,
+                    error=error,
+                    metrics=metrics
+                ):
+                    # Sync in-memory cache
+                    execution = self._executions.get(execution_id)
+                    if execution:
+                        execution.status = status
+                        execution.completed_at = datetime.now()
+                        if result is not None:
+                            execution.result = result
+                        if error is not None:
+                            execution.error = error
+                        if metrics is not None:
+                            execution.metrics = metrics
+                    logger.info(f"Updated execution {execution_id} status to {status.value}")
+                    return True
+            except Exception as e:
+                logger.error(f"Error updating execution {execution_id} in MongoDB: {e}, trying in-memory")
+        
+        # Fall back to in-memory
         execution = self._executions.get(execution_id)
         if not execution:
             return False
@@ -257,10 +409,25 @@ class WorkflowPersistence:
         return workflow
 
 
-# Global persistence instance
-_global_persistence = WorkflowPersistence()
+# Global persistence instance (singleton)
+_global_persistence: Optional[WorkflowPersistence] = None
 
 
 def get_workflow_persistence() -> WorkflowPersistence:
-    """Get the global workflow persistence instance"""
+    """
+    Get the global workflow persistence instance (singleton pattern).
+    Initializes MongoDB backend on first call if available.
+    """
+    global _global_persistence
+    
+    if _global_persistence is None:
+        # Initialize with MongoDB backend if available
+        _global_persistence = WorkflowPersistence()
+        
+        # Log connection status
+        if _global_persistence.storage_backend:
+            logger.info("Workflow persistence initialized with MongoDB backend")
+        else:
+            logger.info("Workflow persistence initialized with in-memory storage only")
+    
     return _global_persistence

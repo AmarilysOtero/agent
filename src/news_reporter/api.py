@@ -46,6 +46,18 @@ async def lifespan(app: FastAPI):
         logging.info("[lifespan] Loading configuration...")
         _ = Settings.load()
 
+        # Initialize workflow persistence (MongoDB connection) on startup
+        try:
+            logging.info("[lifespan] Initializing workflow persistence...")
+            from .workflows.workflow_persistence import get_workflow_persistence
+            persistence = get_workflow_persistence()
+            if persistence.storage_backend:
+                logging.info("[lifespan] Workflow persistence initialized with MongoDB backend")
+            else:
+                logging.info("[lifespan] Workflow persistence initialized with in-memory storage only")
+        except Exception as e:
+            logging.warning("[lifespan] Workflow persistence initialization skipped: %s", e)
+
         if _UPLOAD_AVAILABLE:
             logging.info("[lifespan] Ensuring Azure Search pipeline...")
             try:

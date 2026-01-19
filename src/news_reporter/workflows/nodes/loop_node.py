@@ -60,11 +60,20 @@ class LoopNode(BaseNode):
         # Check continue condition
         elif continue_condition:
             try:
+                logger.info(f"LoopNode {self.config.id}: Evaluating condition: {continue_condition}")
+                # Debug: log the state value being checked
+                if "verdicts.current_fanout_item" in continue_condition:
+                    verdicts_value = self.state.get("verdicts.current_fanout_item")
+                    logger.info(f"LoopNode {self.config.id}: verdicts.current_fanout_item = {verdicts_value} (type: {type(verdicts_value)})")
+                    if isinstance(verdicts_value, list) and len(verdicts_value) > 0:
+                        logger.info(f"LoopNode {self.config.id}: Last verdict = {verdicts_value[-1]}")
+                
                 should_continue = ConditionEvaluator.evaluate(continue_condition, self.state)
+                logger.info(f"LoopNode {self.config.id}: Condition '{continue_condition}' evaluated to {should_continue}")
                 if not should_continue:
                     termination_reason = f"continue_condition not met: {continue_condition}"
             except Exception as e:
-                logger.error(f"Error evaluating loop condition: {e}")
+                logger.error(f"LoopNode {self.config.id}: Error evaluating loop condition '{continue_condition}': {e}", exc_info=True)
                 should_continue = False
                 termination_reason = f"condition evaluation error: {e}"
         

@@ -39,6 +39,16 @@ class WorkflowState(BaseModel):
     # Conditional node results
     conditional: Dict[str, Dict[str, Any]] = Field(default_factory=dict)  # node_id -> {result: bool, ...}
     
+    # Loop state (per loop node)
+    loop_state: Dict[str, Dict[str, Any]] = Field(default_factory=dict)  # loop_node_id -> {iteration: int, ...}
+    
+    # Current iteration (for convenience)
+    current_iter: Optional[int] = None
+    
+    # Fanout state
+    fanout_items: List[Any] = Field(default_factory=list)  # Items being fanned out
+    current_fanout_item: Optional[Any] = None  # Current item in fanout branch
+    
     # Logging and telemetry
     logs: List[Dict[str, Any]] = Field(default_factory=list)
     execution_trace: List[Dict[str, Any]] = Field(default_factory=list)
@@ -46,21 +56,38 @@ class WorkflowState(BaseModel):
     def get(self, path: str, default: Any = None) -> Any:
         """
         Get nested value from state using dot notation.
+        Supports dynamic key resolution (e.g., "verdicts.current_fanout_item" where
+        current_fanout_item is resolved to its actual value first).
         
         Examples:
             state.get("triage.preferred_agent")
             state.get("drafts.reporter_1")
-            state.get("final.reporter_2", "")
+            state.get("verdicts.current_fanout_item")  # Resolves current_fanout_item value first
         """
         parts = path.split(".")
         value = self.model_dump()
         
-        for part in parts:
+        for i, part in enumerate(parts):
             if isinstance(value, dict):
-                value = value.get(part)
+                # Check if this part is a dynamic key (exists as a top-level state attribute)
+                # and if the parent dict is one that should use dynamic keys
+                if (i > 0 and 
+                    hasattr(self, part) and 
+                    isinstance(getattr(self, part), (str, int)) and
+                    parts[i-1] in ['verdicts', 'drafts', 'final']):
+                    # Use the resolved value as the key
+                    resolved_key = getattr(self, part)
+                    logger.debug(f"WorkflowState.get('{path}'): Resolving dynamic key '{part}' -> '{resolved_key}' in '{parts[i-1]}'")
+                    value = value.get(resolved_key)
+                else:
+                    # Use the literal key
+                    value = value.get(part)
+                
                 if value is None:
+                    logger.debug(f"WorkflowState.get('{path}'): Key '{part}' not found in dict, returning default")
                     return default
             else:
+                logger.debug(f"WorkflowState.get('{path}'): Value is not a dict at part '{part}', returning default")
                 return default
         
         return value if value is not None else default

@@ -297,17 +297,38 @@ class GraphExecutor:
                     next_nodes = self._determine_next_nodes(node_id, result, state)
                 
                 # Phase 3: Check for loop back (body node completing, needs to loop back to loop node)
-                # Find if any outgoing edge goes to a loop node
-                outgoing = self.outgoing_edges.get(node_id, [])
-                for edge in outgoing:
-                    next_node_config = self.nodes.get(edge.to_node)
-                    if next_node_config and next_node_config.type == "loop":
-                        # This is a loop back - check if loop should continue
-                        loop_tracker = tracker.get_loop_tracker(edge.to_node)
-                        if loop_tracker and loop_tracker.should_continue:
-                            # Loop back to loop node for next iteration check
-                            next_nodes = [edge.to_node]
+                # First, check if this node is part of a loop by checking if any loop node has an outgoing edge to this node
+                loop_node_id = None
+                for loop_id, loop_tracker in tracker.loops.items():
+                    # Check if this node is the explicit body node
+                    if loop_tracker.body_node_id == node_id:
+                        loop_node_id = loop_id
+                        break
+                    # Check if this node is reachable from the loop node (is a body node via edges)
+                    loop_outgoing = self.outgoing_edges.get(loop_id, [])
+                    for edge in loop_outgoing:
+                        if edge.to_node == node_id:
+                            loop_node_id = loop_id
                             break
+                    if loop_node_id:
+                        break
+                
+                # If this node is part of a loop and no next nodes were determined, loop back to loop node
+                if loop_node_id and not next_nodes:
+                    logger.info(f"Node {node_id} is part of loop {loop_node_id} and has no valid edges, looping back to check exit condition")
+                    next_nodes = [loop_node_id]
+                else:
+                    # Find if any outgoing edge goes to a loop node
+                    outgoing = self.outgoing_edges.get(node_id, [])
+                    for edge in outgoing:
+                        next_node_config = self.nodes.get(edge.to_node)
+                        if next_node_config and next_node_config.type == "loop":
+                            # This is a loop back - check if loop should continue
+                            loop_tracker = tracker.get_loop_tracker(edge.to_node)
+                            if loop_tracker and loop_tracker.should_continue:
+                                # Loop back to loop node for next iteration check
+                                next_nodes = [edge.to_node]
+                                break
                 
                 # Add next nodes to queue
                 for next_node_id in next_nodes:
@@ -548,8 +569,38 @@ class GraphExecutor:
         else:
             # Use outgoing edges to find body
             outgoing = self.outgoing_edges.get(node_id, [])
-            body_nodes = [edge.to_node for edge in outgoing]
+            # Find body nodes - "loop_body" is a special condition that means "enter loop body"
+            body_nodes = []
+            for edge in outgoing:
+                if edge.condition == "loop_body" or edge.condition is None:
+                    body_nodes.append(edge.to_node)
+                elif edge.condition:
+                    # Check if condition is true
+                    try:
+                        from .condition_evaluator import ConditionEvaluator
+                        if ConditionEvaluator.evaluate(edge.condition, state):
+                            body_nodes.append(edge.to_node)
+                    except Exception as e:
+                        logger.warning(f"Error evaluating edge condition '{edge.condition}': {e}")
+            
+            if not body_nodes:
+                # Fallback: use all outgoing nodes
+                body_nodes = [edge.to_node for edge in outgoing]
+            
             if body_nodes:
+                # Register loop if not already registered (for tracking purposes)
+                loop_tracker = tracker.get_loop_tracker(node_id)
+                if not loop_tracker:
+                    tracker.register_loop(
+                        loop_node_id=node_id,
+                        max_iters=node_config.max_iters or 10,
+                        body_node_id=None  # Using edges, not explicit body
+                    )
+                
+                # Increment iteration
+                new_iter = tracker.increment_loop_iteration(node_id)
+                tracker.set_loop_should_continue(node_id, should_continue)
+                
                 # Loop back to first body node
                 body_context = context.create_iteration(body_nodes[0])
                 body_context.node_id = body_nodes[0]
@@ -652,10 +703,14 @@ class GraphExecutor:
         node_config = self.nodes[node_id]
         start_time = time.time()
         
-        # Phase 4: Check cache
+        # Phase 4: Check cache (but skip cache for loop nodes - they need to re-evaluate conditions)
+        # Always get node inputs (needed for caching even if we skip cache check for loops)
         node_inputs = self._get_node_inputs(node_config, state)
-        cached_result = self.cache_manager.get(node_id, node_inputs)
-        cache_hit = cached_result is not None
+        
+        cache_hit = False
+        if node_config.type != "loop":
+            cached_result = self.cache_manager.get(node_id, node_inputs)
+            cache_hit = cached_result is not None
         
         if cache_hit:
             logger.info(f"Cache hit for node {node_id}")
@@ -711,8 +766,8 @@ class GraphExecutor:
             execute_fn=execute_node
         )
         
-        # Phase 4: Cache successful results
-        if result.status == NodeStatus.SUCCESS:
+        # Phase 4: Cache successful results (but skip caching for loop nodes - they need to re-evaluate)
+        if result.status == NodeStatus.SUCCESS and node_config.type != "loop":
             self.cache_manager.set(
                 node_id=node_id,
                 inputs=node_inputs,

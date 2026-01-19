@@ -186,7 +186,85 @@ class ConditionEvaluator:
     
     @staticmethod
     def _get_state_value(path: str, state: WorkflowState, strict: bool) -> Any:
-        """Get value from state by path, handling missing paths"""
+        """Get value from state by path, handling missing paths and list indexing"""
+        # Check for list indexing like [-1], [0], etc.
+        # First, try to use state.get() which handles dynamic keys, then apply indexing
+        if '[' in path and ']' in path:
+            # Split path into base path and index parts
+            parts = []
+            current = path
+            while '[' in current and ']' in current:
+                idx = current.rfind('[')
+                bracket_end = current.find(']', idx)
+                if bracket_end == -1:
+                    break
+                
+                # Extract the part after the bracket
+                after_bracket = current[bracket_end + 1:]
+                if after_bracket.startswith('.'):
+                    # There's more path after the bracket
+                    parts.insert(0, (current[idx + 1:bracket_end], after_bracket[1:]))
+                    current = current[:idx]
+                else:
+                    # This is the last part
+                    parts.insert(0, (current[idx + 1:bracket_end], after_bracket))
+                    current = current[:idx]
+                    break
+            
+            # Get the base value using state.get() which handles dynamic key resolution
+            # For paths like "verdicts.current_fanout_item[-1].decision", 
+            # we need to get "verdicts.current_fanout_item" first (which resolves the dynamic key)
+            base_path = current
+            base_value = state.get(base_path) if base_path else None
+            
+            # Apply indexing and attribute access
+            value = base_value
+            for index_str, remaining_path in parts:
+                if value is None:
+                    if strict:
+                        raise ValueError(f"State path '{path}' - value is None at index '{index_str}'")
+                    return None
+                
+                # Parse index
+                try:
+                    if index_str == '-1':
+                        # Last element
+                        if isinstance(value, (list, tuple)) and len(value) > 0:
+                            value = value[-1]
+                        else:
+                            if strict:
+                                raise ValueError(f"Cannot index '{index_str}' on non-list: {type(value)}")
+                            return None
+                    else:
+                        # Numeric index
+                        idx = int(index_str)
+                        if isinstance(value, (list, tuple)) and 0 <= idx < len(value):
+                            value = value[idx]
+                        else:
+                            if strict:
+                                raise ValueError(f"Index '{idx}' out of range for {type(value)}")
+                            return None
+                except (ValueError, TypeError) as e:
+                    if strict:
+                        raise ValueError(f"Invalid index '{index_str}' in path '{path}': {e}")
+                    return None
+                
+                # If there's remaining path, continue navigation
+                if remaining_path:
+                    if isinstance(value, dict):
+                        value = value.get(remaining_path)
+                    elif hasattr(value, remaining_path):
+                        value = getattr(value, remaining_path)
+                    else:
+                        if strict:
+                            raise ValueError(f"Cannot access '{remaining_path}' on {type(value)}")
+                        return None
+            
+            if value is None and strict:
+                raise ValueError(f"State path '{path}' not found and strict mode enabled")
+            return value
+        
+        # No indexing - use regular path lookup
         value = state.get(path)
         
         if value is None and strict:

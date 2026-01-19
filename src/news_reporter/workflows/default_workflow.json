@@ -200,7 +200,7 @@
   "toolsets": [],
   "policy_profile": "read_only",
   "limits": {
-    "max_steps": 100,
+    "max_steps": 200,
     "timeout_ms": 300000,
     "max_iters": 3,
     "max_parallel": 10

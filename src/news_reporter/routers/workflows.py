@@ -640,12 +640,34 @@ async def get_persisted_workflow(workflow_id: str) -> Dict[str, Any]:
 @router.get("/persist")
 async def list_persisted_workflows(
     tags: Optional[List[str]] = Query(None),
-    is_active: Optional[bool] = Query(None)
+    is_active: Optional[bool] = Query(None, description="Filter by active status. Defaults to True (only active workflows)")
 ) -> List[Dict[str, Any]]:
-    """List persisted workflows"""
+    """List persisted workflows. By default, only returns active workflows."""
     persistence = get_workflow_persistence()
+    # Default to only active workflows if not specified
+    if is_active is None:
+        is_active = True
     workflows = persistence.list_workflows(tags=tags, is_active=is_active)
     return [w.to_dict() for w in workflows]
+
+
+@router.delete("/persist/{workflow_id}")
+async def delete_persisted_workflow(workflow_id: str) -> Dict[str, Any]:
+    """Delete a persisted workflow (soft delete by setting is_active=False)"""
+    persistence = get_workflow_persistence()
+    
+    # Check if workflow exists first
+    workflow = persistence.get_workflow(workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+    
+    # Delete the workflow
+    success = persistence.delete_workflow(workflow_id)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail=f"Failed to delete workflow {workflow_id}")
+    
+    return {"success": True, "message": f"Workflow {workflow_id} deleted successfully"}
 
 
 @router.get("/active")

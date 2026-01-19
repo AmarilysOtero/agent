@@ -648,6 +648,34 @@ async def list_persisted_workflows(
     return [w.to_dict() for w in workflows]
 
 
+@router.get("/active")
+async def get_active_workflow() -> Dict[str, Any]:
+    """Get the currently active workflow"""
+    persistence = get_workflow_persistence()
+    workflow = persistence.get_active_workflow()
+    
+    if not workflow:
+        raise HTTPException(status_code=404, detail="No active workflow found")
+    
+    return workflow.to_dict()
+
+
+@router.post("/{workflow_id}/set-active")
+async def set_active_workflow(workflow_id: str) -> Dict[str, Any]:
+    """Set a workflow as active (deactivates all other workflows)"""
+    persistence = get_workflow_persistence()
+    success = persistence.set_active_workflow(workflow_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} not found")
+    
+    return {
+        "workflow_id": workflow_id,
+        "status": "active",
+        "message": f"Workflow {workflow_id} is now active"
+    }
+
+
 @router.get("/executions/{execution_id}")
 async def get_execution(execution_id: str) -> Dict[str, Any]:
     """Get execution record"""

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 import logging
+import json
 from typing import Any, Dict, List
 
 from ..config import Settings
@@ -8,9 +9,21 @@ from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, News
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
 
+# Optional analytics import
+try:
+    from .workflow_analytics import get_analytics_engine
+except ImportError:
+    def get_analytics_engine():
+        return None
+
 logger = logging.getLogger(__name__)
 
-async def run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = None) -> str:
+async def run_graph_workflow(
+    cfg: Settings, 
+    goal: str, 
+    graph_path: str | None = None,
+    workflow_definition: Dict[str, Any] | None = None
+) -> str:
     """
     Execute workflow using graph executor.
     
@@ -18,13 +31,52 @@ async def run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = 
         cfg: Settings configuration
         goal: User goal/query
         graph_path: Optional path to graph JSON (default: default_workflow.json)
+        workflow_definition: Optional workflow definition dict (from agent builder)
     
     Returns:
         Final output string
     """
     try:
-        # Load graph definition
-        graph_def = load_graph_definition(graph_path=graph_path, config=cfg)
+        # Load graph definition from workflow_definition if provided, otherwise from graph_path
+        if workflow_definition:
+            # Convert workflow definition dict to GraphDefinition
+            from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+            
+            # Substitute agent IDs if needed
+            if cfg:
+                workflow_definition = _substitute_agent_ids_in_dict(workflow_definition, cfg)
+            
+            # Parse nodes
+            nodes = [NodeConfig(**node_data) for node_data in workflow_definition.get("nodes", [])]
+            
+            # Parse edges
+            edges = [EdgeConfig(**edge_data) for edge_data in workflow_definition.get("edges", [])]
+            
+            # Create graph definition
+            limits = None
+            if workflow_definition.get("limits"):
+                limits = GraphLimits(**workflow_definition["limits"])
+            
+            graph_def = GraphDefinition(
+                nodes=nodes,
+                edges=edges,
+                entry_node_id=workflow_definition.get("entry_node_id", "triage"),
+                toolsets=workflow_definition.get("toolsets", []),
+                policy_profile=workflow_definition.get("policy_profile", "read_only"),
+                limits=limits,
+                name=workflow_definition.get("name"),
+                description=workflow_definition.get("description"),
+                version=workflow_definition.get("version")
+            )
+            
+            # Validate workflow before execution
+            validation_errors = graph_def.validate()
+            if validation_errors:
+                logger.warning(f"Workflow validation warnings: {validation_errors}")
+                # Continue execution but log warnings
+        else:
+            # Load from graph_path
+            graph_def = load_graph_definition(graph_path=graph_path, config=cfg)
         
         # Create executor
         executor = GraphExecutor(graph_def, cfg)
@@ -35,10 +87,11 @@ async def run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = 
         # Phase 6: Collect metrics for analytics (simplified - would get run_id properly)
         try:
             analytics_engine = get_analytics_engine()
-            # Get the most recent metrics
-            all_metrics = executor.metrics_collector.get_all_metrics()
-            if all_metrics:
-                analytics_engine.add_metrics(all_metrics[-1])
+            if analytics_engine:
+                # Get the most recent metrics
+                all_metrics = executor.metrics_collector.get_all_metrics()
+                if all_metrics:
+                    analytics_engine.add_metrics(all_metrics[-1])
         except Exception as e:
             logger.warning(f"Failed to add metrics to analytics: {e}")
         
@@ -47,6 +100,38 @@ async def run_graph_workflow(cfg: Settings, goal: str, graph_path: str | None = 
         logger.error(f"Graph workflow failed: {e}", exc_info=True)
         logger.warning("Falling back to sequential workflow")
         return await run_sequential_goal(cfg, goal)
+
+
+def _substitute_agent_ids_in_dict(graph_data: dict, config: Settings) -> dict:
+    """Substitute ${VAR} placeholders in agent_id fields with actual values"""
+    import os
+    
+    # Create mapping of env vars to config values
+    substitutions = {
+        "AGENT_ID_TRIAGE": config.agent_id_triage,
+        "AGENT_ID_AISEARCH": config.agent_id_aisearch,
+        "AGENT_ID_AISEARCHSQL": getattr(config, 'agent_id_aisearch_sql', None),
+        "AGENT_ID_NEO4J_SEARCH": getattr(config, 'agent_id_neo4j_search', None),
+        "AGENT_ID_REVIEWER": config.agent_id_reviewer,
+        "AGENT_ID_REPORTER": config.reporter_ids[0] if config.reporter_ids else None,
+    }
+    
+    # Create a copy to avoid modifying the original
+    graph_data = json.loads(json.dumps(graph_data)) if isinstance(graph_data, dict) else graph_data.copy()
+    
+    # Substitute in nodes
+    for node in graph_data.get("nodes", []):
+        if "agent_id" in node and isinstance(node["agent_id"], str):
+            agent_id = node["agent_id"]
+            if agent_id.startswith("${") and agent_id.endswith("}"):
+                var_name = agent_id[2:-1]
+                if var_name in substitutions and substitutions[var_name]:
+                    node["agent_id"] = substitutions[var_name]
+                else:
+                    # Try environment variable
+                    node["agent_id"] = os.getenv(var_name, agent_id)
+    
+    return graph_data
 
 
 async def run_sequential_goal(cfg: Settings, goal: str) -> str:

@@ -407,6 +407,59 @@ class WorkflowPersistence:
         
         self.save_workflow(workflow)
         return workflow
+    
+    def get_active_workflow(self) -> Optional[WorkflowRecord]:
+        """Get the currently active workflow (only one can be active at a time)"""
+        # Try MongoDB backend first
+        if self.storage_backend and hasattr(self.storage_backend, 'get_active_workflow'):
+            try:
+                workflow = self.storage_backend.get_active_workflow()
+                if workflow:
+                    # Cache in memory
+                    self._workflows[workflow.workflow_id] = workflow
+                    return workflow
+            except Exception as e:
+                logger.error(f"Error getting active workflow from MongoDB: {e}, checking in-memory cache")
+        
+        # Fall back to in-memory: find workflow with is_active=True
+        active_workflows = [w for w in self._workflows.values() if w.is_active]
+        if active_workflows:
+            # Return the most recently updated one if multiple
+            active_workflows.sort(key=lambda w: w.updated_at or datetime.min, reverse=True)
+            return active_workflows[0]
+        
+        return None
+    
+    def set_active_workflow(self, workflow_id: str) -> bool:
+        """
+        Set a workflow as active. Deactivates all other workflows.
+        
+        Args:
+            workflow_id: ID of workflow to set as active
+        
+        Returns:
+            True if successful, False if workflow not found
+        """
+        # Get the workflow
+        workflow = self.get_workflow(workflow_id)
+        if not workflow:
+            logger.warning(f"Workflow {workflow_id} not found, cannot set as active")
+            return False
+        
+        # Deactivate all other workflows
+        all_workflows = self.list_workflows()
+        for w in all_workflows:
+            if w.workflow_id != workflow_id and w.is_active:
+                w.is_active = False
+                self.save_workflow(w)
+                logger.info(f"Deactivated workflow: {w.workflow_id}")
+        
+        # Activate the specified workflow
+        workflow.is_active = True
+        self.save_workflow(workflow)
+        logger.info(f"Set workflow {workflow_id} as active")
+        
+        return True
 
 
 # Global persistence instance (singleton)

@@ -498,3 +498,68 @@ class MongoWorkflowBackend:
         except Exception as e:
             logger.error(f"Failed to update execution {execution_id}: {e}", exc_info=True)
             return False
+    
+    def get_active_workflow(self) -> Optional[WorkflowRecord]:
+        """
+        Get the currently active workflow (only one can be active at a time).
+        
+        Returns:
+            WorkflowRecord if found, None otherwise
+        """
+        if not self._ensure_connected():
+            return None
+        
+        try:
+            # Find workflow with is_active=True, sorted by updated_at descending
+            doc = self.workflows_collection.find_one(
+                {"is_active": True},
+                sort=[("updated_at", -1)]
+            )
+            if doc:
+                return self._dict_to_workflow(doc)
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get active workflow: {e}", exc_info=True)
+            return None
+    
+    def set_active_workflow(self, workflow_id: str) -> bool:
+        """
+        Set a workflow as active. Deactivates all other workflows.
+        
+        Args:
+            workflow_id: ID of workflow to set as active
+        
+        Returns:
+            True if successful, False if workflow not found
+        """
+        if not self._ensure_connected():
+            return False
+        
+        try:
+            # Check if workflow exists
+            workflow = self.get_workflow(workflow_id)
+            if not workflow:
+                logger.warning(f"Workflow {workflow_id} not found, cannot set as active")
+                return False
+            
+            # Deactivate all other workflows
+            result = self.workflows_collection.update_many(
+                {"is_active": True, "workflow_id": {"$ne": workflow_id}},
+                {"$set": {"is_active": False, "updated_at": datetime.now()}}
+            )
+            if result.modified_count > 0:
+                logger.info(f"Deactivated {result.modified_count} workflow(s)")
+            
+            # Activate the specified workflow
+            result = self.workflows_collection.update_one(
+                {"workflow_id": workflow_id},
+                {"$set": {"is_active": True, "updated_at": datetime.now()}}
+            )
+            if result.modified_count > 0:
+                logger.info(f"Set workflow {workflow_id} as active")
+                return True
+            
+            return False
+        except Exception as e:
+            logger.error(f"Failed to set active workflow {workflow_id}: {e}", exc_info=True)
+            return False

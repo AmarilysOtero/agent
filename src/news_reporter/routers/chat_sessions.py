@@ -18,6 +18,8 @@ except ImportError:
 from .auth import get_current_user
 from ..config import Settings
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 def extract_person_names(query: str) -> List[str]:
@@ -412,7 +414,8 @@ async def add_message(
     
     # Load settings for AI orchestration
     from ..config import Settings
-    from ..workflows.workflow_factory import run_sequential_goal
+    from ..workflows.workflow_factory import run_graph_workflow, run_sequential_goal
+    from ..workflows.workflow_persistence import get_workflow_persistence
     
     cfg = Settings.load()
     
@@ -471,11 +474,35 @@ async def add_message(
             logging.error(f"Failed to get Neo4j sources: {e}", exc_info=True)
             sources = []
     
-    # Run the agent workflow
+    # Run the agent workflow - try active workflow first, fallback to sequential
     try:
-        assistant_response = await run_sequential_goal(cfg, user_message_content)
-        print(f"Assistant Response Type: {type(assistant_response)}")
-        print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+        # Check for active workflow (created in agent builder)
+        persistence = get_workflow_persistence()
+        active_workflow = persistence.get_active_workflow()
+        
+        if active_workflow:
+            # Execute custom workflow from agent builder
+            logger.info(f"Using active workflow: {active_workflow.workflow_id} ({active_workflow.name})")
+            try:
+                assistant_response = await run_graph_workflow(
+                    cfg,
+                    user_message_content,
+                    workflow_definition=active_workflow.graph_definition
+                )
+                print(f"Assistant Response Type: {type(assistant_response)}")
+                print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+            except Exception as workflow_error:
+                logger.error(f"Active workflow failed: {workflow_error}, falling back to sequential", exc_info=True)
+                # Fallback to sequential workflow
+                assistant_response = await run_sequential_goal(cfg, user_message_content)
+                print(f"Assistant Response Type: {type(assistant_response)}")
+                print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+        else:
+            # No active workflow set, use sequential fallback
+            logger.info("No active workflow found, using sequential workflow")
+            assistant_response = await run_sequential_goal(cfg, user_message_content)
+            print(f"Assistant Response Type: {type(assistant_response)}")
+            print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
     except RuntimeError as e:
         error_msg = str(e)
         # Check if it's a Foundry access error

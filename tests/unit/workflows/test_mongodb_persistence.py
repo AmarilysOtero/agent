@@ -391,5 +391,82 @@ class TestGetWorkflowPersistence:
             assert persistence.storage_backend is None
 
 
+class TestActiveWorkflowMongoBackend:
+    """Test active workflow functionality in MongoDB backend"""
+    
+    @pytest.fixture
+    def backend(self, mock_mongo_client):
+        """Create MongoDB backend with mocked client"""
+        client, db, workflows_collection, executions_collection = mock_mongo_client
+        
+        with patch("src.news_reporter.workflows.mongo_backend.MongoClient", return_value=client):
+            backend = MongoWorkflowBackend("mongodb://test:test@localhost:27017/workflow_db?authSource=workflow_db")
+            backend.client = client
+            backend.db = db
+            backend.workflows_collection = workflows_collection
+            backend.executions_collection = executions_collection
+            backend._connected = True
+            return backend
+    
+    def test_get_active_workflow(self, backend, mock_mongo_client):
+        """Test getting active workflow from MongoDB"""
+        _, _, workflows_collection, _ = mock_mongo_client
+        
+        # Mock active workflow document
+        active_doc = {
+            "workflow_id": "active_workflow",
+            "name": "Active Workflow",
+            "is_active": True,
+            "graph_definition": {},
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+        
+        workflows_collection.find_one = MagicMock(return_value=active_doc)
+        
+        active = backend.get_active_workflow()
+        
+        assert active is not None
+        assert active.workflow_id == "active_workflow"
+        assert active.is_active is True
+        workflows_collection.find_one.assert_called_once_with(
+            {"is_active": True},
+            sort=[("updated_at", -1)]
+        )
+    
+    def test_set_active_workflow(self, backend, mock_mongo_client):
+        """Test setting a workflow as active in MongoDB"""
+        _, _, workflows_collection, _ = mock_mongo_client
+        
+        # Mock workflow exists
+        workflow_doc = {
+            "workflow_id": "workflow1",
+            "name": "Workflow 1",
+            "is_active": False,
+            "graph_definition": {}
+        }
+        workflows_collection.find_one = MagicMock(return_value=workflow_doc)
+        workflows_collection.update_many = MagicMock(return_value=MagicMock(modified_count=1))
+        workflows_collection.update_one = MagicMock(return_value=MagicMock(modified_count=1))
+        
+        success = backend.set_active_workflow("workflow1")
+        
+        assert success is True
+        # Should deactivate other workflows
+        workflows_collection.update_many.assert_called_once()
+        # Should activate the specified workflow
+        workflows_collection.update_one.assert_called_once()
+    
+    def test_set_active_workflow_not_found(self, backend, mock_mongo_client):
+        """Test setting non-existent workflow as active"""
+        _, _, workflows_collection, _ = mock_mongo_client
+        
+        workflows_collection.find_one = MagicMock(return_value=None)
+        
+        success = backend.set_active_workflow("non_existent")
+        
+        assert success is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

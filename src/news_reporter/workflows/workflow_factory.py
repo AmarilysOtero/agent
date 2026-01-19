@@ -39,50 +39,86 @@ async def run_graph_workflow(
     try:
         # Load graph definition from workflow_definition if provided, otherwise from graph_path
         if workflow_definition:
+            logger.debug(f"Loading workflow from definition dict (entry_node_id: {workflow_definition.get('entry_node_id', 'triage')})")
             # Convert workflow definition dict to GraphDefinition
             from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
             
-            # Substitute agent IDs if needed
-            if cfg:
-                workflow_definition = _substitute_agent_ids_in_dict(workflow_definition, cfg)
-            
-            # Parse nodes
-            nodes = [NodeConfig(**node_data) for node_data in workflow_definition.get("nodes", [])]
-            
-            # Parse edges
-            edges = [EdgeConfig(**edge_data) for edge_data in workflow_definition.get("edges", [])]
-            
-            # Create graph definition
-            limits = None
-            if workflow_definition.get("limits"):
-                limits = GraphLimits(**workflow_definition["limits"])
-            
-            graph_def = GraphDefinition(
-                nodes=nodes,
-                edges=edges,
-                entry_node_id=workflow_definition.get("entry_node_id", "triage"),
-                toolsets=workflow_definition.get("toolsets", []),
-                policy_profile=workflow_definition.get("policy_profile", "read_only"),
-                limits=limits,
-                name=workflow_definition.get("name"),
-                description=workflow_definition.get("description"),
-                version=workflow_definition.get("version")
-            )
-            
-            # Validate workflow before execution
-            validation_errors = graph_def.validate()
-            if validation_errors:
-                logger.warning(f"Workflow validation warnings: {validation_errors}")
-                # Continue execution but log warnings
+            try:
+                # Substitute agent IDs if needed
+                if cfg:
+                    workflow_definition = _substitute_agent_ids_in_dict(workflow_definition, cfg)
+                
+                # Parse nodes
+                nodes = []
+                for node_data in workflow_definition.get("nodes", []):
+                    try:
+                        nodes.append(NodeConfig(**node_data))
+                    except Exception as node_error:
+                        logger.error(f"Failed to parse node {node_data.get('id', 'unknown')}: {node_error}", exc_info=True)
+                        raise ValueError(f"Invalid node configuration: {node_error}")
+                
+                # Parse edges
+                edges = []
+                for edge_data in workflow_definition.get("edges", []):
+                    try:
+                        edges.append(EdgeConfig(**edge_data))
+                    except Exception as edge_error:
+                        logger.error(f"Failed to parse edge {edge_data.get('from_node', '?')} -> {edge_data.get('to_node', '?')}: {edge_error}", exc_info=True)
+                        raise ValueError(f"Invalid edge configuration: {edge_error}")
+                
+                # Create graph definition
+                limits = None
+                if workflow_definition.get("limits"):
+                    try:
+                        limits = GraphLimits(**workflow_definition["limits"])
+                    except Exception as limits_error:
+                        logger.warning(f"Failed to parse limits, using defaults: {limits_error}")
+                
+                graph_def = GraphDefinition(
+                    nodes=nodes,
+                    edges=edges,
+                    entry_node_id=workflow_definition.get("entry_node_id", "triage"),
+                    toolsets=workflow_definition.get("toolsets", []),
+                    policy_profile=workflow_definition.get("policy_profile", "read_only"),
+                    limits=limits,
+                    name=workflow_definition.get("name"),
+                    description=workflow_definition.get("description"),
+                    version=workflow_definition.get("version")
+                )
+                
+                # Validate workflow before execution
+                validation_errors = graph_def.validate()
+                if validation_errors:
+                    logger.warning(f"Workflow validation warnings ({len(validation_errors)}): {validation_errors}")
+                    # Continue execution but log warnings
+                    # If there are critical errors, we might want to fail early
+                    critical_errors = [e for e in validation_errors if "missing agent_id" in e or "not found" in e]
+                    if critical_errors:
+                        logger.error(f"Critical validation errors detected: {critical_errors}")
+                        raise ValueError(f"Workflow validation failed: {critical_errors}")
+            except (ValueError, KeyError, TypeError) as parse_error:
+                logger.error(f"Failed to parse workflow definition: {parse_error}", exc_info=True)
+                raise
         else:
             # Load from graph_path
-            graph_def = load_graph_definition(graph_path=graph_path, config=cfg)
+            logger.debug(f"Loading workflow from graph_path: {graph_path}")
+            try:
+                graph_def = load_graph_definition(graph_path=graph_path, config=cfg)
+            except FileNotFoundError as file_error:
+                logger.error(f"Graph definition file not found: {file_error}")
+                raise
+            except Exception as load_error:
+                logger.error(f"Failed to load graph definition: {load_error}", exc_info=True)
+                raise
         
         # Create executor
+        logger.debug(f"Creating GraphExecutor with {len(graph_def.nodes)} nodes and {len(graph_def.edges)} edges")
         executor = GraphExecutor(graph_def, cfg)
         
         # Execute
+        logger.info(f"Executing graph workflow with goal: {goal[:100]}...")
         result = await executor.execute(goal)
+        logger.info("Graph workflow execution completed successfully")
         
         # Phase 6: Collect metrics for analytics (simplified - would get run_id properly)
         try:
@@ -96,8 +132,13 @@ async def run_graph_workflow(
             logger.warning(f"Failed to add metrics to analytics: {e}")
         
         return result
+    except (ValueError, FileNotFoundError) as e:
+        # These are parsing/configuration errors - should fall back
+        logger.error(f"Graph workflow configuration error: {e}", exc_info=True)
+        logger.warning("Falling back to sequential workflow due to configuration error")
+        return await run_sequential_goal(cfg, goal)
     except Exception as e:
-        logger.error(f"Graph workflow failed: {e}", exc_info=True)
+        logger.error(f"Graph workflow execution failed: {e}", exc_info=True)
         logger.warning("Falling back to sequential workflow")
         return await run_sequential_goal(cfg, goal)
 

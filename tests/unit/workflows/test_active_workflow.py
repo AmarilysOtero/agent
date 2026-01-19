@@ -191,5 +191,44 @@ class TestWorkflowDefinitionValidation:
         assert len([e for e in errors if "missing agent_id" in e]) == 0
 
 
+class TestErrorHandling:
+    """Test error handling in workflow operations"""
+    
+    def test_get_active_workflow_handles_exceptions(self):
+        """Test that get_active_workflow handles exceptions gracefully"""
+        persistence = WorkflowPersistence(storage_backend=None)
+        
+        # Should not raise exception even if there's an issue
+        active = persistence.get_active_workflow()
+        # Should return None or a valid workflow, not raise
+        assert active is None or isinstance(active, WorkflowRecord)
+    
+    def test_set_active_workflow_handles_missing_workflow(self):
+        """Test that set_active_workflow handles missing workflow gracefully"""
+        persistence = WorkflowPersistence(storage_backend=None)
+        
+        # Try to set non-existent workflow
+        success = persistence.set_active_workflow("non-existent")
+        assert success is False
+    
+    def test_workflow_validation_catches_errors(self):
+        """Test that workflow validation catches various error types"""
+        from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+        
+        # Test missing agent_id
+        nodes = [NodeConfig(id="node1", type="agent", agent_id=None)]
+        edges = []
+        graph_def = GraphDefinition(nodes=nodes, edges=edges)
+        errors = graph_def.validate()
+        assert any("missing agent_id" in error for error in errors)
+        
+        # Test missing entry node
+        nodes = [NodeConfig(id="node1", type="agent", agent_id="agent1")]
+        edges = []
+        graph_def = GraphDefinition(nodes=nodes, edges=edges, entry_node_id="non-existent")
+        errors = graph_def.validate()
+        assert any("not found" in error for error in errors)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

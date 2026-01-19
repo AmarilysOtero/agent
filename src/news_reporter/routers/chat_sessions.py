@@ -478,7 +478,12 @@ async def add_message(
     try:
         # Check for active workflow (created in agent builder)
         persistence = get_workflow_persistence()
-        active_workflow = persistence.get_active_workflow()
+        active_workflow = None
+        
+        try:
+            active_workflow = persistence.get_active_workflow()
+        except Exception as persistence_error:
+            logger.warning(f"Failed to retrieve active workflow: {persistence_error}, using sequential workflow", exc_info=True)
         
         if active_workflow:
             # Execute custom workflow from agent builder
@@ -489,18 +494,30 @@ async def add_message(
                     user_message_content,
                     workflow_definition=active_workflow.graph_definition
                 )
+                logger.info(f"Active workflow execution completed successfully")
                 print(f"Assistant Response Type: {type(assistant_response)}")
                 print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
             except Exception as workflow_error:
-                logger.error(f"Active workflow failed: {workflow_error}, falling back to sequential", exc_info=True)
+                error_msg = str(workflow_error)
+                logger.error(
+                    f"Active workflow '{active_workflow.workflow_id}' failed: {error_msg}, "
+                    f"falling back to sequential workflow",
+                    exc_info=True
+                )
                 # Fallback to sequential workflow
-                assistant_response = await run_sequential_goal(cfg, user_message_content)
-                print(f"Assistant Response Type: {type(assistant_response)}")
-                print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                try:
+                    assistant_response = await run_sequential_goal(cfg, user_message_content)
+                    logger.info("Sequential workflow fallback completed successfully")
+                    print(f"Assistant Response Type: {type(assistant_response)}")
+                    print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                except Exception as sequential_error:
+                    logger.error(f"Sequential workflow fallback also failed: {sequential_error}", exc_info=True)
+                    raise
         else:
             # No active workflow set, use sequential fallback
             logger.info("No active workflow found, using sequential workflow")
             assistant_response = await run_sequential_goal(cfg, user_message_content)
+            logger.info("Sequential workflow execution completed successfully")
             print(f"Assistant Response Type: {type(assistant_response)}")
             print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
     except RuntimeError as e:

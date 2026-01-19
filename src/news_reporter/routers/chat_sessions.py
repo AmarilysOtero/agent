@@ -475,6 +475,9 @@ async def add_message(
             sources = []
     
     # Run the agent workflow - try active workflow first, fallback to sequential
+    workflow_name = "Fallback"
+    workflow_failed = None  # Will contain {name, error} if workflow failed and fallback was used
+    
     try:
         # Check for active workflow (created in agent builder)
         persistence = get_workflow_persistence()
@@ -487,7 +490,8 @@ async def add_message(
         
         if active_workflow:
             # Execute custom workflow from agent builder
-            logger.info(f"Using active workflow: {active_workflow.workflow_id} ({active_workflow.name})")
+            workflow_name = active_workflow.name or active_workflow.workflow_id or "Custom Workflow"
+            logger.info(f"Using active workflow: {active_workflow.workflow_id} ({workflow_name})")
             try:
                 assistant_response = await run_graph_workflow(
                     cfg,
@@ -504,7 +508,13 @@ async def add_message(
                     f"falling back to sequential workflow",
                     exc_info=True
                 )
+                # Track failed workflow information
+                workflow_failed = {
+                    "name": workflow_name,
+                    "error": error_msg
+                }
                 # Fallback to sequential workflow
+                workflow_name = "Fallback"
                 try:
                     assistant_response = await run_sequential_goal(cfg, user_message_content)
                     logger.info("Sequential workflow fallback completed successfully")
@@ -541,8 +551,13 @@ async def add_message(
         "role": "assistant",
         "content": assistant_response,
         "sources": sources if sources else None,
+        "workflow_name": workflow_name,
         "createdAt": datetime.utcnow(),
     }
+    
+    # Add failed workflow information if applicable
+    if workflow_failed:
+        assistant_message["workflow_failed"] = workflow_failed
     result = messages_collection.insert_one(assistant_message)
     
     # Update session timestamp
@@ -555,7 +570,12 @@ async def add_message(
         "response": assistant_response,
         "sources": sources,
         "conversation_id": session_id,
+        "workflow_name": workflow_name,
     }
+    
+    # Add failed workflow information if applicable
+    if workflow_failed:
+        raw_response["workflow_failed"] = workflow_failed
     # # Test serialization before returning (to catch the error here)
     # try:
     #     from fastapi.encoders import jsonable_encoder

@@ -133,8 +133,11 @@ class AiSearchAdapter(AgentAdapter):
     
     def parse_output(self, agent_output: Any, state: WorkflowState) -> Dict[str, Any]:
         """Parse AiSearch output (search results string)"""
+        output_str = str(agent_output)
+        logger.info(f"📊 AiSearchAdapter: Storing search results in 'latest' (length: {len(output_str)})")
+        logger.debug(f"📊 AiSearchAdapter: First 500 chars of output: {output_str[:500]}")
         return {
-            "latest": str(agent_output),
+            "latest": output_str,
             "selected_search": "aisearch"
         }
     
@@ -170,9 +173,12 @@ class NewsReporterAdapter(AgentAdapter):
     
     def build_input(self, state: WorkflowState, params: Dict[str, Any]) -> Dict[str, Any]:
         reporter_id = params.get("reporter_id") or state.get("current_fanout_item")
+        latest_news = state.latest or ""
+        logger.info(f"📊 NewsReporterAdapter: Building input for reporter - goal length: {len(state.goal)}, latest_news length: {len(latest_news)}")
+        logger.debug(f"📊 NewsReporterAdapter: latest_news first 500 chars: {latest_news[:500] if latest_news else 'None'}")
         return {
             "goal": state.goal,
-            "latest_news": state.latest,
+            "latest_news": latest_news,
             "reporter_id": reporter_id
         }
     

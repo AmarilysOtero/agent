@@ -48,6 +48,7 @@ class AgentNode(BaseNode):
                 agent_id=self.config.agent_id,
                 input_data=input_data,
                 context=self.state,
+                config=self.runner.config,
                 **params
             )
             
@@ -87,6 +88,7 @@ class AgentNode(BaseNode):
             agent_id=self.config.agent_id,
             input_data=input_data,
             context=self.state,
+            config=self.runner.config,
             **params
         )
         

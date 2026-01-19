@@ -27,6 +27,7 @@ class AgentRunner:
         agent_id: str,
         input_data: str | Dict[str, Any],
         context: WorkflowState,
+        config: Optional[Settings] = None,
         **params: Any
     ) -> Any:
         """
@@ -36,11 +37,40 @@ class AgentRunner:
             agent_id: Foundry agent ID
             input_data: Input string or dict for the agent
             context: WorkflowState for context access
+            config: Settings config (required for agent class instantiation)
             **params: Additional parameters (e.g., database_id for SQLAgent)
         
         Returns:
             Agent output (type depends on agent)
         """
+        # Detect agent type and use actual agent class if available
+        if config:
+            agent_type = AgentRunner.detect_agent_type(agent_id, config)
+            
+            # For search agents, use the actual Python class methods
+            if agent_type == "aisearch":
+                from ..agents.agents import AiSearchAgent
+                goal = input_data if isinstance(input_data, str) else input_data.get("goal", str(input_data))
+                logger.info(f"AgentRunner: Using AiSearchAgent.run() for agent {agent_id}")
+                agent = AiSearchAgent(agent_id)
+                return await agent.run(goal)
+            
+            elif agent_type == "neo4j":
+                from ..agents.agents import Neo4jGraphRAGAgent
+                goal = input_data if isinstance(input_data, str) else input_data.get("goal", str(input_data))
+                logger.info(f"AgentRunner: Using Neo4jGraphRAGAgent.run() for agent {agent_id}")
+                agent = Neo4jGraphRAGAgent(agent_id)
+                return await agent.run(goal)
+            
+            elif agent_type == "sql":
+                from ..agents.agents import SQLAgent
+                goal = input_data if isinstance(input_data, str) else input_data.get("goal", str(input_data))
+                database_id = params.get("database_id") or context.get("triage.database_id")
+                logger.info(f"AgentRunner: Using SQLAgent.run() for agent {agent_id}, database_id={database_id}")
+                agent = SQLAgent(agent_id)
+                return await agent.run(goal, database_id=database_id)
+        
+        # For other agents (triage, reporter, reviewer), use Foundry agent directly
         # Convert input_data to string if it's a dict
         if isinstance(input_data, dict):
             # For agents that expect structured input, format appropriately
@@ -63,7 +93,7 @@ class AgentRunner:
         system_hint = params.get("system_hint")
         
         # Execute agent
-        logger.info(f"AgentRunner: Executing agent {agent_id}")
+        logger.info(f"AgentRunner: Executing agent {agent_id} via Foundry")
         result = run_foundry_agent(
             agent_id=agent_id,
             user_content=user_content,

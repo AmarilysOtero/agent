@@ -103,6 +103,37 @@ class ConditionEvaluator:
                     # Compare
                     return ConditionEvaluator._compare_values(left_value, right_value, op)
         
+        # Handle special syntax: "{node_id} condition result" - references conditional node result
+        if condition.endswith(" condition result"):
+            # Use replace instead of slicing to be more robust
+            node_id = condition.replace(" condition result", "").strip()
+            logger.debug(f"Condition evaluator: Evaluating '{condition}' -> node_id='{node_id}'")
+            
+            # Try accessing conditional dict directly first
+            try:
+                if hasattr(state, 'conditional') and state.conditional and node_id in state.conditional:
+                    node_result = state.conditional[node_id]
+                    if isinstance(node_result, dict) and "result" in node_result:
+                        conditional_result = node_result["result"]
+                        logger.info(f"✅ Condition evaluator: Found conditional.{node_id}.result = {conditional_result}")
+                        return bool(conditional_result)
+                    else:
+                        logger.warning(f"⚠️ Condition evaluator: conditional.{node_id} exists but 'result' key not found. Keys: {list(node_result.keys()) if isinstance(node_result, dict) else type(node_result)}")
+                else:
+                    logger.debug(f"Condition evaluator: conditional.{node_id} not in state.conditional. Available keys: {list(state.conditional.keys()) if hasattr(state, 'conditional') and state.conditional else 'None'}")
+            except Exception as e:
+                logger.warning(f"Error accessing conditional dict directly for {node_id}: {e}")
+            
+            # Fallback to state.get() method
+            conditional_result = state.get(f"conditional.{node_id}.result")
+            if conditional_result is not None:
+                logger.info(f"✅ Condition evaluator: Found via state.get() conditional.{node_id}.result = {conditional_result}")
+                return bool(conditional_result)
+            
+            # If not found, log warning and try to evaluate the conditional node's condition directly
+            logger.error(f"❌ Conditional result not found for '{node_id}'. Condition: '{condition}'. State conditional dict: {state.conditional if hasattr(state, 'conditional') else 'N/A'}")
+            return False
+        
         # If no operator matched, check if path exists and is truthy
         value = ConditionEvaluator._get_state_value(condition, state, strict)
         if value is not None:

@@ -17,6 +17,10 @@ from .execution_tracker import ExecutionTracker, FanoutTracker, LoopTracker
 from .state_checkpoint import StateCheckpoint
 from .nodes import create_node
 from .agent_adapter import AgentAdapterRegistry
+from .performance_metrics import get_metrics_collector
+from .cache_manager import get_cache_manager
+from .retry_handler import RetryConfig, RetryHandler
+from .execution_monitor import get_execution_monitor
 from ..config import Settings
 
 logger = logging.getLogger(__name__)
@@ -93,20 +97,6 @@ class GraphExecutor:
         
         # Phase 5: Execution monitoring
         self.monitor = get_execution_monitor()
-        
-        # Phase 4: Performance metrics, retry, and caching
-        self.metrics_collector = get_metrics_collector()
-        self.cache_manager = get_cache_manager()
-        
-        # Retry configuration
-        retry_config = RetryConfig(
-            max_retries=getattr(config, 'max_retries', 3),
-            initial_delay_ms=getattr(config, 'retry_delay_ms', 1000.0)
-        )
-        self.retry_handler = RetryHandler(retry_config)
-        
-        # Phase 5: Execution monitoring
-        self.monitor = get_execution_monitor()
     
     def _build_execution_graph(self) -> None:
         """Build internal data structures for efficient execution"""
@@ -142,6 +132,11 @@ class GraphExecutor:
         """
         # Initialize state
         state = WorkflowState(goal=goal)
+        logger.info("=" * 100)
+        logger.info("=" * 100)
+        logger.info(f"🚀 GRAPH EXECUTOR STARTING - Goal: {goal}")
+        logger.info("=" * 100)
+        logger.info("=" * 100)
         state.append_log("INFO", f"Starting graph execution with goal: {goal}")
         
         # Find entry nodes
@@ -285,7 +280,9 @@ class GraphExecutor:
                 branch_results[context.branch_id].append(result)
                 
                 # Phase 3: Mark branch as complete if it's part of a fanout
-                tracker.mark_branch_complete(context.branch_id, result)
+                # Only mark complete if this branch is actually tracked (part of a fanout)
+                if context.branch_id in tracker.branch_to_fanout:
+                    tracker.mark_branch_complete(context.branch_id, result)
                 
                 # Phase 3: Check if fanout is complete and trigger merge
                 await self._check_fanout_completion(node_id, state, tracker, queue)
@@ -409,21 +406,24 @@ class GraphExecutor:
             logger.warning(f"Fanout node {node_id} has no items or branches")
             return []
         
-        # Find merge node (next node after fanout)
-        merge_node_id = None
+        # Find next node after fanout (could be merge, loop, or any other node)
+        next_node_id = None
         outgoing = self.outgoing_edges.get(node_id, [])
         for edge in outgoing:
-            next_node = self.nodes.get(edge.to_node)
-            if next_node and next_node.type == "merge":
-                merge_node_id = edge.to_node
-                break
+            # Check edge condition if present
+            if edge.condition:
+                from .condition_evaluator import ConditionEvaluator
+                if not ConditionEvaluator.evaluate(edge.condition, state):
+                    continue  # Skip this edge
+            next_node_id = edge.to_node
+            break  # Use first valid outgoing edge
         
-        # Register fanout in tracker
+        # Register fanout in tracker (use next_node_id instead of just merge_node_id)
         fanout_tracker = tracker.register_fanout(
             fanout_node_id=node_id,
             items=fanout_items,
             branch_node_ids=branch_node_ids,
-            merge_node_id=merge_node_id
+            merge_node_id=next_node_id  # Store next node (may not be merge)
         )
         
         # Create branches for each item
@@ -454,6 +454,47 @@ class GraphExecutor:
         # Don't continue to merge node yet - wait for all branches
         # Merge node will be triggered when all branches complete
         return []
+    
+    async def _check_fanout_completion(
+        self,
+        node_id: str,
+        state: WorkflowState,
+        tracker: ExecutionTracker,
+        queue: deque[ExecutionToken]
+    ) -> None:
+        """Check if a fanout is complete and trigger merge node if so"""
+        # Find which fanout this node belongs to (if any)
+        fanout_tracker = None
+        for fanout in tracker.fanouts.values():
+            # Check if this node is one of the branch nodes in the fanout
+            if node_id in fanout.branch_node_ids:
+                fanout_tracker = fanout
+                break
+        
+        if not fanout_tracker:
+            # This node is not part of a fanout, nothing to check
+            return
+        
+        # Check if all branches are complete
+        if fanout_tracker.all_branches_complete():
+            next_node_id = fanout_tracker.merge_node_id  # Actually the next node (may not be merge)
+            if next_node_id:
+                # All branches complete, trigger next node
+                logger.info(
+                    f"All branches complete for fanout {fanout_tracker.fanout_node_id}, "
+                    f"triggering next node {next_node_id}"
+                )
+                # Create context for next node (use root context or create new one)
+                next_context = ExecutionContext(
+                    node_id=next_node_id,
+                    branch_id="",  # Next node is not part of a branch
+                    iteration=0
+                )
+                queue.append(ExecutionToken(
+                    node_id=next_node_id,
+                    context=next_context,
+                    parent_result=None
+                ))
     
     async def _handle_loop_node(
         self,

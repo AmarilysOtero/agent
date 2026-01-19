@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
 
@@ -148,13 +148,13 @@ def _get_hybrid_search():
 # ---------- TRIAGE (Foundry) ----------
 
 class IntentResult(BaseModel):
-    intents: list[str] = Field(default_factory=list)
+    intents: List[str] = Field(default_factory=list)
     confidence: float = 0.0
     rationale: str = ""
-    targets: list[str] = Field(default_factory=list)
-    database_type: str | None = None  # "postgresql", "csv", "other"
-    database_id: str | None = None  # Best matching database ID
-    preferred_agent: str | None = None  # "sql", "csv", "vector"
+    targets: List[str] = Field(default_factory=list)
+    database_type: Optional[str] = None  # "postgresql", "csv", "other"
+    database_id: Optional[str] = None  # Best matching database ID
+    preferred_agent: Optional[str] = None  # "sql", "csv", "vector"
 
 class TriageAgent:
     def __init__(self, foundry_agent_id: str):
@@ -657,7 +657,7 @@ class SQLAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, query: str, database_id: str | None = None) -> str:
+    async def run(self, query: str, database_id: Optional[str] = None) -> str:
         """
         Run query with fallback chain: PostgreSQL SQL → CSV → Vector
         

@@ -116,9 +116,17 @@ async def run_graph_workflow(
         executor = GraphExecutor(graph_def, cfg)
         
         # Execute
-        logger.info(f"Executing graph workflow with goal: {goal[:100]}...")
+        logger.info("=" * 100)
+        logger.info("=" * 100)
+        logger.info(f"🚀 NEW WORKFLOW RUN STARTING - Goal: {goal[:100]}...")
+        logger.info("=" * 100)
+        logger.info("=" * 100)
         result = await executor.execute(goal)
-        logger.info("Graph workflow execution completed successfully")
+        logger.info("=" * 100)
+        logger.info("=" * 100)
+        logger.info("✅ Graph workflow execution completed successfully")
+        logger.info("=" * 100)
+        logger.info("=" * 100)
         
         # Phase 6: Collect metrics for analytics (simplified - would get run_id properly)
         try:

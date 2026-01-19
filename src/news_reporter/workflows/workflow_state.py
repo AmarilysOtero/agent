@@ -36,6 +36,9 @@ class WorkflowState(BaseModel):
     # Review verdicts (per reporter_id)
     verdicts: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)  # reporter_id -> list of verdicts
     
+    # Conditional node results
+    conditional: Dict[str, Dict[str, Any]] = Field(default_factory=dict)  # node_id -> {result: bool, ...}
+    
     # Logging and telemetry
     logs: List[Dict[str, Any]] = Field(default_factory=list)
     execution_trace: List[Dict[str, Any]] = Field(default_factory=list)
@@ -69,6 +72,7 @@ class WorkflowState(BaseModel):
         Examples:
             state.set("triage.preferred_agent", "sql")
             state.set("drafts.reporter_1", "draft text")
+            state.set("conditional.select_search.result", True)
         """
         parts = path.split(".")
         if len(parts) == 1:
@@ -80,22 +84,36 @@ class WorkflowState(BaseModel):
             return
         
         # Nested path - navigate to parent dict
-        parent_path = ".".join(parts[:-1])
+        root_key = parts[0]
         final_key = parts[-1]
         
-        parent = self.get(parent_path)
-        if parent is None:
-            # Create nested dict structure
-            parent = {}
-            self.set(parent_path, parent)
-            parent = self.get(parent_path)
+        # Check if root key exists and is a dict
+        if not hasattr(self, root_key):
+            logger.warning(f"Attempted to set nested value on unknown root attribute: {root_key}")
+            return
         
-        if isinstance(parent, dict):
-            parent[final_key] = value
-            # Update the actual model field
-            root_key = parts[0]
-            if hasattr(self, root_key):
-                setattr(self, root_key, parent)
+        root_value = getattr(self, root_key)
+        
+        # If root value is None, initialize as dict
+        if root_value is None:
+            root_value = {}
+            setattr(self, root_key, root_value)
+        
+        # Navigate/create nested structure
+        current = root_value
+        for part in parts[1:-1]:  # All parts except first and last
+            if not isinstance(current, dict):
+                logger.warning(f"Cannot set nested value: {path} (parent '{part}' is not a dict)")
+                return
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+        
+        # Set the final value
+        if isinstance(current, dict):
+            current[final_key] = value
+            # Update the root attribute to ensure Pydantic sees the change
+            setattr(self, root_key, root_value)
         else:
             logger.warning(f"Cannot set nested value: {path} (parent is not a dict)")
     

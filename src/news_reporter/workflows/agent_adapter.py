@@ -225,9 +225,27 @@ class ReviewAdapter(AgentAdapter):
                 verdicts[reporter_id] = []
             verdicts[reporter_id].append(verdict_data)
             
-            return {
+            # If decision is "accept", move the accepted draft to final for merging
+            state_updates = {
                 f"verdicts.{reporter_id}": verdicts[reporter_id]
             }
+            
+            decision = (verdict_data.get("decision") or "").lower()
+            if decision == "accept":
+                # Get the accepted draft (use revised_script if available, otherwise current draft)
+                accepted_draft = verdict_data.get("revised_script")
+                if not accepted_draft:
+                    accepted_draft = state.get(f"drafts.{reporter_id}", "")
+                
+                # Store in final for merge node
+                final_dict = state.get("final", {})
+                if not isinstance(final_dict, dict):
+                    final_dict = {}
+                final_dict[reporter_id] = accepted_draft
+                state_updates["final"] = final_dict
+                logger.info(f"ReviewAdapter: Draft accepted for {reporter_id}, moved to final (length: {len(accepted_draft) if accepted_draft else 0})")
+            
+            return state_updates
         except Exception:
             # If not JSON, store as text
             verdicts = state.get("verdicts", {})

@@ -191,10 +191,6 @@
     {
       "from_node": "review_loop",
       "to_node": "stitch"
-    },
-    {
-      "from_node": "stitch",
-      "to_node": "report_fanout"
     }
   ],
   "toolsets": [],

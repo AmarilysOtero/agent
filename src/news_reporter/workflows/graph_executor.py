@@ -298,16 +298,19 @@ class GraphExecutor:
                 
                 # Phase 3: Check for loop back (body node completing, needs to loop back to loop node)
                 # First, check if this node is part of a loop by checking if any loop node has an outgoing edge to this node
+                # IMPORTANT: Only consider "loop_body" edges, not exit edges (edges without "loop_body" condition are exit paths)
                 loop_node_id = None
                 for loop_id, loop_tracker in tracker.loops.items():
                     # Check if this node is the explicit body node
                     if loop_tracker.body_node_id == node_id:
                         loop_node_id = loop_id
                         break
-                    # Check if this node is reachable from the loop node (is a body node via edges)
+                    # Check if this node is reachable from the loop node via a "loop_body" edge (is a body node)
                     loop_outgoing = self.outgoing_edges.get(loop_id, [])
                     for edge in loop_outgoing:
-                        if edge.to_node == node_id:
+                        # Only consider edges with "loop_body" condition as loop body edges
+                        # Exit edges (no condition or other conditions) should not make a node part of the loop
+                        if edge.to_node == node_id and edge.condition == "loop_body":
                             loop_node_id = loop_id
                             break
                     if loop_node_id:
@@ -827,13 +830,30 @@ class GraphExecutor:
         if result.next_nodes:
             return result.next_nodes
         
+        # Check if this is a loop node that has exited
+        node_config = self.nodes.get(node_id)
+        loop_exited = False
+        if node_config and node_config.type == "loop":
+            # Check if loop has exited (should_continue = False)
+            should_continue = result.artifacts.get("should_continue", True)
+            loop_exited = not should_continue
+        
         # Otherwise, use graph edges
         outgoing = self.outgoing_edges.get(node_id, [])
         next_nodes = []
         
         for edge in outgoing:
+            # If loop has exited, skip "loop_body" edges (they're only for entering the loop)
+            if loop_exited and edge.condition == "loop_body":
+                continue
+            
             # Check edge condition
             if edge.condition:
+                # "loop_body" is a special condition handled in _handle_loop_node
+                # Skip it here to avoid evaluation errors
+                if edge.condition == "loop_body":
+                    continue
+                
                 condition_met = ConditionEvaluator.evaluate(edge.condition, state)
                 if not condition_met:
                     continue  # Skip this edge

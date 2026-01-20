@@ -56,6 +56,9 @@ class Settings:
     # === Auth API ===
     auth_api_url: str | None = None
     
+    # === Workflow Configuration ===
+    workflow_json_path: str | None = None  # Optional path to JSON workflow file (used when no active workflow is set)
+    
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
@@ -105,6 +108,9 @@ class Settings:
 
         # Auth
         auth_url = os.getenv("MONGO_AUTH_URL")
+
+        # Workflow JSON path (optional)
+        workflow_json = os.getenv("WORKFLOW_JSON_PATH")
 
         # minimal validation (you likely already have these set)
         missing = []
@@ -157,8 +163,9 @@ class Settings:
             blob_container_chunks=blob_chunks,
             neo4j_api_url=neo4j_url,
             auth_api_url=auth_url,
+            workflow_json_path=workflow_json,
         )
-
+    
     @classmethod
     def load(cls) -> "Settings":
         return cls.from_env()

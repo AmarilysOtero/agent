@@ -21,7 +21,9 @@ from .performance_metrics import get_metrics_collector
 from .cache_manager import get_cache_manager
 from .retry_handler import RetryConfig, RetryHandler
 from .execution_monitor import get_execution_monitor
+from .code_execution_tracer import CodeExecutionTracer
 from ..config import Settings
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +141,9 @@ class GraphExecutor:
         logger.info("=" * 100)
         state.append_log("INFO", f"Starting graph execution with goal: {goal}")
         
+        # Initialize code execution tracer
+        tracer = CodeExecutionTracer()
+        
         # Find entry nodes
         entry_nodes = self.graph_def.get_entry_nodes()
         if not entry_nodes:
@@ -201,6 +206,27 @@ class GraphExecutor:
         # Phase 5: Emit workflow completed event
         duration_ms = (time.time() - start_time) * 1000
         self.monitor.workflow_completed(run_id, final_output, duration_ms)
+        
+        # Write code execution script
+        try:
+            output_dir = Path(__file__).parent
+            state_snapshot = {
+                "triage": state.get("triage"),
+                "latest": state.latest,
+                "conditional": state.get("conditional", {}),
+                "loop_state": state.get("loop_state", {})
+            }
+            tracer.write_execution_script(
+                output_dir=output_dir,
+                run_id=run_id,
+                goal=goal,
+                start_time=start_time,
+                duration_ms=duration_ms,
+                final_output=final_output,
+                state_snapshot=state_snapshot
+            )
+        except Exception as e:
+            logger.warning(f"Failed to write code execution script: {e}")
         
         return final_output
     
@@ -268,8 +294,23 @@ class GraphExecutor:
             # Execute node
             executing.add(node_id)
             try:
+                # Record node execution
+                tracer.record_execution(
+                    method_name="_execute_node",
+                    args={"node_id": node_id},
+                    kwargs={"state": state, "context": context, "parent_result": token.parent_result}
+                )
+                
                 result = await self._execute_node(node_id, state, context, token.parent_result)
                 node_results[node_id] = result
+                
+                # Record result
+                tracer.record_execution(
+                    method_name="_execute_node",
+                    result=result,
+                    result_type="NodeResult",
+                    args={"node_id": node_id}
+                )
                 
                 # Apply state updates
                 self._apply_state_updates(state, result.state_updates)
@@ -815,8 +856,17 @@ class GraphExecutor:
         return result
     
     def _apply_state_updates(self, state: WorkflowState, updates: Dict[str, Any]) -> None:
-        """Apply state updates from NodeResult"""
-        for path, value in updates.items():
+        """Apply state updates from NodeResult
+        
+        Ensures parent paths are set before nested paths to prevent overwriting.
+        For example, "triage" should be set before "triage.intents" to ensure
+        the nested structure is preserved correctly.
+        """
+        # Sort updates: parent paths (fewer dots) before nested paths (more dots)
+        # This ensures that when we set "triage", it happens before "triage.intents"
+        sorted_updates = sorted(updates.items(), key=lambda x: x[0].count('.'))
+        
+        for path, value in sorted_updates:
             state.set(path, value)
     
     def _determine_next_nodes(

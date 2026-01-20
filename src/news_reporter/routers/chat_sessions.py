@@ -524,12 +524,49 @@ async def add_message(
                     logger.error(f"Sequential workflow fallback also failed: {sequential_error}", exc_info=True)
                     raise
         else:
-            # No active workflow set, use sequential fallback
-            logger.info("No active workflow found, using sequential workflow")
-            assistant_response = await run_sequential_goal(cfg, user_message_content)
-            logger.info("Sequential workflow execution completed successfully")
-            print(f"Assistant Response Type: {type(assistant_response)}")
-            print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+            # No active workflow set, check for JSON workflow file
+            if cfg.workflow_json_path:
+                # Load workflow from JSON file
+                workflow_name = f"JSON Workflow ({cfg.workflow_json_path})"
+                logger.info(f"No active workflow found, loading workflow from JSON file: {cfg.workflow_json_path}")
+                try:
+                    assistant_response = await run_graph_workflow(
+                        cfg,
+                        user_message_content,
+                        graph_path=cfg.workflow_json_path
+                    )
+                    logger.info(f"JSON workflow execution completed successfully")
+                    print(f"Assistant Response Type: {type(assistant_response)}")
+                    print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                except Exception as json_workflow_error:
+                    error_msg = str(json_workflow_error)
+                    logger.error(
+                        f"JSON workflow '{cfg.workflow_json_path}' failed: {error_msg}, "
+                        f"falling back to sequential workflow",
+                        exc_info=True
+                    )
+                    # Track failed workflow information
+                    workflow_failed = {
+                        "name": workflow_name,
+                        "error": error_msg
+                    }
+                    # Fallback to sequential workflow
+                    workflow_name = "Fallback"
+                    try:
+                        assistant_response = await run_sequential_goal(cfg, user_message_content)
+                        logger.info("Sequential workflow fallback completed successfully")
+                        print(f"Assistant Response Type: {type(assistant_response)}")
+                        print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                    except Exception as sequential_error:
+                        logger.error(f"Sequential workflow fallback also failed: {sequential_error}", exc_info=True)
+                        raise
+            else:
+                # No active workflow and no JSON file configured, use sequential fallback
+                logger.info("No active workflow found and no workflow JSON path configured, using sequential workflow")
+                assistant_response = await run_sequential_goal(cfg, user_message_content)
+                logger.info("Sequential workflow execution completed successfully")
+                print(f"Assistant Response Type: {type(assistant_response)}")
+                print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
     except RuntimeError as e:
         error_msg = str(e)
         # Check if it's a Foundry access error

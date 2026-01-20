@@ -177,11 +177,11 @@ class GraphExecutor:
         try:
             if self.timeout_ms:
                 await asyncio.wait_for(
-                    self._execute_queue_based(state, entry_nodes, root_context),
+                    self._execute_queue_based(state, entry_nodes, root_context, tracer),
                     timeout=self.timeout_ms / 1000.0
                 )
             else:
-                await self._execute_queue_based(state, entry_nodes, root_context)
+                await self._execute_queue_based(state, entry_nodes, root_context, tracer)
         except asyncio.TimeoutError:
             duration = time.time() - start_time
             error_msg = f"Graph execution timed out after {duration:.2f}s (limit: {self.timeout_ms}ms)"
@@ -234,7 +234,8 @@ class GraphExecutor:
         self,
         state: WorkflowState,
         entry_nodes: List[str],
-        root_context: ExecutionContext
+        root_context: ExecutionContext,
+        tracer: CodeExecutionTracer
     ) -> None:
         """Execute graph using queue-based system with Phase 3 enhancements"""
         # Execution queue

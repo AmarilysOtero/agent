@@ -1,0 +1,204 @@
+{
+  "name": "Default News Reporter Workflow",
+  "description": "Converts sequential workflow to graph: TRIAGE -> SEARCH -> REPORT -> REVIEW_LOOP -> STITCH",
+  "version": "1.0.0",
+  "entry_node_id": "triage",
+  "nodes": [
+    {
+      "id": "triage",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_TRIAGE}",
+      "inputs": {
+        "goal": "goal"
+      },
+      "outputs": {
+        "result": "triage"
+      },
+      "params": {}
+    },
+    {
+      "id": "select_search",
+      "type": "conditional",
+      "condition": "triage.preferred_agent == \"sql\" and agent_id_aisearch_sql is not None",
+      "params": {}
+    },
+    {
+      "id": "search_sql",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_AISEARCHSQL}",
+      "inputs": {
+        "goal": "goal",
+        "database_id": "triage.database_id"
+      },
+      "outputs": {
+        "result": "latest"
+      },
+      "params": {
+        "database_id": "triage.database_id"
+      }
+    },
+    {
+      "id": "search_neo4j",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_NEO4J_SEARCH}",
+      "inputs": {
+        "goal": "goal"
+      },
+      "outputs": {
+        "result": "latest"
+      },
+      "params": {}
+    },
+    {
+      "id": "search_aisearch",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_AISEARCH}",
+      "inputs": {
+        "goal": "goal"
+      },
+      "outputs": {
+        "result": "latest"
+      },
+      "params": {}
+    },
+    {
+      "id": "should_search",
+      "type": "conditional",
+      "condition": "\"ai_search\" in triage.intents or (\"unknown\" in triage.intents and triage.preferred_agent is not None and triage.database_id is not None)",
+      "params": {}
+    },
+    {
+      "id": "report_fanout",
+      "type": "fanout",
+      "branches": ["report_branch"],
+      "params": {}
+    },
+    {
+      "id": "report_branch",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_REPORTER}",
+      "inputs": {
+        "goal": "goal",
+        "latest_news": "latest"
+      },
+      "outputs": {
+        "result": "drafts.current_fanout_item"
+      },
+      "params": {}
+    },
+    {
+      "id": "review_loop",
+      "type": "loop",
+      "max_iters": 3,
+      "loop_condition": "verdicts.current_fanout_item[-1].decision != \"accept\"",
+      "params": {}
+    },
+    {
+      "id": "review",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_REVIEWER}",
+      "inputs": {
+        "topic": "goal",
+        "candidate_script": "drafts.current_fanout_item"
+      },
+      "outputs": {
+        "result": "verdicts.current_fanout_item"
+      },
+      "params": {}
+    },
+    {
+      "id": "reporter_improve",
+      "type": "agent",
+      "agent_id": "${AGENT_ID_REPORTER}",
+      "inputs": {
+        "goal": "goal",
+        "improve_context": "verdicts.current_fanout_item[-1]"
+      },
+      "outputs": {
+        "result": "drafts.current_fanout_item"
+      },
+      "params": {}
+    },
+    {
+      "id": "stitch",
+      "type": "merge",
+      "inputs": {
+        "items": "final"
+      },
+      "outputs": {
+        "merged": "latest"
+      },
+      "params": {
+        "merge_key": "final",
+        "strategy": "stitch"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from_node": "triage",
+      "to_node": "select_search"
+    },
+    {
+      "from_node": "select_search",
+      "to_node": "search_sql",
+      "condition": "triage.preferred_agent == \"sql\""
+    },
+    {
+      "from_node": "select_search",
+      "to_node": "search_neo4j",
+      "condition": "use_neo4j_search == true"
+    },
+    {
+      "from_node": "select_search",
+      "to_node": "search_aisearch"
+    },
+    {
+      "from_node": "search_sql",
+      "to_node": "should_search"
+    },
+    {
+      "from_node": "search_neo4j",
+      "to_node": "should_search"
+    },
+    {
+      "from_node": "search_aisearch",
+      "to_node": "should_search"
+    },
+    {
+      "from_node": "should_search",
+      "to_node": "report_fanout",
+      "condition": "should_search condition result"
+    },
+    {
+      "from_node": "report_fanout",
+      "to_node": "review_loop"
+    },
+    {
+      "from_node": "review_loop",
+      "to_node": "review",
+      "condition": "loop_body"
+    },
+    {
+      "from_node": "review",
+      "to_node": "reporter_improve",
+      "condition": "verdicts.current_fanout_item[-1].decision != \"accept\""
+    },
+    {
+      "from_node": "reporter_improve",
+      "to_node": "review_loop"
+    },
+    {
+      "from_node": "review_loop",
+      "to_node": "stitch"
+    }
+  ],
+  "toolsets": [],
+  "policy_profile": "read_only",
+  "limits": {
+    "max_steps": 200,
+    "timeout_ms": 300000,
+    "max_iters": 3,
+    "max_parallel": 10
+  }
+}

@@ -1,0 +1,313 @@
+"""Condition Expression Evaluator for edge routing - Safe parser (no eval)"""
+
+from __future__ import annotations
+from typing import Any, Optional
+import re
+import logging
+
+from .workflow_state import WorkflowState
+
+logger = logging.getLogger(__name__)
+
+
+class ConditionEvaluator:
+    """
+    Safe condition expression evaluator for graph edge routing.
+    
+    NO eval() - uses parser instead for security.
+    
+    Supports:
+    - Operators: ==, !=, in, not in, is None, is not None, and, or
+    - Types: string literals (quoted), numbers, booleans
+    - State paths: triage.preferred_agent, state.selected_search
+    - Missing path behavior: treat as None (or raise error based on strictness)
+    """
+    
+    @staticmethod
+    def evaluate(condition: str, state: WorkflowState, strict: bool = False) -> bool:
+        """
+        Evaluate a condition expression against workflow state.
+        
+        Args:
+            condition: Condition expression string
+            state: WorkflowState to evaluate against
+            strict: If True, raise error on missing paths. If False, treat as None.
+        
+        Returns:
+            True if condition is met, False otherwise
+        """
+        if not condition or not condition.strip():
+            return True  # Empty condition is always true
+        
+        condition = condition.strip()
+        
+        # Handle logical operators (and, or) - simple precedence: and before or
+        if " or " in condition:
+            parts = condition.split(" or ", 1)
+            left = ConditionEvaluator.evaluate(parts[0].strip(), state, strict)
+            right = ConditionEvaluator.evaluate(parts[1].strip(), state, strict)
+            return left or right
+        
+        if " and " in condition:
+            parts = condition.split(" and ", 1)
+            left = ConditionEvaluator.evaluate(parts[0].strip(), state, strict)
+            right = ConditionEvaluator.evaluate(parts[1].strip(), state, strict)
+            return left and right
+        
+        # Handle negation
+        if condition.startswith("not "):
+            return not ConditionEvaluator.evaluate(condition[4:], state, strict)
+        
+        # Handle "is not None" / "is None"
+        if " is not None" in condition:
+            path = condition.replace(" is not None", "").strip()
+            value = ConditionEvaluator._get_state_value(path, state, strict)
+            return value is not None
+        elif " is None" in condition:
+            path = condition.replace(" is None", "").strip()
+            value = ConditionEvaluator._get_state_value(path, state, strict)
+            return value is None
+        
+        # Handle "not in" operator (must check before "in")
+        if " not in " in condition:
+            parts = condition.split(" not in ", 1)
+            if len(parts) == 2:
+                search_value = ConditionEvaluator._parse_literal(parts[0].strip())
+                container_path = parts[1].strip()
+                container = ConditionEvaluator._get_state_value(container_path, state, strict)
+                return not ConditionEvaluator._check_membership(search_value, container)
+        
+        # Handle "in" operator (membership)
+        if " in " in condition:
+            parts = condition.split(" in ", 1)
+            if len(parts) == 2:
+                search_value = ConditionEvaluator._parse_literal(parts[0].strip())
+                container_path = parts[1].strip()
+                container = ConditionEvaluator._get_state_value(container_path, state, strict)
+                return ConditionEvaluator._check_membership(search_value, container)
+        
+        # Handle equality operators
+        for op in ["==", "!=", ">=", "<=", ">", "<"]:
+            if f" {op} " in condition:
+                parts = condition.split(f" {op} ", 1)
+                if len(parts) == 2:
+                    left_expr = parts[0].strip()
+                    right_expr = parts[1].strip()
+                    
+                    # Parse left side (state path or literal)
+                    left_value = ConditionEvaluator._parse_expression(left_expr, state, strict)
+                    
+                    # Parse right side (literal or state path)
+                    right_value = ConditionEvaluator._parse_expression(right_expr, state, strict)
+                    
+                    # Compare
+                    return ConditionEvaluator._compare_values(left_value, right_value, op)
+        
+        # Handle special syntax: "{node_id} condition result" - references conditional node result
+        if condition.endswith(" condition result"):
+            # Use replace instead of slicing to be more robust
+            node_id = condition.replace(" condition result", "").strip()
+            logger.debug(f"Condition evaluator: Evaluating '{condition}' -> node_id='{node_id}'")
+            
+            # Try accessing conditional dict directly first
+            try:
+                if hasattr(state, 'conditional') and state.conditional and node_id in state.conditional:
+                    node_result = state.conditional[node_id]
+                    if isinstance(node_result, dict) and "result" in node_result:
+                        conditional_result = node_result["result"]
+                        logger.info(f"✅ Condition evaluator: Found conditional.{node_id}.result = {conditional_result}")
+                        return bool(conditional_result)
+                    else:
+                        logger.warning(f"⚠️ Condition evaluator: conditional.{node_id} exists but 'result' key not found. Keys: {list(node_result.keys()) if isinstance(node_result, dict) else type(node_result)}")
+                else:
+                    logger.debug(f"Condition evaluator: conditional.{node_id} not in state.conditional. Available keys: {list(state.conditional.keys()) if hasattr(state, 'conditional') and state.conditional else 'None'}")
+            except Exception as e:
+                logger.warning(f"Error accessing conditional dict directly for {node_id}: {e}")
+            
+            # Fallback to state.get() method
+            conditional_result = state.get(f"conditional.{node_id}.result")
+            if conditional_result is not None:
+                logger.info(f"✅ Condition evaluator: Found via state.get() conditional.{node_id}.result = {conditional_result}")
+                return bool(conditional_result)
+            
+            # If not found, log warning and try to evaluate the conditional node's condition directly
+            logger.error(f"❌ Conditional result not found for '{node_id}'. Condition: '{condition}'. State conditional dict: {state.conditional if hasattr(state, 'conditional') else 'N/A'}")
+            return False
+        
+        # If no operator matched, check if path exists and is truthy
+        value = ConditionEvaluator._get_state_value(condition, state, strict)
+        if value is not None:
+            return bool(value)
+        
+        logger.warning(f"Could not evaluate condition: {condition}")
+        return False
+    
+    @staticmethod
+    def _parse_expression(expr: str, state: WorkflowState, strict: bool) -> Any:
+        """Parse an expression - either a state path or a literal value"""
+        expr = expr.strip()
+        
+        # Check if it's a state path (contains dot or starts with known prefixes)
+        if "." in expr or expr.startswith("state."):
+            # State path
+            if expr.startswith("state."):
+                expr = expr[6:]  # Remove "state." prefix
+            return ConditionEvaluator._get_state_value(expr, state, strict)
+        else:
+            # Try as literal
+            return ConditionEvaluator._parse_literal(expr)
+    
+    @staticmethod
+    def _parse_literal(value: str) -> Any:
+        """Parse a literal value (string, number, boolean) - NO eval()"""
+        value = value.strip()
+        
+        # Remove quotes if present
+        if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+            return value[1:-1]
+        
+        # Try boolean
+        if value.lower() == "true":
+            return True
+        if value.lower() == "false":
+            return False
+        
+        # Try number
+        try:
+            if "." in value:
+                return float(value)
+            else:
+                return int(value)
+        except ValueError:
+            pass
+        
+        # Return as string
+        return value
+    
+    @staticmethod
+    def _get_state_value(path: str, state: WorkflowState, strict: bool) -> Any:
+        """Get value from state by path, handling missing paths and list indexing"""
+        # Check for list indexing like [-1], [0], etc.
+        # First, try to use state.get() which handles dynamic keys, then apply indexing
+        if '[' in path and ']' in path:
+            # Split path into base path and index parts
+            parts = []
+            current = path
+            while '[' in current and ']' in current:
+                idx = current.rfind('[')
+                bracket_end = current.find(']', idx)
+                if bracket_end == -1:
+                    break
+                
+                # Extract the part after the bracket
+                after_bracket = current[bracket_end + 1:]
+                if after_bracket.startswith('.'):
+                    # There's more path after the bracket
+                    parts.insert(0, (current[idx + 1:bracket_end], after_bracket[1:]))
+                    current = current[:idx]
+                else:
+                    # This is the last part
+                    parts.insert(0, (current[idx + 1:bracket_end], after_bracket))
+                    current = current[:idx]
+                    break
+            
+            # Get the base value using state.get() which handles dynamic key resolution
+            # For paths like "verdicts.current_fanout_item[-1].decision", 
+            # we need to get "verdicts.current_fanout_item" first (which resolves the dynamic key)
+            base_path = current
+            base_value = state.get(base_path) if base_path else None
+            
+            # Apply indexing and attribute access
+            value = base_value
+            for index_str, remaining_path in parts:
+                if value is None:
+                    if strict:
+                        raise ValueError(f"State path '{path}' - value is None at index '{index_str}'")
+                    return None
+                
+                # Parse index
+                try:
+                    if index_str == '-1':
+                        # Last element
+                        if isinstance(value, (list, tuple)) and len(value) > 0:
+                            value = value[-1]
+                        else:
+                            if strict:
+                                raise ValueError(f"Cannot index '{index_str}' on non-list: {type(value)}")
+                            return None
+                    else:
+                        # Numeric index
+                        idx = int(index_str)
+                        if isinstance(value, (list, tuple)) and 0 <= idx < len(value):
+                            value = value[idx]
+                        else:
+                            if strict:
+                                raise ValueError(f"Index '{idx}' out of range for {type(value)}")
+                            return None
+                except (ValueError, TypeError) as e:
+                    if strict:
+                        raise ValueError(f"Invalid index '{index_str}' in path '{path}': {e}")
+                    return None
+                
+                # If there's remaining path, continue navigation
+                if remaining_path:
+                    if isinstance(value, dict):
+                        value = value.get(remaining_path)
+                    elif hasattr(value, remaining_path):
+                        value = getattr(value, remaining_path)
+                    else:
+                        if strict:
+                            raise ValueError(f"Cannot access '{remaining_path}' on {type(value)}")
+                        return None
+            
+            if value is None and strict:
+                raise ValueError(f"State path '{path}' not found and strict mode enabled")
+            return value
+        
+        # No indexing - use regular path lookup
+        value = state.get(path)
+        
+        if value is None and strict:
+            raise ValueError(f"State path '{path}' not found and strict mode enabled")
+        
+        return value
+    
+    @staticmethod
+    def _check_membership(search_value: Any, container: Any) -> bool:
+        """Check if search_value is in container"""
+        if container is None:
+            return False
+        
+        if isinstance(container, (list, tuple)):
+            return search_value in container
+        elif isinstance(container, str):
+            return str(search_value) in container
+        elif isinstance(container, dict):
+            return search_value in container.values() or search_value in container.keys()
+        
+        return False
+    
+    @staticmethod
+    def _compare_values(left: Any, right: Any, op: str) -> bool:
+        """Compare two values using the given operator"""
+        if op == "==":
+            return str(left) == str(right)
+        elif op == "!=":
+            return str(left) != str(right)
+        elif op in [">=", "<=", ">", "<"]:
+            try:
+                left_num = float(left) if left is not None else 0
+                right_num = float(right) if right is not None else 0
+                if op == ">=":
+                    return left_num >= right_num
+                elif op == "<=":
+                    return left_num <= right_num
+                elif op == ">":
+                    return left_num > right_num
+                elif op == "<":
+                    return left_num < right_num
+            except (ValueError, TypeError):
+                logger.warning(f"Cannot compare non-numeric values: {left} {op} {right}")
+                return False
+        
+        return False

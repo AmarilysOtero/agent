@@ -2,13 +2,23 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from typing import List, Optional
 from datetime import datetime
-from pymongo import MongoClient
-from bson import ObjectId
 import os
 import logging
 
+# Optional MongoDB imports
+try:
+    from pymongo import MongoClient
+    from bson import ObjectId
+    _MONGO_AVAILABLE = True
+except ImportError:
+    MongoClient = None
+    ObjectId = None
+    _MONGO_AVAILABLE = False
+
 from .auth import get_current_user
 from ..config import Settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -95,24 +105,77 @@ def filter_results_by_exact_match(results: List[dict], query: str, min_similarit
 
 # MongoDB connection
 print("[CHAT_SESSIONS] Initializing chat sessions router...")
-try:
-    settings = Settings.load()
-    # Use the same auth database URI for chat sessions
-    MONGO_AGENT_URL = os.getenv("MONGO_AGENT_URL")
-    
-    if not MONGO_AGENT_URL:
-        # Fall back to auth URI if agent URI not set
-        MONGO_AGENT_URL = settings.auth_api_url
-        print(f"[CHAT_SESSIONS] Using auth_api_url as fallback")
-        raise RuntimeError("No MongoDB URI available for chat sessions")
-    
-    print(f"[CHAT_SESSIONS] Connecting to MongoDB...")
-    client = MongoClient(MONGO_AGENT_URL)
-    agent_db = client.get_database()
-    print(f"[CHAT_SESSIONS] Connected to database: {agent_db.name}")
-except Exception as e:
-    print(f"[CHAT_SESSIONS] Failed to connect to MongoDB: {e}")
-    agent_db = None
+agent_db = None
+if _MONGO_AVAILABLE:
+    try:
+        settings = Settings.load()
+        # Use the same auth database URI for chat sessions
+        MONGO_AGENT_URL = os.getenv("MONGO_AGENT_URL")
+        
+        if not MONGO_AGENT_URL:
+            # Fall back to auth URI if agent URI not set
+            MONGO_AGENT_URL = settings.auth_api_url
+            print(f"[CHAT_SESSIONS] Using auth_api_url as fallback")
+        
+        if not MONGO_AGENT_URL:
+            print("[CHAT_SESSIONS] WARNING: No MongoDB URI available for chat sessions")
+            agent_db = None
+        else:
+            print(f"[CHAT_SESSIONS] Connecting to MongoDB with URL: {MONGO_AGENT_URL.split('@')[0]}@***")  # Hide password in logs
+            # Parse connection string to extract components
+            from urllib.parse import urlparse, parse_qs, unquote
+            parsed = urlparse(MONGO_AGENT_URL)
+            db_name = parsed.path.lstrip('/').split('?')[0] if parsed.path else 'agent_db'
+            query_params = parse_qs(parsed.query)
+            auth_source = query_params.get('authSource', [db_name])[0]
+            
+            # Use explicit parameters to avoid URL parsing issues with special characters
+            password = unquote(parsed.password) if parsed.password else ""
+            print(f"[CHAT_SESSIONS] Using explicit parameters (password length: {len(password)})")
+            
+            # Use the parsed hostname from connection string (mongo in Docker, 127.0.0.1 locally)
+            mongo_host = parsed.hostname or "127.0.0.1"
+            mongo_port = parsed.port or 27017
+            
+            print(f"[CHAT_SESSIONS] Connecting to {mongo_host}:{mongo_port}...")
+            client = MongoClient(
+                host=mongo_host,
+                port=mongo_port,
+                username=parsed.username,
+                password=password,
+                authSource=auth_source,
+                authMechanism="SCRAM-SHA-256",
+                serverSelectionTimeoutMS=5000
+            )
+            agent_db = client[db_name]
+            agent_db.command('ping')
+            # Connection already tested above
+            print(f"[CHAT_SESSIONS] Successfully connected to MongoDB database: {agent_db.name}")
+    except Exception as e:
+        print(f"[CHAT_SESSIONS] Failed to connect to MongoDB: {e}")
+        print(f"[CHAT_SESSIONS] Connection string: {MONGO_AGENT_URL.split('@')[0] if MONGO_AGENT_URL else 'NOT SET'}@***")
+        print(f"[CHAT_SESSIONS] Troubleshooting:")
+        print(f"  1. Verify MongoDB is running (run from any directory):")
+        print(f"     docker ps | findstr rag-mongo")
+        print(f"  2. Check password matches MONGO_APP_PASS (run from RAG_Infra directory):")
+        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
+        print(f"     # Check .env file for MONGO_APP_PASS value")
+        print(f"  3. Verify user exists (run from RAG_Infra directory):")
+        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
+        print(f"     docker exec rag-mongo mongosh -u root -p rootpassword --authenticationDatabase admin")
+        print(f"  4. Test connection (run from RAG_Infra directory):")
+        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
+        if MONGO_AGENT_URL:
+            parsed_url = MONGO_AGENT_URL.split('/')
+            db_name = parsed_url[-1].split('?')[0] if parsed_url else 'agent_db'
+            query_part = MONGO_AGENT_URL.split('?')[1] if '?' in MONGO_AGENT_URL else 'authSource=agent_db'
+            auth_source = query_part.split('=')[1] if 'authSource=' in query_part else 'agent_db'
+            print(f"     docker exec rag-mongo mongosh \"{MONGO_AGENT_URL.split('@')[0]}@127.0.0.1:27017/{db_name}?authSource={auth_source}\"")
+        else:
+            print(f"     docker exec rag-mongo mongosh \"mongodb://user_rw:BestRAG.2026@127.0.0.1:27017/agent_db?authSource=agent_db\"")
+        agent_db = None
+else:
+    print("[CHAT_SESSIONS] pymongo not available - MongoDB features disabled")
 
 # Collections
 if agent_db is not None:
@@ -355,7 +418,8 @@ async def add_message(
     
     # Load settings for AI orchestration
     from ..config import Settings
-    from ..workflows.workflow_factory import run_sequential_goal
+    from ..workflows.workflow_factory import run_graph_workflow, run_sequential_goal
+    from ..workflows.workflow_persistence import get_workflow_persistence
     
     cfg = Settings.load()
     
@@ -411,11 +475,99 @@ async def add_message(
             logging.error(f"Failed to get Neo4j sources: {e}", exc_info=True)
             sources = []
     
-    # Run the agent workflow
+    # Run the agent workflow - try active workflow first, fallback to sequential
+    workflow_name = "Fallback"
+    workflow_failed = None  # Will contain {name, error} if workflow failed and fallback was used
+    
     try:
-        assistant_response = await run_sequential_goal(cfg, user_message_content)
-        print(f"Assistant Response Type: {type(assistant_response)}")
-        print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+        # Check for active workflow (created in agent builder)
+        persistence = get_workflow_persistence()
+        active_workflow = None
+        
+        try:
+            active_workflow = persistence.get_active_workflow()
+        except Exception as persistence_error:
+            logger.warning(f"Failed to retrieve active workflow: {persistence_error}, using sequential workflow", exc_info=True)
+        
+        if active_workflow:
+            # Execute custom workflow from agent builder
+            workflow_name = active_workflow.name or active_workflow.workflow_id or "Custom Workflow"
+            logger.info(f"Using active workflow: {active_workflow.workflow_id} ({workflow_name})")
+            try:
+                assistant_response = await run_graph_workflow(
+                    cfg,
+                    user_message_content,
+                    workflow_definition=active_workflow.graph_definition
+                )
+                logger.info(f"Active workflow execution completed successfully")
+                print(f"Assistant Response Type: {type(assistant_response)}")
+                print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+            except Exception as workflow_error:
+                error_msg = str(workflow_error)
+                logger.error(
+                    f"Active workflow '{active_workflow.workflow_id}' failed: {error_msg}, "
+                    f"falling back to sequential workflow",
+                    exc_info=True
+                )
+                # Track failed workflow information
+                workflow_failed = {
+                    "name": workflow_name,
+                    "error": error_msg
+                }
+                # Fallback to sequential workflow
+                workflow_name = "Fallback"
+                try:
+                    assistant_response = await run_sequential_goal(cfg, user_message_content)
+                    logger.info("Sequential workflow fallback completed successfully")
+                    print(f"Assistant Response Type: {type(assistant_response)}")
+                    print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                except Exception as sequential_error:
+                    logger.error(f"Sequential workflow fallback also failed: {sequential_error}", exc_info=True)
+                    raise
+        else:
+            # No active workflow set, check for JSON workflow file
+            if cfg.workflow_json_path:
+                # Load workflow from JSON file
+                workflow_name = f"JSON Workflow ({cfg.workflow_json_path})"
+                logger.info(f"No active workflow found, loading workflow from JSON file: {cfg.workflow_json_path}")
+                try:
+                    assistant_response = await run_graph_workflow(
+                        cfg,
+                        user_message_content,
+                        graph_path=cfg.workflow_json_path
+                    )
+                    logger.info(f"JSON workflow execution completed successfully")
+                    print(f"Assistant Response Type: {type(assistant_response)}")
+                    print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                except Exception as json_workflow_error:
+                    error_msg = str(json_workflow_error)
+                    logger.error(
+                        f"JSON workflow '{cfg.workflow_json_path}' failed: {error_msg}, "
+                        f"falling back to sequential workflow",
+                        exc_info=True
+                    )
+                    # Track failed workflow information
+                    workflow_failed = {
+                        "name": workflow_name,
+                        "error": error_msg
+                    }
+                    # Fallback to sequential workflow
+                    workflow_name = "Fallback"
+                    try:
+                        assistant_response = await run_sequential_goal(cfg, user_message_content)
+                        logger.info("Sequential workflow fallback completed successfully")
+                        print(f"Assistant Response Type: {type(assistant_response)}")
+                        print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
+                    except Exception as sequential_error:
+                        logger.error(f"Sequential workflow fallback also failed: {sequential_error}", exc_info=True)
+                        raise
+            else:
+                # No active workflow and no JSON file configured, use sequential fallback
+                logger.info("No active workflow found and no workflow JSON path configured, using sequential workflow")
+                assistant_response = await run_sequential_goal(cfg, user_message_content)
+                logger.info("Sequential workflow execution completed successfully")
+                print(f"Assistant Response Type: {type(assistant_response)}")
+                print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
     except RuntimeError as e:
         error_msg = str(e)
 
@@ -452,8 +604,13 @@ async def add_message(
         "role": "assistant",
         "content": assistant_response,
         "sources": sources if sources else None,
+        "workflow_name": workflow_name,
         "createdAt": datetime.utcnow(),
     }
+    
+    # Add failed workflow information if applicable
+    if workflow_failed:
+        assistant_message["workflow_failed"] = workflow_failed
     result = messages_collection.insert_one(assistant_message)
     
     # Update session timestamp
@@ -466,7 +623,11 @@ async def add_message(
         "response": assistant_response,
         "sources": sources,
         "conversation_id": session_id,
+        "workflow_name": workflow_name,
     }
+    # Add failed workflow information if applicable
+    if workflow_failed:
+        raw_response["workflow_failed"] = workflow_failed
     
     # Ensure COMPLETE serialization safety
     safe_response = recursive_serialize(raw_response)

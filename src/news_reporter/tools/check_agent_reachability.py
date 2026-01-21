@@ -23,7 +23,31 @@ def load_env():
 
 # ========== AUTH ==========
 def get_credential():
-    """Prefer Azure CLI credential; fall back to DefaultAzureCredential."""
+    """Choose Azure credential - prefer DefaultAzureCredential in Docker, AzureCliCredential otherwise."""
+    # In Docker, AzureCliCredential doesn't work reliably, so prefer DefaultAzureCredential
+    is_docker = os.getenv("DOCKER_ENV", "").lower() in {"1", "true", "yes"}
+    
+    if is_docker:
+        # In Docker, use DefaultAzureCredential which supports:
+        # - Environment variables (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+        # - Managed Identity (if running on Azure)
+        try:
+            return DefaultAzureCredential()
+        except Exception:
+            # Fallback to AzureCliCredential if DefaultAzureCredential fails
+            # (though this will likely fail in Docker too)
+            try:
+                return AzureCliCredential()
+            except Exception:
+                raise SystemExit(
+                    "❌ Failed to authenticate with Azure. In Docker, set environment variables:\n"
+                    "  AZURE_CLIENT_ID=<your-client-id>\n"
+                    "  ***REMOVED***
+                    "  AZURE_TENANT_ID=<your-tenant-id>\n"
+                    "Or configure managed identity if running on Azure."
+                )
+    else:
+        # Outside Docker, try AzureCliCredential first (for local development)
     try:
         return AzureCliCredential()
     except Exception:

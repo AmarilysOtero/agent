@@ -1,0 +1,22 @@
+{
+  "backup_id": "backup_20260115_231632",
+  "backup_type": "full",
+  "created_at": "2026-01-15T23:16:32.996057",
+  "workflows": [
+    {
+      "workflow_id": "workflow1",
+      "name": "Test",
+      "description": null,
+      "graph_definition": {
+        "nodes": [],
+        "edges": []
+      },
+      "version": "1.0.0",
+      "created_at": "2026-01-15T23:16:32.996057",
+      "updated_at": "2026-01-15T23:16:32.996057",
+      "created_by": null,
+      "tags": [],
+      "is_active": true
+    }
+  ]
+}

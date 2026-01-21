@@ -55,7 +55,8 @@ class SQLGenerator:
         """
         try:
             # 1. Retrieve relevant schema
-            logger.info(f"Retrieving schema for query: '{query[:100]}...'")
+            logger.info(f"🔍 SQLGenerator: Retrieving schema for query: '{query}' (database_id: {database_id})")
+            print(f"🔍 SQLGenerator: Retrieving schema for query: '{query}' (database_id: {database_id})")
             schema_result = self.schema_retriever.get_relevant_schema(
                 query=query,
                 database_id=database_id,
@@ -63,10 +64,17 @@ class SQLGenerator:
                 similarity_threshold=similarity_threshold
             )
             
+            result_count = schema_result.get("result_count", 0)
+            logger.info(f"🔍 SQLGenerator: Schema retrieval - result_count: {result_count}, has_error: {bool(schema_result.get('error'))}")
+            print(f"🔍 SQLGenerator: Schema retrieval - result_count: {result_count}, has_error: {bool(schema_result.get('error'))}")
+            
             if schema_result.get("error"):
+                error_msg = schema_result.get("error")
+                logger.error(f"❌ SQLGenerator: Schema retrieval error: {error_msg}")
+                print(f"❌ SQLGenerator: Schema retrieval error: {error_msg}")
                 return {
                     "sql": None,
-                    "error": schema_result.get("error"),
+                    "error": error_msg,
                     "schema_slice": {"tables": []},
                     "explanation": "Failed to retrieve schema information",
                     "confidence": 0.0
@@ -76,7 +84,24 @@ class SQLGenerator:
             if "tables" not in schema_slice:
                 schema_slice["tables"] = []
             
+            table_count = len(schema_slice.get("tables", []))
+            logger.info(f"🔍 SQLGenerator: Schema slice - table_count: {table_count}")
+            print(f"🔍 SQLGenerator: Schema slice - table_count: {table_count}")
+            
+            if table_count > 0:
+                table_names = [t.get("name", "?") for t in schema_slice.get("tables", [])]
+                logger.info(f"🔍 SQLGenerator: Tables found: {table_names}")
+                print(f"🔍 SQLGenerator: Tables found: {table_names}")
+                for table in schema_slice.get("tables", [])[:3]:  # Show first 3 tables
+                    table_name = table.get("name", "?")
+                    columns = table.get("columns", [])
+                    col_names = [c.get("name", "?") for c in columns[:5]]  # First 5 columns
+                    logger.info(f"🔍 SQLGenerator: Table '{table_name}' has {len(columns)} columns: {col_names}...")
+                    print(f"🔍 SQLGenerator: Table '{table_name}' has {len(columns)} columns: {col_names}...")
+            
             if not schema_slice.get("tables"):
+                logger.warning(f"❌ SQLGenerator: No relevant schema elements found")
+                print(f"❌ SQLGenerator: No relevant schema elements found")
                 return {
                     "sql": None,
                     "error": "No relevant schema elements found",
@@ -87,13 +112,23 @@ class SQLGenerator:
             
             # 2. Format schema for LLM
             schema_text = self.schema_retriever.format_schema_slice_for_llm(schema_slice)
+            logger.info(f"🔍 SQLGenerator: Formatted schema text length: {len(schema_text)} characters")
+            print(f"🔍 SQLGenerator: Formatted schema text length: {len(schema_text)} characters")
+            if len(schema_text) < 500:
+                logger.info(f"🔍 SQLGenerator: Schema text preview: {schema_text[:500]}")
+                print(f"🔍 SQLGenerator: Schema text preview: {schema_text[:500]}")
             
             # 3. Generate SQL using LLM
-            logger.info("Generating SQL using LLM...")
+            logger.info(f"🔍 SQLGenerator: Generating SQL using LLM...")
+            print(f"🔍 SQLGenerator: Generating SQL using LLM...")
             sql_prompt = self._build_sql_prompt(query, schema_text, database_id)
+            logger.info(f"🔍 SQLGenerator: SQL prompt length: {len(sql_prompt)} characters")
+            print(f"🔍 SQLGenerator: SQL prompt length: {len(sql_prompt)} characters")
             
             # Use Azure OpenAI or OpenAI API
             sql_result = self._call_llm(sql_prompt, model=model)
+            logger.info(f"🔍 SQLGenerator: LLM result - has_sql: {bool(sql_result.get('sql'))}, confidence: {sql_result.get('confidence', 0.0)}")
+            print(f"🔍 SQLGenerator: LLM result - has_sql: {bool(sql_result.get('sql'))}, confidence: {sql_result.get('confidence', 0.0)}")
             
             # If LLM failed to generate valid SQL, try simple fallback generation
             if not sql_result.get("sql") or sql_result.get("sql") == "SELECT ...":

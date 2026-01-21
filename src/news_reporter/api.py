@@ -46,6 +46,18 @@ async def lifespan(app: FastAPI):
         logging.info("[lifespan] Loading configuration...")
         _ = Settings.load()
 
+        # Initialize workflow persistence (MongoDB connection) on startup
+        try:
+            logging.info("[lifespan] Initializing workflow persistence...")
+            from .workflows.workflow_persistence import get_workflow_persistence
+            persistence = get_workflow_persistence()
+            if persistence.storage_backend:
+                logging.info("[lifespan] Workflow persistence initialized with MongoDB backend")
+            else:
+                logging.info("[lifespan] Workflow persistence initialized with in-memory storage only")
+        except Exception as e:
+            logging.warning("[lifespan] Workflow persistence initialization skipped: %s", e)
+
         if _UPLOAD_AVAILABLE:
             logging.info("[lifespan] Ensuring Azure Search pipeline...")
             try:
@@ -85,18 +97,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include auth router
 try:
-    # Include auth router
+    logging.info("Attempting to import auth router...")
     from .routers.auth import router as auth_router
+    logging.info(f"Auth router imported successfully. Prefix: {auth_router.prefix}, Routes: {len(auth_router.routes)}")
     app.include_router(auth_router)
     logging.info("Auth router mounted successfully")
+except ImportError as e:
+    logging.warning(f"Auth router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount auth router: {e}", exc_info=True)
 
-    # Include chat sessions router
+# Include chat sessions router
+try:
+    logging.info("Attempting to import chat sessions router...")
     from .routers.chat_sessions import router as chat_router
+    logging.info(f"Chat sessions router imported successfully. Prefix: {chat_router.prefix}, Routes: {len(chat_router.routes)}")
     app.include_router(chat_router)
     logging.info("Chat sessions router mounted successfully")
 except ImportError as e:
-    logging.warning(f"Chat sessions router not available: {e}")
+    logging.warning(f"Chat sessions router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount chat sessions router: {e}", exc_info=True)
+
+# Include workflows router (Phase 4)
+try:
+    logging.info("Attempting to import workflows router...")
+    from .routers.workflows import router as workflows_router
+    logging.info(f"Workflows router imported successfully. Prefix: {workflows_router.prefix}, Routes: {len(workflows_router.routes)}")
+    app.include_router(workflows_router)
+    logging.info("Workflows router mounted successfully")
+except ImportError as e:
+    logging.warning(f"Workflows router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount workflows router: {e}", exc_info=True)
 
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
@@ -183,6 +218,66 @@ def healthz():
     return {"status": "ok"}
 
 
+# Agents endpoint for workflow builder
+@app.get("/api/agents")
+async def get_agents():
+    """Get list of available agents for workflow configuration"""
+    try:
+        config = Settings.load()
+        agents = []
+        
+        # Add required agents
+        if config.agent_id_triage:
+            agents.append({
+                "id": config.agent_id_triage,
+                "name": "Triage Agent",
+                "description": "Routes and categorizes incoming requests"
+            })
+        
+        if config.agent_id_aisearch:
+            agents.append({
+                "id": config.agent_id_aisearch,
+                "name": "AI Search Agent",
+                "description": "Searches Azure AI Search for relevant content"
+            })
+        
+        if config.agent_id_reviewer:
+            agents.append({
+                "id": config.agent_id_reviewer,
+                "name": "Review Agent",
+                "description": "Reviews and validates generated content"
+            })
+        
+        # Add reporter agents
+        for i, reporter_id in enumerate(config.reporter_ids, 1):
+            agents.append({
+                "id": reporter_id,
+                "name": f"Reporter Agent {i}" if len(config.reporter_ids) > 1 else "Reporter Agent",
+                "description": "Generates news reports and content"
+            })
+        
+        # Add optional agents
+        if config.agent_id_neo4j_search:
+            agents.append({
+                "id": config.agent_id_neo4j_search,
+                "name": "Neo4j GraphRAG Agent",
+                "description": "Searches Neo4j graph database for relevant content"
+            })
+        
+        if config.agent_id_aisearch_sql:
+            agents.append({
+                "id": config.agent_id_aisearch_sql,
+                "name": "SQL Search Agent",
+                "description": "Queries PostgreSQL databases and converts to vector search"
+            })
+        
+        return agents
+    except Exception as e:
+        logging.exception("Failed to get agents list")
+        # Return empty list on error so frontend doesn't break
+        return []
+
+
 # SQL Generation Endpoints
 
 class SQLGenerationRequest(BaseModel):
@@ -243,4 +338,8 @@ async def search_schema(request: SchemaSearchRequest):
 # ---------- Allow `python -m src.news_reporter.api` to start the server ----------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.news_reporter.api:app", host="127.0.0.1", port=8787, reload=True)
+    import os
+    # In Docker, bind to 0.0.0.0; locally, use 127.0.0.1
+    host = "0.0.0.0" if os.getenv("DOCKER_ENV") else "127.0.0.1"
+    reload = os.getenv("DOCKER_ENV") is None
+    uvicorn.run("src.news_reporter.api:app", host=host, port=8787, reload=reload)

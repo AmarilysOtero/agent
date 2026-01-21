@@ -25,8 +25,13 @@ except (ImportError, TypeError) as e:
     ResourceNotFoundError = Exception
     HttpResponseError = Exception
 
-# Load .env
-load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env", override=True)
+# Load .env (only if file exists - in Docker, env vars come from docker-compose)
+env_path = Path(__file__).resolve().parents[2] / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=True)
+else:
+    # In Docker, env vars are set by docker-compose, so just ensure they're loaded from environment
+    load_dotenv(override=False)  # This will load from environment without overriding
 
 # Mute Azure SDK logs
 if os.getenv("QUIET_AZURE_LOGS", "1").lower() in {"1", "true", "yes"}:
@@ -37,10 +42,36 @@ _client: Optional[AIProjectClient] = None
 _validated: bool = False
 
 def _choose_credential():
-    try:
-        return AzureCliCredential()
-    except Exception:
-        return DefaultAzureCredential()
+    """Choose Azure credential - prefer DefaultAzureCredential in Docker, AzureCliCredential otherwise."""
+    # In Docker, AzureCliCredential doesn't work reliably, so prefer DefaultAzureCredential
+    is_docker = os.getenv("DOCKER_ENV", "").lower() in {"1", "true", "yes"}
+    
+    if is_docker:
+        # In Docker, use DefaultAzureCredential which supports:
+        # - Environment variables (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+        # - Managed Identity (if running on Azure)
+        # - Other credential types that work in containers
+        try:
+            return DefaultAzureCredential()
+        except Exception:
+            # Fallback to AzureCliCredential if DefaultAzureCredential fails
+            # (though this will likely fail in Docker too)
+            try:
+                return AzureCliCredential()
+            except Exception:
+                raise RuntimeError(
+                    "Failed to authenticate with Azure. In Docker, set environment variables:\n"
+                    "  AZURE_CLIENT_ID=<your-client-id>\n"
+                    "  ***REMOVED***
+                    "  AZURE_TENANT_ID=<your-tenant-id>\n"
+                    "Or configure managed identity if running on Azure."
+                )
+    else:
+        # Outside Docker, try AzureCliCredential first (for local development)
+        try:
+            return AzureCliCredential()
+        except Exception:
+            return DefaultAzureCredential()
 
 def _require_env(name: str) -> str:
     v = os.getenv(name)
@@ -73,12 +104,30 @@ def _call_with_agent_kw(fn: Callable[..., Any], *, thread_id: str, agent_id: str
         return fn(thread_id=thread_id, assistant_id=agent_id, **kw)
 
 def _with_retries(fn: Callable[[], Any], *, attempts: int = 3) -> Any:
+    last_error = None
     for i in range(attempts):
         try:
             return fn()
-        except (HttpResponseError, ResourceNotFoundError):
+        except (HttpResponseError, ResourceNotFoundError) as e:
+            last_error = e
+            if i < attempts - 1:  # Don't log on last attempt
+                logging.debug(f"Retry {i+1}/{attempts} after error: {type(e).__name__}: {str(e)}")
             time.sleep(0.5 * (2 ** i) + random.random() * 0.2)
-    raise RuntimeError("Operation failed after retries")
+        except Exception as e:
+            # For non-HTTP errors, log and re-raise immediately
+            last_error = e
+            logging.error(f"Non-retryable error in _with_retries: {type(e).__name__}: {str(e)}")
+            raise
+    # If we get here, all retries failed
+    error_msg = f"Operation failed after {attempts} retries"
+    if last_error:
+        error_details = str(last_error)
+        status_code = getattr(last_error, 'status_code', None)
+        if status_code:
+            error_msg += f" (HTTP {status_code}: {error_details})"
+        else:
+            error_msg += f" (Error: {error_details})"
+    raise RuntimeError(error_msg) from last_error
 
 def get_foundry_client() -> AIProjectClient:
     global _client, _validated
@@ -144,22 +193,25 @@ def run_foundry_agent(agent_id: str, user_content: str, *, system_hint: str | No
         thread_id = _get_id(thread)
     except Exception as e:
         error_msg = str(e)
-        if "authentication" in error_msg.lower() or "401" in error_msg.lower() or "403" in error_msg.lower():
+        # Check for authentication/authorization errors
+        status_code = getattr(e, 'status_code', None)
+        if status_code == 401 or status_code == 403 or "authentication" in error_msg.lower() or "unauthorized" in error_msg.lower():
             raise RuntimeError(
-                "Access denied to Foundry. "
+                f"Access denied to Foundry (HTTP {status_code if status_code else 'N/A'}). "
                 "Please check your Azure credentials and permissions. "
-                "Run 'az login' to authenticate. "
+                "In Docker, ensure AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and AZURE_TENANT_ID are set correctly. "
+                "The service principal needs 'Cognitive Services User' or 'AI Developer' role on the Foundry project. "
                 f"Error: {error_msg}"
             ) from e
-        elif "not found" in error_msg.lower() or "404" in error_msg.lower():
+        elif status_code == 404 or "not found" in error_msg.lower():
             raise RuntimeError(
-                "Foundry resource not found. "
-                "Please verify your Foundry configuration and agent IDs. "
+                f"Foundry resource not found (HTTP {status_code if status_code else 'N/A'}). "
+                "Please verify your AZURE_AI_PROJECT_ENDPOINT and ensure you have access to the project. "
                 f"Error: {error_msg}"
             ) from e
         else:
             raise RuntimeError(
-                f"Failed to create Foundry thread: {error_msg}. "
+                f"Failed to create Foundry thread (HTTP {status_code if status_code else 'N/A'}): {error_msg}. "
                 "Please check your Foundry access and configuration."
             ) from e
 

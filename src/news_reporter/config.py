@@ -22,6 +22,7 @@ class Settings:
     
     # === Optional agent settings ===
     agent_id_neo4j_search: str | None = None  # Optional Neo4j GraphRAG agent
+    agent_id_aisearch_sql: str | None = None  # Optional SQL agent (PostgreSQL → CSV → Vector)
     multi_route_always: bool = False
     use_neo4j_search: bool = False  # Toggle to use Neo4j instead of Azure Search
 
@@ -55,11 +56,15 @@ class Settings:
     # === Auth API ===
     auth_api_url: str | None = None
     
+    # === Workflow Configuration ===
+    workflow_json_path: str | None = None  # Optional path to JSON workflow file (used when no active workflow is set)
+    
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
         aisearch = os.getenv("AGENT_ID_AISEARCH") or ""
         neo4j_search = os.getenv("AGENT_ID_NEO4J_SEARCH")  # Optional
+        aisearch_sql = os.getenv("AGENT_ID_AISEARCHSQL")  # Optional SQL agent
         reviewer = os.getenv("AGENT_ID_REVIEWER") or ""
         reporters = _split_list(os.getenv("AGENT_ID_REPORTER_LIST"))
         if not reporters:
@@ -104,6 +109,9 @@ class Settings:
         # Auth
         auth_url = os.getenv("MONGO_AUTH_URL")
 
+        # Workflow JSON path (optional)
+        workflow_json = os.getenv("WORKFLOW_JSON_PATH")
+
         # minimal validation (you likely already have these set)
         missing = []
         if not (ai_endpoint and ai_sub and ai_rg and ai_account and (ai_project or "/api/projects/" in (ai_endpoint or ""))):
@@ -130,6 +138,7 @@ class Settings:
             agent_id_triage=triage,
             agent_id_aisearch=aisearch,
             agent_id_neo4j_search=neo4j_search,
+            agent_id_aisearch_sql=aisearch_sql,
             reporter_ids=reporters,
             agent_id_reviewer=reviewer,
             multi_route_always=multi_flag,
@@ -154,8 +163,9 @@ class Settings:
             blob_container_chunks=blob_chunks,
             neo4j_api_url=neo4j_url,
             auth_api_url=auth_url,
+            workflow_json_path=workflow_json,
         )
-
+    
     @classmethod
     def load(cls) -> "Settings":
         return cls.from_env()

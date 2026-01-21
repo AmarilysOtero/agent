@@ -8,6 +8,7 @@ Provides hybrid GraphRAG retrieval from Neo4j:
 
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
+import os
 import requests
 import logging
 import time
@@ -43,6 +44,11 @@ class Neo4jGraphRAGRetriever:
                 "NEO4J_API_URL must be set in .env or passed to constructor. "
                 "Example: http://localhost:8000"
             )
+        
+        # If running in Docker and URL uses localhost, replace with host.docker.internal
+        if os.getenv("DOCKER_ENV") and "localhost" in self.neo4j_api_url:
+            self.neo4j_api_url = self.neo4j_api_url.replace("localhost", "host.docker.internal")
+            logger.info(f"Running in Docker - updated Neo4j URL to use host.docker.internal")
         
         # Remove trailing slash if present
         self.neo4j_api_url = self.neo4j_api_url.rstrip("/")
@@ -104,6 +110,11 @@ class Neo4jGraphRAGRetriever:
             if keywords:
                 payload["keywords"] = keywords
             
+            logger.info(f"🔍 [hybrid_retrieve] Querying Neo4j GraphRAG API: {url}")
+            logger.info(f"🔍 [hybrid_retrieve] Payload: {payload}")
+            print(f"🔍 [hybrid_retrieve] Querying Neo4j GraphRAG API: {url}")
+            print(f"🔍 [hybrid_retrieve] Payload: query='{query[:100]}...', top_k_vector={top_k_vector}, similarity_threshold={similarity_threshold}, keywords={keywords}")
+            
             logger.info(f"Querying Neo4j GraphRAG: '{query[:100]}...' (timeout: 120s)")
             start_time = time.time()
             # Increased timeout to 120 seconds for complex queries with graph expansion
@@ -113,6 +124,10 @@ class Neo4jGraphRAGRetriever:
                 logger.info(f"Neo4j GraphRAG request completed in {elapsed:.2f}s")
                 response.raise_for_status()
                 data = response.json()
+                
+                logger.info(f"📊 [hybrid_retrieve] Neo4j API returned {len(data.get('results', []))} results")
+                print(f"📊 [hybrid_retrieve] Neo4j API returned {len(data.get('results', []))} results")
+                
             except requests.exceptions.Timeout:
                 elapsed = time.time() - start_time
                 logger.error(f"Neo4j GraphRAG request timed out after {elapsed:.2f}s (timeout: 120s)")
@@ -120,8 +135,8 @@ class Neo4jGraphRAGRetriever:
             
             # Transform to match Azure Search format for compatibility
             results = []
-            for chunk in data.get("results", []):
-                results.append({
+            for i, chunk in enumerate(data.get("results", []), 1):
+                chunk_result = {
                     "id": chunk.get("id"),
                     "text": chunk.get("text", ""),
                     "file_name": chunk.get("file_name"),
@@ -139,7 +154,21 @@ class Neo4jGraphRAGRetriever:
                         "file_id": chunk.get("file_id"),
                         "chunk_size": chunk.get("chunk_size")
                     }
-                })
+                }
+                results.append(chunk_result)
+                
+                # Log first few chunks for debugging
+                if i <= 3:
+                    logger.info(
+                        f"   Chunk {i} from API: similarity={chunk_result['similarity']:.3f}, "
+                        f"hybrid_score={chunk_result['hybrid_score']:.3f}, "
+                        f"file='{chunk_result['file_name']}', "
+                        f"text_preview='{chunk_result['text'][:100]}...'"
+                    )
+                    print(
+                        f"   Chunk {i} from API: similarity={chunk_result['similarity']:.3f}, "
+                        f"file='{chunk_result['file_name']}'"
+                    )
             
             logger.info(f"Retrieved {len(results)} chunks from Neo4j GraphRAG")
             return results
@@ -182,8 +211,11 @@ def graphrag_search(
     Returns:
         List of chunk results (compatible with Azure Search format)
     """
+    logger.info(f"🔍 [graphrag_search] Called with query='{query[:100]}...', top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}")
+    print(f"🔍 [graphrag_search] Called with query='{query[:100]}...', top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}")
+    
     retriever = Neo4jGraphRAGRetriever()
-    return retriever.hybrid_retrieve(
+    results = retriever.hybrid_retrieve(
         query=query,
         top_k_vector=top_k,
         max_hops=1,  # Reduced from 2 to 1 to limit indirect connections
@@ -194,5 +226,14 @@ def graphrag_search(
         keywords=keywords,
         keyword_match_type=keyword_match_type,
         keyword_boost=keyword_boost
-    )[:top_k]  # Limit to top_k
+    )
+    
+    logger.info(f"📊 [graphrag_search] hybrid_retrieve returned {len(results)} results")
+    print(f"📊 [graphrag_search] hybrid_retrieve returned {len(results)} results")
+    
+    limited_results = results[:top_k]  # Limit to top_k
+    logger.info(f"📊 [graphrag_search] Returning {len(limited_results)} results (limited from {len(results)})")
+    print(f"📊 [graphrag_search] Returning {len(limited_results)} results (limited from {len(results)})")
+    
+    return limited_results
 

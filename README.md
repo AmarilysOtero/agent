@@ -94,3 +94,53 @@ pip install azure-search-documents azure-storage-blob requests
 # (only for vector querying with your own embedding:)
 
 # pip install azure-ai-projects azure-identity
+
+## Docker Setup
+
+For running the Agent application in Docker (recommended for Windows to avoid MongoDB authentication issues):
+
+### Quick Start
+
+1. **Configure .env for Docker:**
+   - Update MongoDB connection strings to use `mongo` hostname instead of `127.0.0.1`
+   - Add Azure service principal credentials (see below)
+
+2. **Start with Docker Compose:**
+
+   ```powershell
+   cd C:\Alexis\Projects\RAG_Infra
+   docker-compose -f docker-compose.dev.yml up -d --build agent
+   ```
+
+3. **View logs:**
+   ```powershell
+   docker logs -f rag-agent
+   ```
+
+### Azure Authentication for Docker
+
+Since `az login` doesn't work in Docker containers, you need to use service principal authentication:
+
+1. **Create a service principal:**
+
+   ```powershell
+   az login
+   az ad sp create-for-rbac --name "rag-agent-sp" --role contributor --scopes /subscriptions/<your-subscription-id>
+   ```
+
+2. **Add to `.env` file:**
+
+   ```env
+   AZURE_CLIENT_ID=<appId-from-output>
+   ***REMOVED***
+   AZURE_TENANT_ID=<tenant-from-output>
+   ```
+
+3. **Assign Foundry permissions:**
+   ```powershell
+   az role assignment create --assignee <appId> --role "Cognitive Services User" --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<account-name>
+   ```
+
+For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
+## Test

@@ -102,7 +102,6 @@ For running the Agent application in Docker (recommended for Windows to avoid Mo
 ### Quick Start
 
 1. **Configure .env for Docker:**
-
    - Update MongoDB connection strings to use `mongo` hostname instead of `127.0.0.1`
    - Add Azure service principal credentials (see below)
 
@@ -143,3 +142,5 @@ Since `az login` doesn't work in Docker containers, you need to use service prin
    ```
 
 For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
+## Test

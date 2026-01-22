@@ -143,4 +143,36 @@ Since `az login` doesn't work in Docker containers, you need to use service prin
 
 For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
+## Neo4j GraphRAG Backend (New)
+
+The repository now includes a Neo4j GraphRAG backend for entity extraction and graph-based retrieval:
+
+- **Entity extraction** from document chunks using Azure OpenAI
+- **Typed relationships** between entities (WORKS_FOR, LOCATED_IN, etc.)
+- **Graph-based search** with multi-hop traversal
+- **Entity deduplication** and canonicalization
+
+### Quick Start
+
+```bash
+# 1. Start Neo4j database
+docker run -d --name neo4j -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/your_password neo4j:latest
+
+# 2. Configure .env (add Neo4j connection details)
+# See neo4j_backend/ENV_CONFIG.md
+
+# 3. Start the backend
+python -m neo4j_backend.main
+
+# 4. Extract entities from documents
+curl -X POST http://localhost:8000/api/graph/extract-entities \
+  -H "Content-Type: application/json" \
+  -d '{"file_path": "/path/to/document.pdf", "extract_relationships": true}'
+```
+
+For detailed setup and integration instructions, see:
+- **[neo4j_backend/README.md](neo4j_backend/README.md)** - Backend API documentation
+- **[NEO4J_INTEGRATION.md](NEO4J_INTEGRATION.md)** - Integration guide
+
 ## Test

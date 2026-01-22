@@ -32,3 +32,6 @@ requests>=2.31.0
 # Auth dependencies
 bcrypt>=4.0.0
 pymongo>=4.6.0
+
+# Neo4j GraphRAG Backend
+neo4j>=5.14.0

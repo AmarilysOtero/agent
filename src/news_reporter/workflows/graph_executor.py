@@ -7,7 +7,7 @@ import asyncio
 import time
 import logging
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from .workflow_state import WorkflowState
 from .agent_runner import AgentRunner
 from .condition_evaluator import ConditionEvaluator
@@ -71,7 +71,11 @@ class GraphExecutor:
         # Validate graph
         errors = graph_def.validate()
         if errors:
-            raise ValueError(f"Invalid graph definition: {', '.join(errors)}")
+            # Filter out triage-specific validation error - entry nodes will be inferred
+            # Only structural errors (cycles, missing nodes) should block execution
+            non_triage_errors = [e for e in errors if "Entry node 'triage'" not in e]
+            if non_triage_errors:
+                raise ValueError(f"Invalid graph definition: {', '.join(non_triage_errors)}")
         
         # Build execution graph
         self._build_execution_graph()

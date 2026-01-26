@@ -16,7 +16,7 @@ except ImportError:
     MongoClient = None
     _MONGO_AVAILABLE = False
 
-from .workflow_persistence import WorkflowRecord, ExecutionRecord, WorkflowStatus
+from ..models.workflow_persistence import WorkflowRecord, ExecutionRecord, WorkflowStatus
 
 logger = logging.getLogger(__name__)
 

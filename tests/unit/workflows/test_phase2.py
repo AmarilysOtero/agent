@@ -15,7 +15,7 @@ from src.news_reporter.workflows.agent_adapter import (
     AgentAdapterRegistry, AgentAdapter, TriageAdapter, SQLAdapter
 )
 from src.news_reporter.workflows.workflow_state import WorkflowState
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 from src.news_reporter.workflows.graph_executor import GraphExecutor
 from src.news_reporter.config import Settings
 from unittest.mock import Mock

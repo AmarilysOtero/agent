@@ -8,7 +8,7 @@ project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
 import pytest
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from src.news_reporter.workflows.condition_evaluator import ConditionEvaluator
 from src.news_reporter.workflows.workflow_state import WorkflowState
 

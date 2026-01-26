@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Dict, List, Any, Optional
 import logging
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 
 logger = logging.getLogger(__name__)
 

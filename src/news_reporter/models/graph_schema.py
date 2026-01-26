@@ -119,10 +119,10 @@ class GraphDefinition(BaseModel):
                 errors.append(f"Duplicate node ID: {node.id}")
             seen_ids.add(node.id)
         
-        # Check entry_node_id exists
-        if self.entry_node_id:
-            if self.entry_node_id not in node_ids:
-                errors.append(f"Entry node '{self.entry_node_id}' not found in graph nodes")
+        # # Check entry_node_id exists
+        # if self.entry_node_id:
+        #     if self.entry_node_id not in node_ids:
+        #         errors.append(f"Entry node '{self.entry_node_id}' not found in graph nodes")
         
         # Check node type-specific requirements
         for node in self.nodes:

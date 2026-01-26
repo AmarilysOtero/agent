@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 
 logger = logging.getLogger(__name__)
 

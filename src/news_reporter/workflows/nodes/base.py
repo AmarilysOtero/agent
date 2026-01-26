@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import logging
 
-from ..graph_schema import NodeConfig
+from ...models.graph_schema import NodeConfig
 from ..workflow_state import WorkflowState
 from ..agent_runner import AgentRunner
 from ..node_result import NodeResult

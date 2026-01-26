@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 import logging
 
 from .base import BaseNode
-from ..graph_schema import NodeConfig
+from ...models.graph_schema import NodeConfig
 from ..workflow_state import WorkflowState
 from ..agent_runner import AgentRunner
 from ..node_result import NodeResult, NodeStatus
@@ -92,7 +92,7 @@ class AgentNode(BaseNode):
             **params
         )
         
-        # Map outputs to state (default behavior)
+        # Map outputs to state (custom mappings)
         state_updates = {}
         if self.config.outputs:
             for output_key, state_path in self.config.outputs.items():
@@ -100,7 +100,12 @@ class AgentNode(BaseNode):
                     state_updates[state_path] = result
                 elif isinstance(result, dict) and output_key in result:
                     state_updates[state_path] = result[output_key]
-        else:
-            state_updates["latest"] = str(result)
+        
+        # ALWAYS write terminal outputs (for arbitrary agent graphs)
+        # This enables:
+        # 1. Terminal output resolution via outputs.<node_id>
+        # 2. Agent chaining via latest
+        state_updates["latest"] = str(result)
+        state_updates[f"outputs.{self.config.id}"] = str(result)
         
         return NodeResult.success(state_updates=state_updates, artifacts={"agent_output": result})

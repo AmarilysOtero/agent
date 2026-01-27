@@ -76,12 +76,38 @@ class AgentNode(BaseNode):
             value = self.state.get(state_path)
             input_data[input_key] = value
         
-        # If no structured inputs, use goal as default
+        # If no structured inputs, infer input for automatic chaining
         if not input_data:
-            input_data = {"goal": self.state.goal}
+            # Check if we have a parent result (for chaining)
+            parent_result = getattr(self, 'parent_result', None)
+            
+            if parent_result:
+                # Use parent's output for chaining
+                # Prefer latest, fallback to agent_output artifact
+                if 'latest' in parent_result.state_updates:
+                    input_text = parent_result.state_updates['latest']
+                elif 'agent_output' in parent_result.artifacts:
+                    input_text = str(parent_result.artifacts['agent_output'])
+                else:
+                    # Fallback to first state update value
+                    input_text = next(iter(parent_result.state_updates.values()), self.state.goal)
+                
+                # Downstream nodes receive ONLY parent output (no goal)
+                input_data = {"input": str(input_text)}
+                logger.debug(f"AgentNode {self.config.id}: Chaining - input='{str(input_text)[:120]}...'")
+            else:
+                # Entry node - use workflow goal only
+                input_data = {"goal": self.state.goal}
+                logger.debug(f"AgentNode {self.config.id}: Entry node - goal='{self.state.goal[:100]}...')")
         
         # Get additional params
         params = self.config.params.copy()
+        
+        # Log resolved inputs for traceability
+        input_keys = list(input_data.keys())
+        input_preview = " ".join([f"{k}='{str(v)[:120]}...'" if len(str(v)) > 120 else f"{k}='{v}'" 
+                                   for k, v in input_data.items()])
+        logger.info(f"[{self.config.id}] agent_id={self.config.agent_id} input_keys={input_keys} {input_preview}")
         
         # Execute agent
         result = await self.runner.run(

@@ -215,8 +215,10 @@ class GraphExecutor:
         try:
             output_dir = Path(__file__).parent
             state_snapshot = {
+                "goal": state.goal,
                 "triage": state.get("triage"),
                 "latest": state.latest,
+                "outputs": state.outputs,
                 "conditional": state.get("conditional", {}),
                 "loop_state": state.get("loop_state", {})
             }
@@ -801,6 +803,9 @@ class GraphExecutor:
             settings=self.config
         )
         
+        # Pass parent_result to node for automatic chaining
+        node.parent_result = parent_result
+        
         state.append_log("INFO", f"Executing node: {node_id} (type: {node_config.type})", node_id=node_id)
         
         # Phase 5: Emit node started event
@@ -873,6 +878,15 @@ class GraphExecutor:
         
         for path, value in sorted_updates:
             state.set(path, value)
+            
+            # Log key state updates for traceability
+            if path == "latest":
+                value_preview = str(value)[:100] + "..." if len(str(value)) > 100 else str(value)
+                logger.info(f"State update: latest='{value_preview}'")
+            elif path.startswith("outputs."):
+                node_id = path.split(".", 1)[1]
+                value_preview = str(value)[:100] + "..." if len(str(value)) > 100 else str(value)
+                logger.info(f"State update: outputs.{node_id}='{value_preview}' (total outputs: {len(state.outputs)})")
     
     def _determine_next_nodes(
         self,

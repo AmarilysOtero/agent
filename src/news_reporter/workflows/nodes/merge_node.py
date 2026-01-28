@@ -26,15 +26,35 @@ class MergeNode(BaseNode):
     """
     
     async def execute(self) -> NodeResult:
-        """Merge inputs from state with join barrier semantics"""
+        """Merge inputs from parent_result or state with join barrier semantics"""
         # Get merge configuration
         merge_key = self.config.params.get("merge_key", "final")  # "final", "drafts", etc.
-        strategy = self.config.params.get("strategy", "stitch")
+        strategy = self.config.params.get("strategy", "concat_text")
         expected_keys = self.config.params.get("expected_keys")  # Join barrier: wait for these keys
         timeout = self.config.params.get("timeout", 60.0)  # Timeout for join barrier
         
-        # Get items to merge
-        items = self.state.get(merge_key, {})
+        # Get items to merge - prioritize parent_result (from fanout branches)
+        items = None
+        if hasattr(self, 'parent_result') and self.parent_result:
+            # Check for branch outputs from fanout (primary path)
+            if "branches" in self.parent_result.state_updates:
+                items = self.parent_result.state_updates["branches"]
+                logger.debug(f"MergeNode {self.config.id}: Using branch outputs from parent_result: {list(items.keys())}")
+            # Check for legacy 'final' in parent_result (compatibility)
+            elif merge_key in self.parent_result.state_updates:
+                items = self.parent_result.state_updates[merge_key]
+                logger.debug(f"MergeNode {self.config.id}: Using '{merge_key}' from parent_result")
+        
+        # Fallback to state if not provided via parent_result
+        if items is None:
+            items = self.state.get(merge_key, {})
+            if items:
+                logger.debug(f"MergeNode {self.config.id}: Using '{merge_key}' from state: {list(items.keys())}")
+        
+        # Ensure items is a dict
+        if not isinstance(items, dict):
+            logger.warning(f"MergeNode {self.config.id}: Items is not a dict, converting: {type(items)}")
+            items = {}
         
         # Join barrier: wait for expected keys if specified
         if expected_keys:
@@ -68,23 +88,27 @@ class MergeNode(BaseNode):
                 )
         
         if not items:
-            logger.warning(f"MergeNode {self.config.id}: No items to merge from '{merge_key}'")
-            return NodeResult.success(
-                state_updates={"latest": ""},
-                artifacts={"merged": "", "strategy": strategy, "item_count": 0}
-            )
+            logger.warning(f"MergeNode {self.config.id}: No items to merge (checked parent_result.branches, parent_result.{merge_key}, state.{merge_key})")
+            # return NodeResult.success(
+            #     state_updates={"latest": ""},
+            #     artifacts={"merged": "", "strategy": strategy, "item_count": 0}
+            # )
+            error_msg = f"MergeNode {self.config.id}: No items to merge..."
+            return NodeResult.failed(error_msg)
         
         # Apply merge strategy
         merged = self._apply_strategy(strategy, items, self.config.params)
         
         logger.info(
             f"MergeNode {self.config.id}: Merged {len(items)} items using strategy '{strategy}'. "
-            f"Expected: {expected_keys}, Got: {list(items.keys())}"
+            f"Keys: {list(items.keys())}"
         )
         
-        # Set output
-        output_path = self.config.outputs.get("merged", "latest")
-        state_updates = {output_path: merged}
+        # Set output - always write to 'latest' for standard chaining, and also outputs.<node_id>
+        state_updates = {
+            "latest": merged,
+            f"outputs.{self.config.id}": merged
+        }
         
         return NodeResult.success(
             state_updates=state_updates,
@@ -100,7 +124,7 @@ class MergeNode(BaseNode):
     def _apply_strategy(self, strategy: str, items: Dict[str, Any], params: Dict[str, Any]) -> Any:
         """Apply merge strategy to items"""
         if strategy == "concat_text":
-            separator = params.get("separator", "\n\n")
+            separator = params.get("separator", " | ")
             return separator.join(str(v) for v in items.values())
         
         elif strategy == "collect_list":

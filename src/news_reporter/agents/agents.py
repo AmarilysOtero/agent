@@ -320,16 +320,20 @@ class AiSearchAgent:
                 metadata = res.get("metadata", {})
                 vector_score = metadata.get("vector_score", 0.0)
                 keyword_score = metadata.get("keyword_score", 0.0)
+                header_text = metadata.get("header_text", "N/A")
+                parent_headers = metadata.get("parent_headers", [])
                 
                 logger.info(
                     f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
                     f"vector_score={vector_score:.3f}, keyword_score={keyword_score:.3f}, "
+                    f"header_text='{header_text}', parent_headers={parent_headers}, "
                     f"file='{file_name}', chunk_id='{chunk_id[:50]}...', "
                     f"text_preview='{text_preview}...'"
                 )
                 print(
                     f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
                     f"vector_score={vector_score:.3f}, keyword_score={keyword_score:.3f}, "
+                    f"header_text='{header_text}', parent_headers={parent_headers}, "
                     f"file='{file_name}', text_preview='{text_preview}...'"
                 )
         else:
@@ -360,8 +364,11 @@ class AiSearchAgent:
                 similarity = res.get("similarity", 0.0)
                 text_preview = res.get("text", "")[:150].replace("\n", " ")
                 file_name = res.get("file_name", "?")
-                logger.info(f"   Filtered {i}: similarity={similarity:.3f}, file='{file_name}', text_preview='{text_preview}...'")
-                print(f"   Filtered {i}: similarity={similarity:.3f}, file='{file_name}', text_preview='{text_preview}...'")
+                metadata = res.get("metadata", {})
+                header_text = metadata.get("header_text", "N/A")
+                parent_headers = metadata.get("parent_headers", [])
+                logger.info(f"   Filtered {i}: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}', text_preview='{text_preview}...'")
+                print(f"   Filtered {i}: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}', text_preview='{text_preview}...'")
         
         # Limit to top 8 after filtering
         filtered_results = filtered_results[:8]
@@ -592,6 +599,7 @@ class AiSearchAgent:
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
             file_path = res.get("file_path", "")
+            similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
             if file_path.lower().endswith('.csv'):
@@ -613,6 +621,13 @@ class AiSearchAgent:
                 metadata_parts.append(f"similarity:{res['similarity']:.2f}")
             if "metadata" in res and res["metadata"]:
                 meta = res["metadata"]
+                header_text = meta.get("header_text", "N/A")
+                parent_headers = meta.get("parent_headers", [])
+                
+                # Debug log for each chunk being added to findings
+                logger.info(f"🔍 [AiSearchAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
+                print(f"🔍 [AiSearchAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
+                
                 if meta.get("hop_count", 0) > 0:
                     metadata_parts.append(f"hops:{meta['hop_count']}")
                 if meta.get("vector_score") is not None:
@@ -627,6 +642,10 @@ class AiSearchAgent:
                     metadata_parts.append(f"size:{meta['chunk_size']}")
                 if meta.get("file_id"):
                     metadata_parts.append(f"file_id:{meta['file_id']}")
+                if header_text != "N/A":
+                    metadata_parts.append(f"header:{header_text}")
+                if parent_headers:
+                    metadata_parts.append(f"parents:{len(parent_headers)}")
             
             metadata_str = f" [{', '.join(metadata_parts)}]" if metadata_parts else ""
             
@@ -873,6 +892,14 @@ class SQLAgent:
             text = res.get("text", "").replace("\n", " ")
             file_path = res.get("file_path", "")
             file_name = res.get("file_name", "Unknown")
+            similarity = res.get("similarity", 0.0)
+            metadata = res.get("metadata", {})
+            header_text = metadata.get("header_text", "N/A")
+            parent_headers = metadata.get("parent_headers", [])
+            
+            # Debug log for each chunk being added to findings
+            logger.info(f"🔍 [SQLAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
+            print(f"🔍 [SQLAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
             
             if file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
@@ -1176,6 +1203,7 @@ class Neo4jGraphRAGAgent:
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
             file_path = res.get("file_path", "")
+            similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
             if file_path.lower().endswith('.csv'):
@@ -1197,6 +1225,13 @@ class Neo4jGraphRAGAgent:
                 metadata_parts.append(f"similarity:{res['similarity']:.2f}")
             if "metadata" in res and res["metadata"]:
                 meta = res["metadata"]
+                header_text = meta.get("header_text", "N/A")
+                parent_headers = meta.get("parent_headers", [])
+                
+                # Debug log for each chunk being added to findings
+                logger.info(f"🔍 [Neo4jGraphRAGAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
+                print(f"🔍 [Neo4jGraphRAGAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
+                
                 if meta.get("hop_count", 0) > 0:
                     metadata_parts.append(f"hops:{meta['hop_count']}")
                 if meta.get("vector_score") is not None:
@@ -1211,6 +1246,10 @@ class Neo4jGraphRAGAgent:
                     metadata_parts.append(f"size:{meta['chunk_size']}")
                 if meta.get("file_id"):
                     metadata_parts.append(f"file_id:{meta['file_id']}")
+                if header_text != "N/A":
+                    metadata_parts.append(f"header:{header_text}")
+                if parent_headers:
+                    metadata_parts.append(f"parents:{len(parent_headers)}")
             
             metadata_str = f" [{', '.join(metadata_parts)}]" if metadata_parts else ""
             

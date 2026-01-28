@@ -212,7 +212,7 @@ class WorkflowComposer:
         merge_node = NodeConfig(
             id="compose_merge",
             type="merge",
-            params={"strategy": "stitch"}
+            params={"strategy": "concat_text"}
         )
         all_nodes.append(merge_node)
         

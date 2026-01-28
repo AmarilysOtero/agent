@@ -40,9 +40,7 @@ def get_ai_project_client() -> AIProjectClient:
 
     from ..tools.util import parse_connection_string
     parts = parse_connection_string(conn)
-    print(f"Parts: {parts}")
     credential = DefaultAzureCredential()
-    print(f"Credential: {credential}")
 
     return AIProjectClient(
         endpoint=parts["endpoint"],

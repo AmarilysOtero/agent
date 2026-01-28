@@ -2,15 +2,17 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple, Set
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
 
 logger = logging.getLogger(__name__)
 
-
 def infer_header_from_chunk(text: str, file_name: str = "") -> tuple[str, list[str]]:
-    """Infer header context from chunk text when header_text is N/A
+    """Infer header context from chunk text when header_text is N/A.
+    
+    Generic patterns only—no hardcoded keywords.
+    Pattern detection: "Lines that look like headers" (short, capitalized, structured).
     
     Args:
         text: Chunk text to analyze
@@ -26,35 +28,33 @@ def infer_header_from_chunk(text: str, file_name: str = "") -> tuple[str, list[s
     inferred_header = "N/A"
     parent_headers = []
     
-    # Look for header patterns in the first few lines
+    # Look for header patterns in the first few lines (purely structural, no keywords)
     for line in lines[:5]:  # Check first 5 lines
         stripped = line.strip()
         if not stripped:
             continue
         
-        # Pattern 1: All caps or title case short line (likely a header)
-        if len(stripped) < 80 and (stripped.isupper() or 
-            (stripped[0].isupper() and not stripped.endswith('.'))):
-            # Check if line looks like a header (short, capitalized, ends with special char or is short)
-            if len(stripped) < 50 or re.match(r'^[A-Z][a-zA-Z\s\-/()]*\s*[:\-]?\s*$', stripped):
-                inferred_header = stripped
-                logger.debug(f"[InferHeader] Detected header from pattern: '{inferred_header}'")
-                break
+        # Generic header detection (no domain keywords):
+        # 1. All caps short line
+        # 2. Title case short line
+        # 3. Line ending with colon or dash (structural marker)
         
-        # Pattern 2: Contains section keywords
-        lower = stripped.lower()
-        if any(keyword in lower for keyword in ['skill', 'experience', 'education', 'project', 
-                                                  'certification', 'summary', 'objective', 'about',
-                                                  'contact', 'profile']):
-            # Extract just the keyword part
-            for keyword in ['skills', 'experience', 'education', 'projects', 'certifications', 
-                           'professional summary', 'objective', 'about', 'contact', 'profile']:
-                if keyword in lower:
-                    inferred_header = stripped
-                    logger.debug(f"[InferHeader] Detected header from keyword '{keyword}' in: '{inferred_header}'")
-                    break
-            if inferred_header != "N/A":
-                break
+        is_all_caps = stripped.isupper() and len(stripped) > 1
+        is_title_case_short = (
+            len(stripped) < 80 and
+            stripped[0].isupper() and
+            not stripped.endswith('.') and
+            not stripped[0].isdigit()
+        )
+        has_structural_marker = stripped.endswith((':',  '-', '–', '—'))
+        
+        # If any generic header pattern matches
+        if (is_all_caps or 
+            (is_title_case_short and (len(stripped) < 50 or has_structural_marker or ' ' not in stripped))):
+            
+            inferred_header = stripped
+            logger.debug(f"[InferHeader] Detected header from generic pattern: '{inferred_header}'")
+            break
     
     # If still no header but file name has context, use it
     if inferred_header == "N/A" and file_name:
@@ -67,39 +67,43 @@ def infer_header_from_chunk(text: str, file_name: str = "") -> tuple[str, list[s
     return inferred_header, parent_headers
 
 
-def extract_person_names(query: str) -> List[str]:
-    """Extract potential person names from query (capitalized words that might be names)
+# Import context-aware person name extraction from header_vocab module
+# This uses corpus-learned vocabulary instead of hardcoded keyword lists
+try:
+    from ..tools.header_vocab import extract_person_names_and_mode, extract_person_names
+except ImportError:
+    # Fallback if header_vocab module not available
+    logger.warning("header_vocab module not available, using basic name extraction")
     
-    Args:
-        query: User query text
-        
-    Returns:
-        List of potential person names (capitalized words)
-    """
-    # Split query into words
-    words = query.split()
-    # Extract capitalized words that are likely names (length > 2, starts with capital)
-    names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
-    # Remove common words that start with capital but aren't names
-    # Expanded to include query verbs like "List", "Name", etc.
-    common_words = {
-        'The', 'This', 'That', 'These', 'Those', 
-        'What', 'When', 'Where', 'Who', 'Why', 'How', 
-        'Tell', 'Show', 'Give', 'Find', 'Search', 'Get',
-        'List', 'Name', 'Count', 'Sum', 'Calculate', 'Compute',
-        'Return', 'Display', 'Print', 'Output'
-    }
-    names = [n for n in names if n not in common_words]
-    return names
+    def extract_person_names(query: str) -> List[str]:
+        """Basic fallback: Extract capitalized words that might be names"""
+        words = query.split()
+        names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
+        return names
+    
+    def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = None) -> Tuple[List[str], bool]:
+        """Fallback: Extract names and always return is_person_query=False"""
+        return extract_person_names(query), False
 
 
-def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min_similarity: float = 0.88) -> List[Dict[str, Any]]:
-    """Filter search results to require query name appears in chunk text or very high similarity
+def filter_results_by_exact_match(
+    results: List[Dict[str, Any]], 
+    query: str, 
+    min_similarity: float = 0.88,
+    is_person_query: Optional[bool] = None,
+    person_names: Optional[List[str]] = None
+) -> List[Dict[str, Any]]:
+    """Filter search results based on query type (person-centric vs generic).
+    
+    For person-centric queries: requires name to appear in chunk text or very high similarity.
+    For generic queries: only applies similarity threshold, no name enforcement.
     
     Args:
         results: List of search result dictionaries
         query: Original query text
-        min_similarity: Minimum similarity to keep result without exact match
+        min_similarity: Minimum similarity to keep result without exact match (person mode)
+        is_person_query: If provided, uses this instead of re-detecting
+        person_names: If provided, uses these instead of re-extracting
         
     Returns:
         Filtered list of results
@@ -107,24 +111,44 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
     if not results:
         return results
     
-    # Extract potential name words from query using the same function that filters common words
-    names = extract_person_names(query)
-    query_words = [n.lower() for n in names]
+    # Use provided values or detect from query
+    if is_person_query is None or person_names is None:
+        detected_names, detected_mode = extract_person_names_and_mode(query)
+        if person_names is None:
+            person_names = detected_names
+        if is_person_query is None:
+            is_person_query = detected_mode
     
-    # If no capitalized words, apply minimum similarity threshold only
+    logger.info(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
+    logger.info(f"🔍 [filter_results_by_exact_match] is_person_query={is_person_query}, person_names={person_names}")
+    print(f"🔍 [filter_results_by_exact_match] is_person_query={is_person_query}, person_names={person_names}")
+    
+    # ✅ GENERIC MODE: No name enforcement, just similarity threshold
+    if not is_person_query:
+        logger.info(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
+        print(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
+        filtered = [res for res in results if res.get("similarity", 0.0) >= 0.3]
+        logger.info(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
+        print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
+        return filtered
+    
+    # ✅ PERSON MODE: Enforce name matching
+    # Split full names into tokens for matching
+    query_words = []
+    for full_name in person_names:
+        query_words.extend(full_name.lower().split())
+    query_words = [w for w in query_words if len(w) > 1]  # Filter very short tokens
+    
     if not query_words:
-        # Still filter out very low similarity results
+        # Person mode but no valid name tokens - fall back to similarity only
+        logger.info(f"📋 [filter] Person mode but no name tokens - using similarity threshold")
         return [res for res in results if res.get("similarity", 0.0) >= 0.3]
     
-    # Get first name (first name word) - critical for distinguishing names
     first_name = query_words[0] if query_words else None
     last_name = query_words[-1] if len(query_words) > 1 else None
     
-    logger.info(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
-    logger.info(f"🔍 [filter_results_by_exact_match] Extracted names: {names}, query_words: {query_words}")
-    logger.info(f"🔍 [filter_results_by_exact_match] first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
-    print(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
-    print(f"🔍 [filter_results_by_exact_match] first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
+    logger.info(f"🔍 [filter] Person mode: first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
+    print(f"🔍 [filter] Person mode: first_name='{first_name}', last_name='{last_name}'")
     
     filtered = []
     for i, res in enumerate(results, 1):
@@ -133,14 +157,12 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
         file_name = res.get("file_name", "?")
         text_preview = text[:100].replace("\n", " ")
         
-        # Apply absolute minimum similarity threshold (reject very low scores)
+        # Apply absolute minimum similarity threshold
         if similarity < 0.3:
-            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3 (absolute minimum), file='{file_name}'")
-            print(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3 (absolute minimum), file='{file_name}'")
+            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
             continue
         
-        # Check if first name appears in text (required for name queries)
-        # This prevents "Axel Torres" from matching "Alexis Torres" queries
+        # Check if first name appears in text
         first_name_found = first_name in text if first_name else True
         
         # If we have both first and last name, require both to match
@@ -148,51 +170,38 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
             last_name_found = last_name in text
             name_match = first_name_found and last_name_found
         else:
-            # Only first name available, require it to match
             name_match = first_name_found
         
-        # Also check if file name contains the person's name (useful when text matching fails)
-        # This helps when the chunk text doesn't contain the name but the file name does
+        # Check file name for person's name
         file_name_lower = file_name.lower() if file_name else ""
         file_contains_name = False
         if first_name and last_name:
-            # Check if file contains both names, or at least the last name (common in file names)
             file_contains_name = (first_name in file_name_lower and last_name in file_name_lower) or \
-                                 (last_name in file_name_lower)  # Last name alone is often in file names
+                                 (last_name in file_name_lower)
         elif first_name:
             file_contains_name = first_name in file_name_lower
         
-        # Keep if: 
-        # 1. Name matches in text AND similarity >= 0.3, OR
-        # 2. File name contains the person's name AND similarity >= 0.4 (slightly higher for file match), OR
-        # 3. Similarity is very high (>= min_similarity)
+        # Keep if name matches, file contains name, or similarity is very high
         if (name_match and similarity >= 0.3) or \
            (file_contains_name and similarity >= 0.4) or \
            similarity >= min_similarity:
             filtered.append(res)
             logger.info(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_match={name_match}, "
+                f"file_contains_name={file_contains_name}, file='{file_name}'"
             )
             print(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_match={name_match}, file='{file_name}'"
             )
         else:
             logger.info(
-                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, similarity >= min_similarity={similarity >= min_similarity}, "
-                f"file='{file_name}', text_preview='{text_preview}...'"
+                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, name_match={name_match}, "
+                f"file_contains_name={file_contains_name}, file='{file_name}'"
             )
-            print(
-                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
-            )
+            print(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, file='{file_name}'")
     
-    logger.info(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
-    print(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
+    logger.info(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")
+    print(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")
     return filtered
 
 # Lazy import for Azure Search to avoid import errors when using Neo4j only
@@ -341,25 +350,29 @@ class AiSearchAgent:
             logger.warning("CSV query tools not available, skipping CSV queries")
             csv_query_available = False
         
-        # Extract person names from query for keyword filtering
-        person_names = extract_person_names(query)
+        # Extract person names and determine if query is person-centric
+        # Uses corpus-learned vocabulary for context-aware classification
+        person_names, is_person_query = extract_person_names_and_mode(query)
         
         logger.info(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
-        logger.info(f"🔍 [AiSearchAgent] Extracted person names: {person_names}")
+        logger.info(f"🔍 [AiSearchAgent] Extracted person names: {person_names}, is_person_query: {is_person_query}")
         print(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
-        print(f"🔍 [AiSearchAgent] Extracted person names: {person_names}")
+        print(f"🔍 [AiSearchAgent] person_names={person_names}, is_person_query={is_person_query}")
         
-        # Use improved search parameters to reduce false matches
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={person_names}, keyword_boost=0.4")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={person_names}, keyword_boost=0.4")
+        # Only use keywords for person-centric queries
+        keywords = person_names if (is_person_query and person_names) else None
+        keyword_boost = 0.4 if keywords else 0.0
+        
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}")
         
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
             similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
-            keywords=person_names if person_names else None,
+            keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=0.4  # Increase keyword weight for name matching
+            keyword_boost=keyword_boost
         )
 
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
@@ -404,14 +417,16 @@ class AiSearchAgent:
         if not results:
             return "No results found in Neo4j GraphRAG."
 
-        # Filter results to require exact name match or very high similarity
-        logger.info(f"🔍 [AiSearchAgent] Filtering {len(results)} results with filter_results_by_exact_match (min_similarity=0.7)")
-        print(f"🔍 [AiSearchAgent] Filtering {len(results)} results with filter_results_by_exact_match (min_similarity=0.7)")
+        # Filter results - mode-aware filtering based on query type
+        logger.info(f"🔍 [AiSearchAgent] Filtering {len(results)} results (is_person_query={is_person_query})")
+        print(f"🔍 [AiSearchAgent] Filtering {len(results)} results (is_person_query={is_person_query})")
         
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
-            min_similarity=0.7  # Very high threshold for results without exact match
+            min_similarity=0.7,
+            is_person_query=is_person_query,
+            person_names=person_names
         )
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
@@ -851,12 +866,14 @@ class SQLAgent:
         
         if csv_query_available:
             # Get some initial results to find CSV path
-            person_names = extract_person_names(query)
+            # For CSV queries, we don't need person-mode filtering
+            person_names, is_person_query = extract_person_names_and_mode(query)
+            keywords = person_names if (is_person_query and person_names) else None
             initial_results = graphrag_search(
                 query=query,
                 top_k=5,
                 similarity_threshold=0.7,
-                keywords=person_names if person_names else None,
+                keywords=keywords,
                 keyword_match_type="any"
             )
             
@@ -936,20 +953,28 @@ class SQLAgent:
         logger.info("SQLAgent: Falling back to Vector/GraphRAG search")
         from ..tools.neo4j_graphrag import graphrag_search
         
-        person_names = extract_person_names(query)
+        # Use context-aware name extraction
+        person_names, is_person_query = extract_person_names_and_mode(query)
+        keywords = person_names if (is_person_query and person_names) else None
+        keyword_boost = 0.4 if keywords else 0.0
+        
         results = graphrag_search(
             query=query,
             top_k=12,
             similarity_threshold=0.75,
-            keywords=person_names if person_names else None,
+            keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=0.4
+            keyword_boost=keyword_boost
         )
         
         if not results:
             return "No results found in PostgreSQL SQL, CSV, or Vector search."
         
-        filtered_results = filter_results_by_exact_match(results, query, min_similarity=0.7)
+        # Pass is_person_query to filter so it knows whether to enforce name matching
+        filtered_results = filter_results_by_exact_match(
+            results, query, min_similarity=0.7, 
+            is_person_query=is_person_query, person_names=person_names
+        )
         filtered_results = filtered_results[:8]
         
         if not filtered_results:
@@ -1031,27 +1056,34 @@ class Neo4jGraphRAGAgent:
             logger.warning("CSV query tools not available, skipping CSV queries")
             csv_query_available = False
         
-        # Extract person names from query for keyword filtering
-        person_names = extract_person_names(query)
+        # Extract person names and determine if query is person-centric
+        # Uses corpus-learned vocabulary for context-aware classification
+        person_names, is_person_query = extract_person_names_and_mode(query)
+        
+        # Only use keywords for person-centric queries
+        keywords = person_names if (is_person_query and person_names) else None
+        keyword_boost = 0.4 if keywords else 0.0
         
         # Use improved search parameters to reduce false matches
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
             similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
-            keywords=person_names if person_names else None,
+            keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=0.4  # Increase keyword weight for name matching
+            keyword_boost=keyword_boost
         )
 
         if not results:
             return "No results found in Neo4j GraphRAG."
 
-        # Filter results to require exact name match or very high similarity
+        # Filter results - mode-aware filtering based on query type
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
-            min_similarity=0.7  # Very high threshold for results without exact match
+            min_similarity=0.7,
+            is_person_query=is_person_query,
+            person_names=person_names
         )
         
         # Limit to top 8 after filtering

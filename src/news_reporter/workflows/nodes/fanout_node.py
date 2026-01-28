@@ -17,33 +17,23 @@ class FanoutNode(BaseNode):
     """Node that executes multiple branches in parallel"""
     
     async def execute(self) -> NodeResult:
-        """Prepare fanout and return branch information"""
-        if not self.config.branches:
-            return NodeResult.failed(f"Fanout node {self.config.id} missing branches")
+        """Prepare fanout and forward parent output
         
-        # Get list of items to fan out over (e.g., reporter_ids)
-        fanout_items = self.get_input("items", [])
-        if not fanout_items:
-            # Default: use reporter_ids from settings
-            fanout_items = getattr(self.settings, 'reporter_ids', [])
+        Fanout is a control node - branches are derived from graph topology.
+        This node forwards the parent's output to all branches.
+        """
+        # Get parent output to broadcast (from parent_result)
+        parent_output = None
+        if hasattr(self, 'parent_result') and self.parent_result:
+            parent_output = self.parent_result.state_updates.get('latest')
         
-        if not fanout_items:
-            logger.warning(f"Fanout node {self.config.id}: No items to fan out over")
-            return NodeResult.success(
-                state_updates={"fanout_items": []},
-                artifacts={"fanout_items": [], "branch_count": 0}
-            )
+        # Fallback to state.latest or goal
+        if parent_output is None:
+            parent_output = self.state.latest or self.state.goal
         
-        logger.info(f"FanoutNode {self.config.id}: Fanning out over {len(fanout_items)} items")
-        
-        # Store fanout items in state for branch nodes to access
-        # Results will be collected by the executor when branches complete
+        # Forward parent output so branches receive it
+        # Executor will handle branch scheduling from graph edges
         return NodeResult.success(
-            state_updates={"fanout_items": fanout_items},
-            artifacts={
-                "fanout_items": fanout_items,
-                "branch_count": len(fanout_items),
-                "branches": self.config.branches
-            },
-            next_nodes=self.config.branches  # Execute all branches
+            state_updates={"latest": parent_output},
+            artifacts={"forwarded_output": parent_output}
         )

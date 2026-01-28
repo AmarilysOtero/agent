@@ -128,6 +128,14 @@ class Neo4jGraphRAGRetriever:
                 logger.info(f"📊 [hybrid_retrieve] Neo4j API returned {len(data.get('results', []))} results")
                 print(f"📊 [hybrid_retrieve] Neo4j API returned {len(data.get('results', []))} results")
                 
+                # Debug: log first result structure
+                if data.get('results'):
+                    first_chunk = data['results'][0]
+                    logger.debug(f"🔍 [hybrid_retrieve] First chunk raw structure: {list(first_chunk.keys())}")
+                    logger.debug(f"🔍 [hybrid_retrieve] First chunk header fields: header_text={first_chunk.get('header_text')}, header_level={first_chunk.get('header_level')}, parent_headers={first_chunk.get('parent_headers')}")
+                    if first_chunk.get('metadata'):
+                        logger.debug(f"🔍 [hybrid_retrieve] First chunk metadata keys: {list(first_chunk['metadata'].keys())}")
+                
             except requests.exceptions.Timeout:
                 elapsed = time.time() - start_time
                 logger.error(f"Neo4j GraphRAG request timed out after {elapsed:.2f}s (timeout: 120s)")
@@ -150,6 +158,10 @@ class Neo4jGraphRAGRetriever:
                         "keyword_score": chunk.get("metadata", {}).get("keyword_score", 0.0),
                         "path_score": chunk.get("metadata", {}).get("path_score", 0.0),
                         "hop_count": chunk.get("metadata", {}).get("hop_count", 0),
+                        "header_level": chunk.get("metadata", {}).get("header_level") or chunk.get("header_level"),
+                        "header_text": chunk.get("metadata", {}).get("header_text") or chunk.get("header_text"),
+                        "header_path": chunk.get("metadata", {}).get("header_path") or chunk.get("header_path"),
+                        "parent_headers": chunk.get("metadata", {}).get("parent_headers") or chunk.get("parent_headers", []),
                         "chunk_index": chunk.get("index"),
                         "file_id": chunk.get("file_id"),
                         "chunk_size": chunk.get("chunk_size")

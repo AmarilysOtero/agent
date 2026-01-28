@@ -283,6 +283,12 @@ def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = No
     # Load vocabulary if not provided
     if vocab_set is None:
         vocab_set = load_header_vocab()
+
+    # If vocabulary is empty, disable person extraction to avoid false positives
+    # (corpus-driven only; no hardcoded fallbacks)
+    if not vocab_set:
+        logger.debug("[PersonMode] Empty header vocabulary; defaulting to generic mode")
+        return [], False
     
     # ---- 2) Extract multi-token name spans (2-4 capitalized words) ----
     # Pattern supports accents and initials: "Kevin J. Ramírez", "María del Carmen"
@@ -292,12 +298,21 @@ def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = No
     )
     spans = name_span_pattern.findall(q)
     
-    # Clean and filter obvious non-names
+    # Build corpus-derived unigram set for span filtering
+    vocab_unigrams = set()
+    for phrase in vocab_set:
+        for token in phrase.split():
+            vocab_unigrams.add(token)
+
+    # Clean and filter spans that include corpus header tokens
     cleaned_spans = []
     for s in spans:
         parts = [p.strip(".,!?;:()[]{}") for p in s.split()]
         parts = [_normalize_possessive(p) for p in parts]
         if not parts:
+            continue
+        # If any token after the first is a corpus-derived header token, skip
+        if any(p.lower() in vocab_unigrams for p in parts[1:]):
             continue
         cleaned_spans.append(" ".join(parts))
     

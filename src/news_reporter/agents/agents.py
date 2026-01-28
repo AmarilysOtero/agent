@@ -1,11 +1,70 @@
 from __future__ import annotations
 import json
 import logging
+import re
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
 
 logger = logging.getLogger(__name__)
+
+
+def infer_header_from_chunk(text: str, file_name: str = "") -> tuple[str, list[str]]:
+    """Infer header context from chunk text when header_text is N/A
+    
+    Args:
+        text: Chunk text to analyze
+        file_name: Original file name for additional context
+        
+    Returns:
+        Tuple of (inferred_header, parent_headers)
+    """
+    if not text or not text.strip():
+        return "N/A", []
+    
+    lines = text.split('\n')
+    inferred_header = "N/A"
+    parent_headers = []
+    
+    # Look for header patterns in the first few lines
+    for line in lines[:5]:  # Check first 5 lines
+        stripped = line.strip()
+        if not stripped:
+            continue
+        
+        # Pattern 1: All caps or title case short line (likely a header)
+        if len(stripped) < 80 and (stripped.isupper() or 
+            (stripped[0].isupper() and not stripped.endswith('.'))):
+            # Check if line looks like a header (short, capitalized, ends with special char or is short)
+            if len(stripped) < 50 or re.match(r'^[A-Z][a-zA-Z\s\-/()]*\s*[:\-]?\s*$', stripped):
+                inferred_header = stripped
+                logger.debug(f"[InferHeader] Detected header from pattern: '{inferred_header}'")
+                break
+        
+        # Pattern 2: Contains section keywords
+        lower = stripped.lower()
+        if any(keyword in lower for keyword in ['skill', 'experience', 'education', 'project', 
+                                                  'certification', 'summary', 'objective', 'about',
+                                                  'contact', 'profile']):
+            # Extract just the keyword part
+            for keyword in ['skills', 'experience', 'education', 'projects', 'certifications', 
+                           'professional summary', 'objective', 'about', 'contact', 'profile']:
+                if keyword in lower:
+                    inferred_header = stripped
+                    logger.debug(f"[InferHeader] Detected header from keyword '{keyword}' in: '{inferred_header}'")
+                    break
+            if inferred_header != "N/A":
+                break
+    
+    # If still no header but file name has context, use it
+    if inferred_header == "N/A" and file_name:
+        # Extract meaningful parts from file name
+        name_parts = file_name.replace('.pdf', '').replace('.docx', '').replace('.xlsx', '')
+        if name_parts and len(name_parts) > 5:  # Reasonable file name
+            inferred_header = f"[From {name_parts}]"
+            logger.debug(f"[InferHeader] Using file name as context: '{inferred_header}'")
+    
+    return inferred_header, parent_headers
 
 
 def extract_person_names(query: str) -> List[str]:
@@ -320,8 +379,10 @@ class AiSearchAgent:
                 metadata = res.get("metadata", {})
                 vector_score = metadata.get("vector_score", 0.0)
                 keyword_score = metadata.get("keyword_score", 0.0)
-                header_text = metadata.get("header_text", "N/A")
-                parent_headers = metadata.get("parent_headers", [])
+                
+                # Try to get header_text from metadata first, then from top-level
+                header_text = metadata.get("header_text", res.get("header_text", "N/A"))
+                parent_headers = metadata.get("parent_headers", res.get("parent_headers", []))
                 
                 logger.info(
                     f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
@@ -621,8 +682,17 @@ class AiSearchAgent:
                 metadata_parts.append(f"similarity:{res['similarity']:.2f}")
             if "metadata" in res and res["metadata"]:
                 meta = res["metadata"]
-                header_text = meta.get("header_text", "N/A")
-                parent_headers = meta.get("parent_headers", [])
+                # Try to get header_text from metadata first, then from top-level
+                header_text = meta.get("header_text", res.get("header_text", "N/A"))
+                parent_headers = meta.get("parent_headers", res.get("parent_headers", []))
+                
+                # Infer header if missing (for PDFs without font metadata)
+                if header_text == "N/A":
+                    chunk_text = res.get("text", "")
+                    inferred_header, _ = infer_header_from_chunk(chunk_text, file_name)
+                    if inferred_header != "N/A":
+                        header_text = inferred_header
+                        logger.debug(f"[AiSearchAgent] Inferred header from chunk text: '{header_text}'")
                 
                 # Debug log for each chunk being added to findings
                 logger.info(f"🔍 [AiSearchAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
@@ -894,8 +964,17 @@ class SQLAgent:
             file_name = res.get("file_name", "Unknown")
             similarity = res.get("similarity", 0.0)
             metadata = res.get("metadata", {})
-            header_text = metadata.get("header_text", "N/A")
-            parent_headers = metadata.get("parent_headers", [])
+            # Try to get header_text from metadata first, then from top-level
+            header_text = metadata.get("header_text", res.get("header_text", "N/A"))
+            parent_headers = metadata.get("parent_headers", res.get("parent_headers", []))
+            
+            # Infer header if missing (for PDFs without font metadata)
+            if header_text == "N/A":
+                chunk_text = res.get("text", "")
+                inferred_header, _ = infer_header_from_chunk(chunk_text, file_name)
+                if inferred_header != "N/A":
+                    header_text = inferred_header
+                    logger.debug(f"[SQLAgent] Inferred header from chunk text: '{header_text}'")
             
             # Debug log for each chunk being added to findings
             logger.info(f"🔍 [SQLAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
@@ -1225,8 +1304,17 @@ class Neo4jGraphRAGAgent:
                 metadata_parts.append(f"similarity:{res['similarity']:.2f}")
             if "metadata" in res and res["metadata"]:
                 meta = res["metadata"]
-                header_text = meta.get("header_text", "N/A")
-                parent_headers = meta.get("parent_headers", [])
+                # Try to get header_text from metadata first, then from top-level
+                header_text = meta.get("header_text", res.get("header_text", "N/A"))
+                parent_headers = meta.get("parent_headers", res.get("parent_headers", []))
+                
+                # Infer header if missing (for PDFs without font metadata)
+                if header_text == "N/A":
+                    chunk_text = res.get("text", "")
+                    inferred_header, _ = infer_header_from_chunk(chunk_text, file_name)
+                    if inferred_header != "N/A":
+                        header_text = inferred_header
+                        logger.debug(f"[Neo4jGraphRAGAgent] Inferred header from chunk text: '{header_text}'")
                 
                 # Debug log for each chunk being added to findings
                 logger.info(f"🔍 [Neo4jGraphRAGAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")

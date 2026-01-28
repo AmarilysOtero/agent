@@ -592,7 +592,7 @@ async def add_message(
         _persist_and_raise_chat_error(
             session_id=session_id,
             user_id=user_id,
-            error_msg=error_msg,
+            error_msg=str(e),
             detail_prefix="Chat processing failed: ",
             status_code=500,
         )

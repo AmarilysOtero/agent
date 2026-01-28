@@ -1233,49 +1233,64 @@ class Neo4jGraphRAGAgent:
         return "\n".join(findings)
 
 
-# ---------- REPORTER (Foundry) ----------
+# ---------- ASSISTANT (Foundry) ----------
 
-class NewsReporterAgent:
+class AssistantAgent:
+    """Generate natural language responses using RAG context"""
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, topic: str, latest_news: str) -> str:
-        content = (
-            f"Topic: {topic}\n"
-            f"Latest info:\n{latest_news}\n"
-            # "Write a 60-90s news broadcast script."
-            "Write a description about the information in the tone of a news reporter." 
+    async def run(self, query: str, context: str) -> str:
+        logger.info(f"🤖 [AGENT INVOKED] AssistantAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] AssistantAgent (ID: {self._id})")
+        
+        # If no context found, allow LLM to provide helpful general guidance
+        context_instruction = "the context above" if context and context.strip() else "general knowledge"
+        fallback_permission = "" if context and context.strip() else "\n- If no specific documentation is available, you may provide general best-practice guidance."
+        
+        prompt = (
+            f"User Question: {query}\n\n"
+            f"Retrieved Context:\n{context if context and context.strip() else '(No specific documentation found in knowledge base)'}\n\n"
+            "Instructions:\n"
+            f"- Answer the user's question using {context_instruction}\n"
+            f"- Be conversational, concise, and accurate{fallback_permission}\n"
+            "- Cite specific details from the context when available\n"
+            "- If citing context, mention the source"
         )
-        logger.info(f"🤖 [AGENT INVOKED] NewsReporterAgent (ID: {self._id})")
-        print(f"🤖 [AGENT INVOKED] NewsReporterAgent (ID: {self._id})")
-        print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
+        print("AssistantAgent: using Foundry agent:", self._id)  # keep print
         try:
-            return run_foundry_agent(self._id, content)
+            return run_foundry_agent(self._id, prompt)
         except RuntimeError as e:
-            logger.error("NewsReporterAgent Foundry error: %s", e)
+            logger.error("AssistantAgent Foundry error: %s", e)
             raise RuntimeError(
-                f"Reporter agent failed: {str(e)}. "
+                f"Assistant agent failed: {str(e)}. "
                 "Please check your Foundry access and agent configuration."
             ) from e
 
 # ---------- REVIEWER (Foundry, strict JSON) ----------
 
 class ReviewAgent:
+    """Review assistant responses for accuracy and completeness"""
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, topic: str, candidate_script: str) -> dict:
+    async def run(self, query: str, candidate_response: str) -> dict:
         """
-        Foundry system prompt already defines the JSON schema. We still remind at user layer.
+        Review assistant response and decide if it needs improvement.
         Returns a dict with keys: decision, reason, suggested_changes, revised_script.
-        Return ONLY STRICT JSON (no markdown, no prose) as per your schema.
         """
         prompt = (
-            f"Topic: {topic}\n\n"
-            f"Candidate script:\n{candidate_script}\n\n"
-            # "Evaluate factual accuracy, clarity, neutral tone, explicit dates, and 60-90s length. "
-            "Evaluate factual accuracy, relevance, and tone of a news reporter. " 
-            "Return ONLY STRICT JSON (no markdown, no prose) as per your schema."
+            f"User Query: {query}\n\n"
+            f"Assistant Response:\n{candidate_response}\n\n"
+            "Review the response for:\n"
+            "1. Accuracy - Does it correctly answer the question?\n"
+            "2. Completeness - Is the answer sufficient?\n"
+            "3. Clarity - Is it easy to understand?\n\n"
+            "Return ONLY STRICT JSON (no markdown, no prose) with keys:\n"
+            '"decision": "accept" or "revise"\n'
+            '"reason": brief explanation\n'
+            '"suggested_changes": what to improve (empty if accept)\n'
+            '"revised_script": improved version (empty if accept)'
         )
         logger.info(f"🤖 [AGENT INVOKED] ReviewAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] ReviewAgent (ID: {self._id})")
@@ -1301,14 +1316,18 @@ class ReviewAgent:
                 "decision": decision if decision in {"accept", "revise"} else "revise",
                 "reason": data.get("reason", ""),
                 "suggested_changes": data.get("suggested_changes", ""),
-                "revised_script": data.get("revised_script", candidate_script),
+                "revised_script": data.get("revised_script", candidate_response),
             }
         except Exception as e:
             logger.error("Review parse error: %s", e)
-            # Fail-safe: accept last script to avoid infinite loops
+            # Fail-safe: accept last response to avoid infinite loops
             return {
                 "decision": "accept",
                 "reason": "parse_error",
                 "suggested_changes": "",
-                "revised_script": candidate_script,
+                "revised_script": candidate_response,
             }
+
+
+# Backward compatibility alias
+NewsReporterAgent = AssistantAgent

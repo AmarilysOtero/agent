@@ -29,6 +29,7 @@ class FanoutTracker:
     branch_node_ids: List[str]  # Branch nodes to execute
     branches: Dict[str, BranchTracker] = field(default_factory=dict)  # item -> BranchTracker
     merge_node_id: Optional[str] = None  # Merge node waiting for this fanout
+    merge_triggered: bool = False  # Latch to prevent duplicate merge triggering
     created_at: float = field(default_factory=time.time)
     
     def all_branches_complete(self) -> bool:

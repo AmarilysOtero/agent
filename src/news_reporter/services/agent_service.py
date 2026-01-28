@@ -36,19 +36,24 @@ def _explain_http(e: HttpResponseError, ctx: str) -> str:
 
 def _try_create_methods(agents_ops: Any, name: str, model: str, instructions: str, description: Optional[str] = None, tools: Optional[List[str]] = None) -> Any:
     """
-    Try multiple SDK method signatures to create an agent
-    Uses the same robust approach as create_foundry_agents.py
+    Try multiple SDK method signatures to create an agent.
+    
+    Newer versions of the Azure Agents API require `tool_resources` to be
+    present in the JSON body (even if empty). We always include an empty
+    object plus a tools array (empty by default) to satisfy the contract.
     """
     body = {
         "model": model,
         "name": name,
         "instructions": instructions,
-        "description": description or name
+        "description": description or name,
+        # Required by current Foundry / Agents API even when you don't
+        # attach any external resources.
+        "tool_resources": {},
+        # Ensure tools is always an array (the service expects a list)
+        "tools": tools or [],
     }
-    
-    if tools:
-        body["tools"] = tools
-    
+
     # Try different method signatures (SDK compatibility)
     trials = [
         ("agents.create_agent(model=..., name=..., instructions=...)", lambda: agents_ops.create_agent(**body)),

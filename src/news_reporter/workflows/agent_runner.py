@@ -73,12 +73,16 @@ class AgentRunner:
         # For other agents (triage, reporter, reviewer), use Foundry agent directly
         # Convert input_data to string if it's a dict
         if isinstance(input_data, dict):
+            # if "goal" in input_data and "input" in input_data:
+            #     # Structured chaining format (generic agents in linear workflows)
             # For agents that expect structured input, format appropriately
             if "input" in input_data and len(input_data) == 1:
                 # Chained node - use parent output directly (no goal)
                 user_content = str(input_data["input"])
             elif "goal" in input_data and "input" in input_data:
-                # Structured chaining format (generic agents in linear workflows)
+                # Legacy format: {goal, input} together (not currently emitted by AgentNode)
+                # AgentNode now uses: entry nodes = {goal}, non-entry = {input} only
+                # This branch kept for backward compatibility with external callers
                 user_content = f"Goal: {input_data['goal']}\n\nInput: {input_data['input']}"
             elif "goal" in input_data and "latest_news" in input_data:
                 # NewsReporterAgent format
@@ -98,9 +102,12 @@ class AgentRunner:
         # Add system hint if needed (for SQL generation, etc.)
         system_hint = params.get("system_hint")
         
-        # Log executed Foundry Agent for traceability
+        # Log Foundry prompt for traceability
         user_content_preview = user_content[:200] + "..." if len(user_content) > 200 else user_content
         logger.info(f"AgentRunner: agent_id={agent_id} user_content_preview=\"{user_content_preview}\"")
+        
+        # Execute agent
+        logger.info(f"AgentRunner: Executing agent {agent_id} via Foundry")
         result = run_foundry_agent(
             agent_id=agent_id,
             user_content=user_content,

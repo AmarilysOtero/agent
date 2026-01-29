@@ -13,7 +13,7 @@ from src.news_reporter.workflows.workflow_scheduler import WorkflowScheduler, Sc
 from src.news_reporter.workflows.workflow_analytics import WorkflowAnalyticsEngine, WorkflowAnalytics
 from src.news_reporter.workflows.workflow_tester import WorkflowTester, TestCase, TestStatus
 from src.news_reporter.workflows.workflow_composer import WorkflowComposer
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from src.news_reporter.workflows.performance_metrics import WorkflowMetrics
 
 

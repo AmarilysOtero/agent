@@ -14,7 +14,7 @@ from src.news_reporter.workflows.execution_monitor import (
     ExecutionMonitor, ExecutionEvent, ExecutionEventType, get_execution_monitor
 )
 from src.news_reporter.workflows.workflow_templates import get_template_registry
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 
 
 class TestWorkflowVisualizer:

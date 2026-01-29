@@ -1,12 +1,112 @@
 from __future__ import annotations
 import json
+import os
 import logging
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
+from azure.core.exceptions import HttpResponseError
 
 logger = logging.getLogger(__name__)
 
+def _load_env():
+    """Load .env from the project root"""
+    try:
+        from dotenv import load_dotenv
+        here = Path(__file__).resolve()
+        candidates = [
+            here.parents[2] / ".env",  # repo root
+            here.parents[1] / ".env",
+            Path.cwd() / ".env",
+        ]
+        for p in candidates:
+            if p.exists():
+                load_dotenv(p)
+                logger.info(f"Loaded .env from: {p}")
+                break
+    except Exception as e:
+        logger.warning(f"Failed to load .env: {e}")
+
+
+_load_env()
+
+def get_ai_project_client() -> AIProjectClient:
+    conn = os.getenv("AI_PROJECT_CONNECTION_STRING")
+    if not conn:
+        raise ValueError("AI_PROJECT_CONNECTION_STRING is not set")
+
+    from ..tools.util import parse_connection_string
+    parts = parse_connection_string(conn)
+    credential = DefaultAzureCredential()
+
+    return AIProjectClient(
+        endpoint=parts["endpoint"],
+        project=parts["project"],
+        subscription_id=parts["subscription_id"],
+        resource_group_name=parts["resource_group"],
+        account_name=parts["account"],
+        credential=credential,
+    )
+
+def list_agents_from_foundry() -> List[Dict[str, Any]]:
+    """
+    List all available agents from Azure AI Foundry.
+    
+    Returns:
+        List of agent dictionaries with id, name, model, description, etc.
+    """
+    try:
+        # Ensure OPENAI_API_VERSION is set for the SDK
+        if "OPENAI_API_VERSION" not in os.environ:
+            os.environ["OPENAI_API_VERSION"] = "2024-05-01-preview"
+            logger.info("Set default OPENAI_API_VERSION to 2024-05-01-preview for agents")
+
+        client = get_ai_project_client()
+
+        listing = client.agents.list_agents()
+        print(f"Listing: {listing}")
+
+        agents: List[Dict[str, Any]] = []
+
+        # In the current SDK, `listing` is an iterable of Agent objects.
+        # We still keep a fallback for any response shape that has `.data`/`.value`.
+        iterable = None
+
+        # If the SDK ever returns a wrapper with `.data` or `.value`, use it
+        maybe_data = getattr(listing, "data", None) or getattr(listing, "value", None)
+        if maybe_data is not None:
+            iterable = maybe_data
+        else:
+            # Normal case: pageable iterator
+            iterable = listing
+
+        for agent in iterable:
+            agent_dict = {
+                "id": getattr(agent, "id", None) or getattr(agent, "value", None) or "",
+                "name": getattr(agent, "name", "Unknown"),
+                "model": getattr(agent, "model", ""),
+                "description": getattr(agent, "description", ""),
+                "created_at": getattr(agent, "created_at", None),
+                "instructions": getattr(agent, "instructions", ""),
+            }
+            agents.append(agent_dict)
+
+        logger.info(
+            "Successfully listed %d agents from Foundry: %s",
+            len(agents),
+            [a["name"] for a in agents],
+        )
+        return agents
+
+    except HttpResponseError as e:
+        logger.error(f"HTTP error listing agents from Foundry: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Failed to list agents from Foundry: {e}")
+        raise
 
 def extract_person_names(query: str) -> List[str]:
     """Extract potential person names from query (capitalized words that might be names)

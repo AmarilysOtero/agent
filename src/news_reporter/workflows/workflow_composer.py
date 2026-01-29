@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Dict, List, Any, Optional
 import logging
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +212,7 @@ class WorkflowComposer:
         merge_node = NodeConfig(
             id="compose_merge",
             type="merge",
-            params={"strategy": "stitch"}
+            params={"strategy": "concat_text"}
         )
         all_nodes.append(merge_node)
         

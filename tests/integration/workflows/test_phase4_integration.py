@@ -11,7 +11,7 @@ import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 from src.news_reporter.workflows.graph_executor import GraphExecutor
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from src.news_reporter.workflows.performance_metrics import get_metrics_collector
 from src.news_reporter.workflows.cache_manager import get_cache_manager
 from src.news_reporter.workflows.retry_handler import RetryHandler, RetryConfig

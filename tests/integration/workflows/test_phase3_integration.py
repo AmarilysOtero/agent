@@ -17,7 +17,7 @@ from src.news_reporter.workflows.workflow_persistence import (
     get_workflow_persistence
 )
 from src.news_reporter.workflows.workflow_factory import run_graph_workflow, run_sequential_goal
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 from src.news_reporter.config import Settings
 
 
@@ -109,7 +109,7 @@ class TestWorkflowCreationAndSaving:
         assert saved is not None
         
         # Validate the graph definition structure
-        from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+        from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
         
         nodes = [NodeConfig(**node) for node in workflow_def["nodes"]]
         edges = [EdgeConfig(**edge) for edge in workflow_def["edges"]]

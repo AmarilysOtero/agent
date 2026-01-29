@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .graph_schema import GraphDefinition
+from ..models.graph_schema import GraphDefinition
 from .workflow_state import WorkflowState
 from .node_result import NodeResult, NodeStatus
 

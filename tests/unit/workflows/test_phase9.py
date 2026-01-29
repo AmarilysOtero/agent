@@ -79,7 +79,7 @@ class TestWorkflowMigration:
     def test_add_migration_rule(self):
         """Test adding migration rules"""
         migration = WorkflowMigration()
-        from src.news_reporter.workflows.graph_schema import GraphDefinition
+        from src.news_reporter.models.graph_schema import GraphDefinition
         rule = migration.add_migration_rule(
             "rule1",
             "Test Rule",

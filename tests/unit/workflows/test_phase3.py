@@ -15,7 +15,7 @@ from src.news_reporter.workflows.execution_tracker import (
 )
 from src.news_reporter.workflows.state_checkpoint import StateCheckpoint
 from src.news_reporter.workflows.workflow_state import WorkflowState
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from src.news_reporter.workflows.execution_context import ExecutionContext
 from src.news_reporter.workflows.node_result import NodeResult, NodeStatus
 

@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Optional
 import json
 from pathlib import Path
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 
 
 class WorkflowTemplate:

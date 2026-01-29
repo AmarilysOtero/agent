@@ -1,3 +1,4 @@
+# routers\workflows.py
 """Workflow API Router - Endpoints for graph workflow execution"""
 
 from __future__ import annotations
@@ -53,11 +54,37 @@ class WorkflowResponse(BaseModel):
     metrics: Optional[Dict[str, Any]] = None
     execution_time_ms: float
 
+@router.get("/agents")
+async def list_foundry_agents():
+    """
+    List all available workflow agents from Azure AI Foundry environment.
+    
+    Returns:
+        List of agents with id, name, model, description, etc.
+    """
+    try:
+        from ..agents.agents import list_agents_from_foundry
+        try:
+            agents = list_agents_from_foundry()
+            print(f"try agents: ${agents}")
+        except Exception as foundry_error:
+            print(f"Foundry queries failed: {foundry_error}")
+            # Return empty list rather than crashing
+            return []
+        
+        print(f"agents: ${agents}")
+
+        print(f"Returned {len(agents)} workflow agents: {[a.get('name') for a in agents]}")
+        return agents
+    except ValueError as e:
+        # Configuration error
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list workflow agents: {str(e)}")
 
 @router.post("/execute", response_model=WorkflowResponse)
 async def execute_workflow(
-    request: WorkflowRequest,
-    config: Settings = None
+    request: WorkflowRequest
 ) -> WorkflowResponse:
     """
     Execute a workflow with the given goal.
@@ -567,7 +594,7 @@ async def save_workflow_definition(
     - {definition: {...}, name: "..."} (nested)
     - {...workflow_definition...} (flat - workflow definition fields directly)
     """
-    from ..workflows.graph_schema import GraphDefinition
+    from ..models.graph_schema import GraphDefinition
     import uuid
     
     # Check if request has nested 'definition' field
@@ -610,7 +637,7 @@ async def validate_workflow_definition(
     definition: Dict[str, Any] = Body(...)
 ) -> Dict[str, Any]:
     """Validate a workflow definition"""
-    from ..workflows.graph_schema import GraphDefinition
+    from ..models.graph_schema import GraphDefinition
     
     try:
         graph_def = GraphDefinition(**definition)

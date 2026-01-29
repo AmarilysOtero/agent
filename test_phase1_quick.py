@@ -17,7 +17,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+    from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
     from src.news_reporter.workflows.condition_evaluator import ConditionEvaluator
     from src.news_reporter.workflows.workflow_state import WorkflowState
     from src.news_reporter.workflows.graph_loader import load_graph_definition

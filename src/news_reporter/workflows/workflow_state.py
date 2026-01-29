@@ -36,6 +36,9 @@ class WorkflowState(BaseModel):
     # Review verdicts (per reporter_id)
     verdicts: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)  # reporter_id -> list of verdicts
     
+    # Generic agent outputs (per node_id) - enables terminal resolution and composition
+    outputs: Dict[str, Any] = Field(default_factory=dict)  # node_id -> output
+    
     # Conditional node results
     conditional: Dict[str, Dict[str, Any]] = Field(default_factory=dict)  # node_id -> {result: bool, ...}
     

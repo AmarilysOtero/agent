@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Optional, Set
 import logging
 from dataclasses import dataclass, field
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 from .performance_metrics import WorkflowMetrics, NodeMetrics
 
 logger = logging.getLogger(__name__)

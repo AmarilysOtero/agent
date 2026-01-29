@@ -180,9 +180,9 @@ The LLM should **not** be the primary filter against noise. That's the graph's j
 
 | Component              | File                                               | Lines     | Status                                |
 | ---------------------- | -------------------------------------------------- | --------- | ------------------------------------- |
-| Person query detection | `Agent/src/agents.py`                              | 40–95     | ❌ Broken (single-name queries fail)  |
-| Graph traversal entry  | `neo4j_backend/src/services/graphrag_retrieval.py` | ~290      | ❌ Unreachable                        |
-| Graph expansion logic  | `neo4j_backend/src/services/graphrag_retrieval.py` | 818–900   | ⚠️ Exists but unreachable             |
+| Person query detection | `Agent/src/agents.py`                              | 40–95     | ✅ Fixed (Step 1 complete)            |
+| Graph traversal entry  | `neo4j_backend/src/services/graphrag_retrieval.py` | ~290      | ✅ API integration complete           |
+| Graph expansion logic  | `neo4j_backend/src/services/graphrag_retrieval.py` | 818–900   | ✅ Implemented (awaiting backend restart) |
 | Chunk metadata output  | `neo4j_backend/main.py`                            | 210–240   | ⚠️ Incomplete (missing header fields) |
 | Header vocab logic     | `Agent/build_header_vocab.py`                      | all       | ❌ Not integrated                     |
 | Coworker relationships | `neo4j_backend/database/operations.py`             | 2831–2930 | ✅ Created, not used in traversal     |

@@ -18,27 +18,22 @@ except ImportError:
 from .auth import get_current_user
 from ..config import Settings
 
+# Import updated person detection from header_vocab (Step 1 fix)
+try:
+    from ..tools.header_vocab import extract_person_names, extract_person_names_and_mode
+except ImportError:
+    # Fallback if header_vocab not available
+    def extract_person_names(query: str) -> List[str]:
+        words = query.split()
+        names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
+        return names
+    
+    def extract_person_names_and_mode(query: str):
+        return extract_person_names(query), False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
-
-def extract_person_names(query: str) -> List[str]:
-    """Extract potential person names from query (capitalized words that might be names)
-    
-    Args:
-        query: User query text
-        
-    Returns:
-        List of potential person names (capitalized words)
-    """
-    # Split query into words
-    words = query.split()
-    # Extract capitalized words that are likely names (length > 2, starts with capital)
-    names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
-    # Remove common words that start with capital but aren't names
-    common_words = {'The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Who', 'Why', 'How', 'Tell', 'Show', 'Give', 'Find', 'Search', 'Get'}
-    names = [n for n in names if n not in common_words]
-    return names
 
 
 def filter_results_by_exact_match(results: List[dict], query: str, min_similarity: float = 0.9) -> List[dict]:

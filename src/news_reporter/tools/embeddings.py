@@ -31,6 +31,15 @@ class EmbeddingsProvider:
     def __init__(self) -> None:
         from azure.identity import DefaultAzureCredential
         from azure.ai.projects import AIProjectClient
+        import os
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "[EmbeddingsProvider] Env check: OPENAI_API_VERSION=%s, AZURE_OPENAI_API_VERSION=%s",
+            os.getenv("OPENAI_API_VERSION"),
+            os.getenv("AZURE_OPENAI_API_VERSION"),
+        )
 
         # ✅ explicit runtime + type guard to satisfy Pylance
         if settings.ai_project_endpoint is None:

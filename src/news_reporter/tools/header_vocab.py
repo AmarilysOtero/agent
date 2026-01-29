@@ -299,6 +299,15 @@ def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = No
         'through', 'before', 'after', 'during', 'including', 'without', 'between',
     }
     
+    # Words that are document section headers, not part of person names
+    # When these appear after a capitalized word, the capitalized word is likely
+    # a person name and this is the section they're asking about (not a multi-token name)
+    header_indicator_words = {
+        'skills', 'experience', 'education', 'certifications', 'projects', 'activities',
+        'role', 'roles', 'background', 'history', 'summary', 'overview', 'about',
+        'contact', 'references', 'objectives', 'achievements', 'qualifications'
+    }
+    
     # Tokenize case-sensitively to detect actual capitalization
     # Split by spaces/punctuation to maintain case
     import re as re_module
@@ -321,6 +330,17 @@ def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = No
             # Filter out if ANY token is a common query word
             if any(t.lower() in query_words for t in name_tokens):
                 continue
+            
+            # CRITICAL FIX: If the last token is a header indicator word,
+            # this is probably "PersonName HeaderSection" not "FirstName LastName"
+            # Extract just the name part and treat it as person + header
+            if name_tokens[-1].lower() in header_indicator_words:
+                # Person name is everything except the last token
+                person_tokens = name_tokens[:-1]
+                if person_tokens:
+                    clean_name = " ".join(_normalize_possessive(t.strip(".,!?;:()[]{}")) for t in person_tokens)
+                    logger.debug(f"[PersonMode] Name '{clean_name}' followed by header indicator '{name_tokens[-1]}'")
+                    return [clean_name], True
             
             # Valid multi-token name found (e.g., "John Smith", "Maria Rodriguez")
             clean_name = " ".join(_normalize_possessive(t.strip(".,!?;:()[]{}")) for t in name_tokens)

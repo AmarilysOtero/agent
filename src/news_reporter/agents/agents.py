@@ -158,13 +158,10 @@ def filter_results_by_exact_match(
     for i, res in enumerate(results, 1):
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
+        hybrid_score = res.get("hybrid_score", similarity)  # Fall back to similarity if no hybrid_score
         file_name = res.get("file_name", "?")
         header_text = res.get("header_text", "").lower() if res.get("header_text") else ""
-        
-        # Apply absolute minimum similarity threshold
-        if similarity < 0.3:
-            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
-            continue
+        keywords_list = [k.lower() for k in (res.get("keywords") or [])]
         
         # Check if ANY of the person names appear in text or header
         name_found_in_text = any(name in text for name in person_names_lower)
@@ -174,25 +171,53 @@ def filter_results_by_exact_match(
         file_name_lower = file_name.lower() if file_name else ""
         name_found_in_file = any(name in file_name_lower for name in person_names_lower)
         
+        # Check if this chunk is actually about the requested attribute
+        is_attribute_match = (
+            any(attr in header_text for attr in attribute_keywords) or
+            any(attr in keywords_list for attr in attribute_keywords)
+        )
+        
+        # For attribute queries with strong keyword/header matches, use hybrid_score
+        # to avoid filtering out relevant chunks with low vector similarity
+        file_scope_match = name_found_in_file and is_attribute_query
+        
+        if is_attribute_query and file_scope_match and is_attribute_match:
+            # For attribute chunks: accept if EITHER similarity OR hybrid_score is good
+            # This handles cases where "Skills" section has low vector sim but high keyword match
+            if similarity < 0.25 and hybrid_score < 0.45:
+                logger.info(
+                    f"❌ [filter] Result {i} FILTERED OUT: sim={similarity:.3f} < 0.25 "
+                    f"AND hybrid={hybrid_score:.3f} < 0.45, header='{res.get('header_text', '')}'"
+                )
+                continue
+        else:
+            # Standard similarity threshold for non-attribute chunks
+            if similarity < 0.3:
+                logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
+                continue
+        
         # Keep if:
         # 1. Name found in text/header (very high confidence)
         # 2. Name found in file AND this is an attribute query (trust file scope for attributes)
         # 3. Very high similarity (catch edge cases)
         name_match = name_found_in_text or name_found_in_header
-        file_scope_match = name_found_in_file and is_attribute_query
         
         if (name_match and similarity >= 0.3) or \
-           (file_scope_match and similarity >= 0.25) or \
+           (file_scope_match and (similarity >= 0.25 or hybrid_score >= 0.45)) or \
            similarity >= min_similarity:
             filtered.append(res)
             logger.info(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_in_text={name_found_in_text}, "
-                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, "
-                f"file_scope_match={file_scope_match}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                f"name_in_text={name_found_in_text}, name_in_header={name_found_in_header}, "
+                f"name_in_file={name_found_in_file}, file_scope_match={file_scope_match}, "
+                f"is_attr_match={is_attribute_match if is_attribute_query else 'N/A'}, "
+                f"header='{res.get('header_text', '')}', file='{file_name}'"
             )
             print(
-                f"✅ [filter] Result {i} KEPT: sim={similarity:.3f}, name_match={name_match}, "
-                f"file_scope={file_scope_match}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT: sim={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                f"name_match={name_match}, file_scope={file_scope_match}, "
+                f"attr_match={is_attribute_match if is_attribute_query else 'N/A'}, "
+                f"header='{res.get('header_text', '')}', file='{file_name}'"
             )
         else:
             logger.info(
@@ -354,6 +379,8 @@ class AiSearchAgent:
         
         # Extract person names and determine if query is person-centric
         # Uses corpus-learned vocabulary for context-aware classification
+        from ..tools.header_vocab import extract_attribute_keywords
+        
         person_names, is_person_query = extract_person_names_and_mode(query)
         
         logger.info(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
@@ -361,8 +388,21 @@ class AiSearchAgent:
         print(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
         print(f"🔍 [AiSearchAgent] person_names={person_names}, is_person_query={is_person_query}")
         
-        # Only use keywords for person-centric queries
-        keywords = person_names if (is_person_query and person_names) else None
+        # Build keyword list: person names + attribute keywords (e.g., skills)
+        # For "Tell me Kevin Skills" → keywords=['kevin', 'skills']
+        keywords = []
+        if is_person_query and person_names:
+            keywords.extend(person_names)
+        
+        # Add attribute keywords for richer matching
+        attribute_kws = extract_attribute_keywords(query)
+        if attribute_kws:
+            keywords.extend(attribute_kws)
+            logger.info(f"🔍 [AiSearchAgent] Added attribute keywords: {attribute_kws}")
+        
+        # Remove duplicates while preserving order
+        keywords = list(dict.fromkeys(keywords))
+        
         keyword_boost = 0.4 if keywords else 0.0
         
         logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")

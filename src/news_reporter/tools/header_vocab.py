@@ -265,9 +265,10 @@ def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = No
     is asking about a specific person.
     
     Detection logic:
-    1. Multi-token name spans (2-4 capitalized tokens) → person-centric
+    1. Multi-token name spans (2-4 capitalized tokens, not query words) → person-centric
     2. Single-token name followed by known header phrase → person-centric
-    3. No name signals → NOT person-centric
+    3. Single-token name in context-rich queries (e.g., "who does X work with") → person-centric
+    4. No name signals → NOT person-centric
     
     Args:
         query: User query text
@@ -283,66 +284,84 @@ def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = No
     # Load vocabulary if not provided
     if vocab_set is None:
         vocab_set = load_header_vocab()
-
-    # If vocabulary is empty, disable person extraction to avoid false positives
-    # (corpus-driven only; no hardcoded fallbacks)
-    if not vocab_set:
-        logger.debug("[PersonMode] Empty header vocabulary; defaulting to generic mode")
-        return [], False
     
-    # ---- 2) Extract multi-token name spans (2-4 capitalized words) ----
-    # Pattern supports accents and initials: "Kevin J. Ramírez", "María del Carmen"
-    name_span_pattern = re.compile(
-        r"\b(?:[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñüàèìòùâêîôû\-]+|[A-Z]\.)"
-        r"(?:\s+(?:[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñüàèìòùâêîôû\-]+|[A-Z]\.)){1,3}\b"
-    )
-    spans = name_span_pattern.findall(q)
+    # Common query words that should not be treated as names
+    query_words = {
+        'who', 'what', 'where', 'when', 'why', 'how', 'is', 'are', 'am', 'be', 'been',
+        'being', 'have', 'has', 'had', 'do', 'does', 'did', 'doing', 'will', 'would',
+        'could', 'should', 'can', 'shall', 'may', 'might', 'must', 'the', 'a', 'an',
+        'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from',
+        'about', 'show', 'tell', 'find', 'get', 'give', 'as', 'if', 'this', 'that',
+        'these', 'those', 'me', 'you', 'him', 'her', 'us', 'them', 'it', 'my', 'your',
+        'his', 'her', 'its', 'our', 'their', 'all', 'each', 'every', 'both', 'any',
+        'some', 'more', 'most', 'other', 'another', 'such', 'no', 'not', 'only',
+        'then', 'now', 'just', 'also', 'still', 'up', 'down', 'out', 'over', 'under',
+        'through', 'before', 'after', 'during', 'including', 'without', 'between',
+    }
     
-    # Build corpus-derived unigram set for span filtering
-    vocab_unigrams = set()
-    for phrase in vocab_set:
-        for token in phrase.split():
-            vocab_unigrams.add(token)
-
-    # Clean and filter spans that include corpus header tokens
-    cleaned_spans = []
-    for s in spans:
-        parts = [p.strip(".,!?;:()[]{}") for p in s.split()]
-        parts = [_normalize_possessive(p) for p in parts]
-        if not parts:
-            continue
-        # If any token after the first is a corpus-derived header token, skip
-        if any(p.lower() in vocab_unigrams for p in parts[1:]):
-            continue
-        cleaned_spans.append(" ".join(parts))
+    # Tokenize case-sensitively to detect actual capitalization
+    # Split by spaces/punctuation to maintain case
+    import re as re_module
+    raw_tokens = re_module.split(r'[\s\-,;.!?()]+', q.strip())
+    raw_tokens = [t.strip() for t in raw_tokens if t.strip()]
     
-    # Deduplicate while preserving order
-    names = list(dict.fromkeys(cleaned_spans))
+    # ---- 1) Multi-token capitalized name spans (2-4 tokens) ----
+    for i in range(len(raw_tokens) - 1):
+        # Look for 2-4 consecutive tokens that start with uppercase
+        span_len = 1
+        while (i + span_len < len(raw_tokens) and 
+               raw_tokens[i + span_len] and 
+               raw_tokens[i + span_len][0].isupper() and
+               span_len < 4):
+            span_len += 1
+        
+        if span_len >= 2:  # Found potential multi-token name
+            name_tokens = raw_tokens[i:i + span_len]
+            
+            # Filter out if ANY token is a common query word
+            if any(t.lower() in query_words for t in name_tokens):
+                continue
+            
+            # Valid multi-token name found (e.g., "John Smith", "Maria Rodriguez")
+            clean_name = " ".join(_normalize_possessive(t.strip(".,!?;:()[]{}")) for t in name_tokens)
+            logger.debug(f"[PersonMode] Multi-token name found: '{clean_name}'")
+            return [clean_name], True
     
-    if names:
-        # Multi-token name found - person-centric
-        logger.debug(f"[PersonMode] Multi-token names found: {names}")
-        return names, True
-    
-    # ---- 3) Single-token name detection (gated by header vocabulary) ----
-    tokens = tokenize_query(q)
-    
-    for i, tok in enumerate(tokens[:-1]):
-        # Skip short tokens
-        if len(tok) <= 2:
+    # ---- 2) Single-token name detection ----
+    for i, tok in enumerate(raw_tokens):
+        # Skip short tokens or query words
+        if len(tok) <= 2 or tok.lower() in query_words:
             continue
         
         # Check if token starts with uppercase (potential name)
         if tok and tok[0].isupper():
-            # Check if followed by a known header phrase from corpus
-            matched_header = match_following_header_phrase(tokens, i, vocab_set, max_len=4)
-            if matched_header:
-                # Example: "Kevin skills" where "skills" is in header_vocab
-                clean_name = _normalize_possessive(tok.strip(".,!?;:()[]{}"))
-                logger.debug(f"[PersonMode] Single-token name '{clean_name}' followed by header '{matched_header}'")
-                return [clean_name], True
+            clean_name = _normalize_possessive(tok.strip(".,!?;:()[]{}"))
+            
+            # Get context: tokens after this token
+            context_after = [raw_tokens[j].lower() for j in range(i + 1, min(len(raw_tokens), i + 5))]
+            
+            if not context_after:
+                continue
+            
+            # ---- 2a) Header vocabulary matching (if available) ----
+            if vocab_set:
+                # Check if next token(s) form a known header phrase
+                for n in range(1, min(5, len(context_after) + 1)):
+                    phrase = " ".join(context_after[:n])
+                    if phrase in vocab_set:
+                        logger.debug(f"[PersonMode] Single-token name '{clean_name}' followed by header '{phrase}'")
+                        return [clean_name], True
+            
+            # ---- 2b) Intent-based matching: single-token name in person-oriented queries ----
+            person_intent_keywords = {'work', 'colleague', 'team', 'project', 'experience', 'skills', 'history', 'background'}
+            
+            # Check for person intent keywords in the context
+            for keyword in person_intent_keywords:
+                if keyword in context_after:
+                    logger.debug(f"[PersonMode] Single-token name '{clean_name}' followed by intent keyword '{keyword}'")
+                    return [clean_name], True
     
-    # ---- 4) No person signals detected ----
+    # ---- 3) No person signals detected ----
     logger.debug(f"[PersonMode] No person signals in query: '{q[:50]}...'")
     return [], False
 

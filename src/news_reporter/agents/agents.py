@@ -158,7 +158,8 @@ def filter_results_by_exact_match(
     for i, res in enumerate(results, 1):
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
-        hybrid_score = res.get("hybrid_score", similarity)  # Fall back to similarity if no hybrid_score
+        hybrid_score = res.get("hybrid_score", similarity)
+        keyword_score = res.get("keyword_score", 0.0)
         file_name = res.get("file_name", "?")
         header_text = res.get("header_text", "").lower() if res.get("header_text") else ""
         keywords_list = [k.lower() for k in (res.get("keywords") or [])]
@@ -177,55 +178,57 @@ def filter_results_by_exact_match(
             any(attr in keywords_list for attr in attribute_keywords)
         )
         
-        # For attribute queries with strong keyword/header matches, use hybrid_score
-        # to avoid filtering out relevant chunks with low vector similarity
-        file_scope_match = name_found_in_file and is_attribute_query
-        
-        if is_attribute_query and file_scope_match and is_attribute_match:
-            # For attribute chunks: accept if EITHER similarity OR hybrid_score is good
-            # This handles cases where "Skills" section has low vector sim but high keyword match
-            if similarity < 0.25 and hybrid_score < 0.45:
+        # 🔥 ATTRIBUTE QUERY MODE: Structural chunks (Skills, Experience) don't need name in text
+        # They score low on embeddings but high on keyword/header signals
+        if is_attribute_query and name_found_in_file and is_attribute_match:
+            # Keep if ANY signal is strong (header match, keyword score, or hybrid score)
+            if header_text and any(attr in header_text for attr in attribute_keywords):
+                # Strong signal: header explicitly says "Skills", "Experience", etc.
+                filtered.append(res)
                 logger.info(
-                    f"❌ [filter] Result {i} FILTERED OUT: sim={similarity:.3f} < 0.25 "
-                    f"AND hybrid={hybrid_score:.3f} < 0.45, header='{res.get('header_text', '')}'"
+                    f"✅ [filter] Result {i} KEPT (ATTRIBUTE): sim={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                    f"header='{res.get('header_text', '')}', file='{file_name}'"
+                )
+                print(f"✅ [filter] Result {i} KEPT (ATTRIBUTE): header='{res.get('header_text', '')}', hybrid={hybrid_score:.3f}")
+                continue
+            elif keyword_score > 0 or hybrid_score >= 0.45:
+                # Good keyword/hybrid match from person's file
+                filtered.append(res)
+                logger.info(
+                    f"✅ [filter] Result {i} KEPT (ATTRIBUTE): sim={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                    f"kw_score={keyword_score:.3f}, file='{file_name}'"
+                )
+                print(f"✅ [filter] Result {i} KEPT (ATTRIBUTE): kw={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
+                continue
+            else:
+                logger.info(
+                    f"❌ [filter] Result {i} FILTERED OUT (WEAK ATTRIBUTE): sim={similarity:.3f}, "
+                    f"hybrid={hybrid_score:.3f}, kw={keyword_score:.3f}"
                 )
                 continue
-        else:
-            # Standard similarity threshold for non-attribute chunks
-            if similarity < 0.3:
-                logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
-                continue
         
-        # Keep if:
-        # 1. Name found in text/header (very high confidence)
-        # 2. Name found in file AND this is an attribute query (trust file scope for attributes)
-        # 3. Very high similarity (catch edge cases)
+        # 🔥 PERSON IDENTITY MODE: Requires name in text/header for verification
+        # Standard similarity threshold
+        if similarity < 0.3:
+            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
+            continue
+        
         name_match = name_found_in_text or name_found_in_header
         
-        if (name_match and similarity >= 0.3) or \
-           (file_scope_match and (similarity >= 0.25 or hybrid_score >= 0.45)) or \
-           similarity >= min_similarity:
+        if name_match or similarity >= min_similarity:
             filtered.append(res)
             logger.info(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                f"✅ [filter] Result {i} KEPT (PERSON): similarity={similarity:.3f}, "
                 f"name_in_text={name_found_in_text}, name_in_header={name_found_in_header}, "
-                f"name_in_file={name_found_in_file}, file_scope_match={file_scope_match}, "
-                f"is_attr_match={is_attribute_match if is_attribute_query else 'N/A'}, "
-                f"header='{res.get('header_text', '')}', file='{file_name}'"
+                f"file='{file_name}'"
             )
-            print(
-                f"✅ [filter] Result {i} KEPT: sim={similarity:.3f}, hybrid={hybrid_score:.3f}, "
-                f"name_match={name_match}, file_scope={file_scope_match}, "
-                f"attr_match={is_attribute_match if is_attribute_query else 'N/A'}, "
-                f"header='{res.get('header_text', '')}', file='{file_name}'"
-            )
+            print(f"✅ [filter] Result {i} KEPT (PERSON): sim={similarity:.3f}, name_match={name_match}")
         else:
             logger.info(
-                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, name_in_text={name_found_in_text}, "
-                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, "
-                f"file_scope_match={file_scope_match}, file='{file_name}'"
+                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, "
+                f"name_match={name_match}, file='{file_name}'"
             )
-            print(f"❌ [filter] Result {i} FILTERED OUT: sim={similarity:.3f}, file='{file_name}'")
+            print(f"❌ [filter] Result {i} FILTERED OUT: sim={similarity:.3f}, name_match={name_match}")
     
     logger.info(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")
     print(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")

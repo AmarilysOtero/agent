@@ -156,6 +156,16 @@ def filter_results_by_exact_match(
     
     filtered = []
     for i, res in enumerate(results, 1):
+        # RAW DEBUG: Print all keys and a sample of the dict for Result 3
+        if i == 3:
+            logger.info(f"[DEBUG-KEYS-3] Result 3 top-level keys: {list(res.keys())}")
+            logger.info(f"[DEBUG-KEYS-3] Result 3 metadata keys: {list(res.get('metadata', {}).keys())}")
+            logger.info(f"[DEBUG-RAW-3] header_text in res? {res.get('header_text')}")
+            logger.info(f"[DEBUG-RAW-3] header_text in metadata? {res.get('metadata', {}).get('header_text')}")
+            logger.info(f"[DEBUG-RAW-3] keyword_score in res? {res.get('keyword_score')}")
+            logger.info(f"[DEBUG-RAW-3] keyword_score in metadata? {res.get('metadata', {}).get('keyword_score')}")
+            print(f"[DEBUG-KEYS-3] Result 3 keys: {list(res.keys())}")
+        
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
         

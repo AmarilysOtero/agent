@@ -439,8 +439,16 @@ class AiSearchAgent:
         
         keyword_boost = 0.4 if keywords else 0.0
         
+        # PHASE 5: Query Classification for Structural Routing
+        query_intent = self._classify_query_intent(query, person_names or [])
+        logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
+        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        
         logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
         print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        
+        # NOTE: Section-based routing will be implemented when section-aware search endpoints are added to graphrag_search tool
+        # For now, using existing hybrid search with enhanced keyword matching
         
         results = graphrag_search(
             query=query,
@@ -830,6 +838,110 @@ class AiSearchAgent:
                 logger.info(f"📝 Included full chunk text ({len(text)} characters) for file: {file_name}")
 
         return "\n".join(findings)
+    
+    def _classify_query_intent(self, query: str, person_names: List[str]) -> dict:
+        """Determine if query is section-based or semantic
+        
+        Detects:
+        1. Section-based with person scope (person + attribute)
+        2. Section-based cross-document (attribute only, no person)
+        3. Semantic-based (general question)
+        
+        Examples:
+            "Kevin's Industry Experience" → section_based_scoped
+            "What are Kevin's skills?" → section_based_scoped
+            "Tell me about machine learning" → semantic
+            "All resumes with Python skills" → section_based_cross_document
+            
+        Args:
+            query: User query text
+            person_names: List of person names extracted from query
+            
+        Returns:
+            Dictionary with type, routing, section_query, file_scope
+        """
+        query_lower = query.lower()
+        
+        # Attribute keywords (structural sections)
+        attribute_keywords = [
+            'skill', 'experience', 'education', 'qualification',
+            'role', 'position', 'project', 'certification',
+            'background', 'expertise', 'training', 'achievement',
+            'industry', 'professional', 'technical', 'employment',
+            'work', 'career', 'competenc', 'capabilit'
+        ]
+        
+        # Check for person name
+        has_person = any(name.lower() in query_lower for name in person_names)
+        
+        # Check for attribute keyword
+        has_attribute = any(keyword in query_lower for keyword in attribute_keywords)
+        
+        # Extract attribute phrase if present
+        attribute_match = None
+        if has_attribute:
+            attribute_match = self._extract_attribute_phrase(query, attribute_keywords)
+        
+        # Classify
+        if has_person and has_attribute:
+            return {
+                'type': 'section_based_scoped',
+                'routing': 'hard',
+                'person_names': person_names,
+                'section_query': attribute_match,
+                'file_scope': True
+            }
+        elif has_attribute and not has_person:
+            return {
+                'type': 'section_based_cross_document',
+                'routing': 'hard',
+                'section_query': attribute_match,
+                'file_scope': False
+            }
+        else:
+            return {
+                'type': 'semantic',
+                'routing': 'soft',
+                'section_query': None,
+                'file_scope': has_person
+            }
+    
+    def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -> str:
+        """Extract section-like phrase around attribute keyword
+        
+        Example:
+            "Kevin's industry experience" → "industry experience"
+            "technical skills summary" → "technical skills"
+            
+        Args:
+            query: User query
+            attribute_keywords: List of attribute keywords
+            
+        Returns:
+            Extracted attribute phrase or first keyword found
+        """
+        words = query.lower().split()
+        
+        # Find first keyword that appears
+        for i, word in enumerate(words):
+            word_clean = word.strip('.,!?;:\'"')
+            # Check if any attribute keyword is in this word
+            for keyword in attribute_keywords:
+                if keyword in word_clean:
+                    # Take 1-2 words before + keyword + 1 word after
+                    start = max(0, i - 1)
+                    end = min(len(words), i + 2)
+                    phrase = ' '.join(words[start:end])
+                    # Clean up
+                    phrase = phrase.strip('.,!?;:\'"')
+                    return phrase
+        
+        # Fallback: return first keyword found
+        for keyword in attribute_keywords:
+            if keyword in query.lower():
+                return keyword
+        
+        return "attribute"
 
 
 # ---------- SQL AGENT (PostgreSQL → CSV → Vector Fallback) ----------

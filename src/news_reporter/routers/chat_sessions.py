@@ -384,7 +384,15 @@ async def add_message(
     user: dict = Depends(get_current_user)
 ):
     """Add a message to a session (user message + get AI response)."""
-    print(f"[add_message] Message: {message}")
+    
+    # Log new chat request with clear separator
+    logger.info("=" * 100)
+    logger.info("💬 NEW CHAT REQUEST")
+    logger.info(f"   Session ID: {session_id}")
+    logger.info(f"   User ID: {user.get('_id')}")
+    logger.info(f"   Message Preview: {str(message.get('content', ''))[:100]}...")
+    logger.info("=" * 100)
+    
     if sessions_collection is None or messages_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
@@ -631,6 +639,12 @@ async def add_message(
     
     # Ensure COMPLETE serialization safety
     safe_response = recursive_serialize(raw_response)
+    
+    # Log chat request completion
+    logger.info("=" * 100)
+    logger.info(f"✅ CHAT REQUEST COMPLETED - Session: {session_id}, Workflow: {workflow_name}")
+    logger.info(f"   Response length: {len(assistant_response)} chars, Sources: {len(sources)}")
+    logger.info("=" * 100)
     
     return safe_response
 

@@ -132,71 +132,61 @@ def filter_results_by_exact_match(
         print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         return filtered
     
-    # ✅ PERSON MODE: Enforce name matching
-    # Split full names into tokens for matching
-    query_words = []
-    for full_name in person_names:
-        query_words.extend(full_name.lower().split())
-    query_words = [w for w in query_words if len(w) > 1]  # Filter very short tokens
+    # ✅ PERSON MODE: More lenient name matching
+    # Extract actual person names (not context words)
+    # person_names was extracted specifically as the person's name
+    # So only check for THIS person, don't require 2-token names
+    person_names_lower = [n.lower() for n in (person_names or [])]
     
-    if not query_words:
-        # Person mode but no valid name tokens - fall back to similarity only
-        logger.info(f"📋 [filter] Person mode but no name tokens - using similarity threshold")
+    if not person_names_lower:
+        # Person mode but no valid names - fall back to similarity only
+        logger.info(f"📋 [filter] Person mode but no person names - using similarity threshold")
         return [res for res in results if res.get("similarity", 0.0) >= 0.3]
     
-    first_name = query_words[0] if query_words else None
-    last_name = query_words[-1] if len(query_words) > 1 else None
-    
-    logger.info(f"🔍 [filter] Person mode: first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
-    print(f"🔍 [filter] Person mode: first_name='{first_name}', last_name='{last_name}'")
+    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, min_similarity={min_similarity}")
+    print(f"🔍 [filter] Person mode: person_names={person_names_lower}")
     
     filtered = []
     for i, res in enumerate(results, 1):
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
         file_name = res.get("file_name", "?")
-        text_preview = text[:100].replace("\n", " ")
+        header_text = res.get("header_text", "").lower() if res.get("header_text") else ""
         
         # Apply absolute minimum similarity threshold
         if similarity < 0.3:
             logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
             continue
         
-        # Check if first name appears in text
-        first_name_found = first_name in text if first_name else True
-        
-        # If we have both first and last name, require both to match
-        if first_name and last_name:
-            last_name_found = last_name in text
-            name_match = first_name_found and last_name_found
-        else:
-            name_match = first_name_found
+        # Check if ANY of the person names appear in text or header
+        name_found_in_text = any(name in text for name in person_names_lower)
+        name_found_in_header = any(name in header_text for name in person_names_lower)
         
         # Check file name for person's name
         file_name_lower = file_name.lower() if file_name else ""
-        file_contains_name = False
-        if first_name and last_name:
-            file_contains_name = (first_name in file_name_lower and last_name in file_name_lower) or \
-                                 (last_name in file_name_lower)
-        elif first_name:
-            file_contains_name = first_name in file_name_lower
+        name_found_in_file = any(name in file_name_lower for name in person_names_lower)
         
-        # Keep if name matches, file contains name, or similarity is very high
+        # Keep if:
+        # 1. Name found in text/file/header (very high confidence)
+        # 2. Name not found but similarity is very high (catch edge cases)
+        # 3. File contains person's name at any threshold
+        name_match = name_found_in_text or name_found_in_header
+        
         if (name_match and similarity >= 0.3) or \
-           (file_contains_name and similarity >= 0.4) or \
+           (name_found_in_file and similarity >= 0.4) or \
            similarity >= min_similarity:
             filtered.append(res)
             logger.info(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_match={name_match}, "
-                f"file_contains_name={file_contains_name}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_in_text={name_found_in_text}, "
+                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, file='{file_name}'"
             )
             print(
                 f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_match={name_match}, file='{file_name}'"
             )
         else:
             logger.info(
-                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, name_match={name_match}, "
-                f"file_contains_name={file_contains_name}, file='{file_name}'"
+                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, name_in_text={name_found_in_text}, "
+                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, file='{file_name}'"
             )
             print(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, file='{file_name}'")
     

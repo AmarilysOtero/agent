@@ -118,7 +118,10 @@ class Neo4jGraphRAGRetriever:
         use_keyword_search: bool = True,
         keywords: Optional[List[str]] = None,
         keyword_match_type: str = "any",
-        keyword_boost: float = 0.3
+        keyword_boost: float = 0.3,
+        is_person_query: bool = False,
+        enable_coworker_expansion: bool = True,
+        person_names: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """
         Hybrid GraphRAG retrieval with keyword + semantic search:
@@ -138,6 +141,9 @@ class Neo4jGraphRAGRetriever:
             keywords: Explicit keywords (auto-extracted if None)
             keyword_match_type: "any" (OR) or "all" (AND) matching
             keyword_boost: Weight for keyword matches in re-ranking (0.0 to 1.0)
+            is_person_query: Flag indicating person-centric query for coworker expansion
+            enable_coworker_expansion: Enable coworker graph traversal for person queries
+            person_names: Resolved person names for entity-based expansion
         
         Returns:
             List of chunk dicts with: text, file_name, file_path, similarity, hybrid_score, metadata
@@ -159,6 +165,8 @@ class Neo4jGraphRAGRetriever:
                 "use_keyword_search": use_keyword_search,
                 "keyword_match_type": keyword_match_type,
                 "keyword_boost": keyword_boost,
+                "is_person_query": is_person_query,
+                "enable_coworker_expansion": enable_coworker_expansion,
             }
             
             # Add optional parameters
@@ -168,6 +176,8 @@ class Neo4jGraphRAGRetriever:
                 payload["directory_path"] = directory_path
             if keywords:
                 payload["keywords"] = keywords
+            if person_names:
+                payload["person_names"] = person_names
             
             logger.info(f"🔍 [hybrid_retrieve] Querying Neo4j GraphRAG API: {url}")
             logger.info(f"🔍 [hybrid_retrieve] Payload: {payload}")
@@ -275,7 +285,10 @@ def graphrag_search(
     use_keyword_search: bool = True,
     keywords: Optional[List[str]] = None,
     keyword_match_type: str = "any",
-    keyword_boost: float = 0.3
+    keyword_boost: float = 0.3,
+    is_person_query: bool = False,
+    enable_coworker_expansion: bool = True,
+    person_names: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """
     Convenience function for GraphRAG search (matches Azure Search API style)
@@ -290,12 +303,15 @@ def graphrag_search(
         keywords: Explicit keywords (auto-extracted if None)
         keyword_match_type: "any" (OR) or "all" (AND) matching
         keyword_boost: Weight for keyword matches in re-ranking (0.0 to 1.0)
+        is_person_query: Flag indicating person-centric query for coworker expansion
+        enable_coworker_expansion: Enable coworker graph traversal for person queries
+        person_names: Resolved person names for entity-based expansion
     
     Returns:
         List of chunk results (compatible with Azure Search format)
     """
-    logger.info(f"🔍 [graphrag_search] Called with query='{query[:100]}...', top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}")
-    print(f"🔍 [graphrag_search] Called with query='{query[:100]}...', top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}")
+    logger.info(f"🔍 [graphrag_search] Called with query='{query[:100]}...', top_k={top_k}, similarity_threshold={similarity_threshold}, is_person_query={is_person_query}, person_names={person_names}")
+    print(f"🔍 [graphrag_search] Called with query='{query[:100]}...', is_person_query={is_person_query}, person_names={person_names}")
     
     retriever = Neo4jGraphRAGRetriever()
     results = retriever.hybrid_retrieve(
@@ -308,7 +324,10 @@ def graphrag_search(
         use_keyword_search=use_keyword_search,
         keywords=keywords,
         keyword_match_type=keyword_match_type,
-        keyword_boost=keyword_boost
+        keyword_boost=keyword_boost,
+        is_person_query=is_person_query,
+        enable_coworker_expansion=enable_coworker_expansion,
+        person_names=person_names
     )
     
     logger.info(f"📊 [graphrag_search] hybrid_retrieve returned {len(results)} results")

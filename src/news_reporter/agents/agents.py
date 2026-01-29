@@ -363,8 +363,8 @@ class AiSearchAgent:
         keywords = person_names if (is_person_query and person_names) else None
         keyword_boost = 0.4 if keywords else 0.0
         
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}")
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
         
         results = graphrag_search(
             query=query,
@@ -372,7 +372,10 @@ class AiSearchAgent:
             similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
             keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=keyword_boost
+            keyword_boost=keyword_boost,
+            is_person_query=is_person_query,
+            enable_coworker_expansion=True,  # Enable coworker expansion for person queries
+            person_names=person_names
         )
 
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")

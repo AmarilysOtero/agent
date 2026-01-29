@@ -159,22 +159,25 @@ def filter_results_by_exact_match(
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
         
-        # Normalize field names - support multiple variations
-        hybrid_score = res.get("hybrid_score") or res.get("hybridScore") or res.get("hybrid") or similarity
-        keyword_score = res.get("keyword_score") or res.get("keywordScore") or res.get("kw_score") or 0.0
+        # Get metadata dict first
+        metadata = res.get("metadata", {})
         
-        file_name = res.get("file_name") or res.get("fileName") or res.get("file") or "?"
+        # Normalize field names - check metadata first, then top-level
+        hybrid_score = res.get("hybrid_score") or metadata.get("hybrid_score") or similarity
+        keyword_score = metadata.get("keyword_score") or res.get("keyword_score") or 0.0
         
-        # Header text - check multiple possible keys
-        header_raw = res.get("header_text") or res.get("headerText") or res.get("header") or ""
+        file_name = res.get("file_name") or res.get("file") or "?"
+        
+        # Header text - check metadata first, then top-level
+        header_raw = metadata.get("header_text") or res.get("header_text") or res.get("header") or ""
         header_text = header_raw.lower() if header_raw else ""
         
-        # Keywords - check multiple possible keys
-        keywords_raw = res.get("keywords") or res.get("keyword_list") or []
+        # Keywords - check metadata first, then top-level
+        keywords_raw = metadata.get("keywords") or res.get("keywords") or []
         keywords_list = [k.lower() for k in keywords_raw] if keywords_raw else []
         
         # DEBUG: Print what we're actually receiving
-        logger.info(f"[DEBUG] Result {i}: header_text='{header_raw}', keywords={keywords_raw[:3] if keywords_raw else []}, hybrid={hybrid_score:.3f}, kw_score={keyword_score:.3f}")
+        logger.info(f"[DEBUG] Result {i}: header_text='{header_raw}' (from metadata or top-level), keywords={keywords_raw[:3] if keywords_raw else []}, hybrid={hybrid_score:.3f}, kw_score={keyword_score:.3f}")
         print(f"[DEBUG] Result {i}: header='{header_raw}', kw_score={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
         
         # Check if ANY of the person names appear in text or header

@@ -95,7 +95,8 @@ def filter_results_by_exact_match(
 ) -> List[Dict[str, Any]]:
     """Filter search results based on query type (person-centric vs generic).
     
-    For person-centric queries: requires name to appear in chunk text or very high similarity.
+    For person-centric queries: requires name to appear in chunk or file scope match.
+    For attribute queries (skills/experience): trusts file scope - keeps chunks from person's file
     For generic queries: only applies similarity threshold, no name enforcement.
     
     Args:
@@ -132,10 +133,7 @@ def filter_results_by_exact_match(
         print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         return filtered
     
-    # ✅ PERSON MODE: More lenient name matching
-    # Extract actual person names (not context words)
-    # person_names was extracted specifically as the person's name
-    # So only check for THIS person, don't require 2-token names
+    # ✅ PERSON MODE: Lenient matching with file scope awareness
     person_names_lower = [n.lower() for n in (person_names or [])]
     
     if not person_names_lower:
@@ -143,8 +141,18 @@ def filter_results_by_exact_match(
         logger.info(f"📋 [filter] Person mode but no person names - using similarity threshold")
         return [res for res in results if res.get("similarity", 0.0) >= 0.3]
     
-    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, min_similarity={min_similarity}")
-    print(f"🔍 [filter] Person mode: person_names={person_names_lower}")
+    # Detect if query contains attribute keywords (skills, experience, education, etc.)
+    # For attribute queries, we're less strict about name appearing in chunk text
+    attribute_keywords = [
+        'skill', 'experience', 'education', 'qualification', 'certification',
+        'role', 'position', 'project', 'achievement', 'responsibility',
+        'background', 'expertise', 'ability', 'competency', 'proficiency'
+    ]
+    query_lower = query.lower()
+    is_attribute_query = any(keyword in query_lower for keyword in attribute_keywords)
+    
+    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
+    print(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
     
     filtered = []
     for i, res in enumerate(results, 1):
@@ -167,28 +175,32 @@ def filter_results_by_exact_match(
         name_found_in_file = any(name in file_name_lower for name in person_names_lower)
         
         # Keep if:
-        # 1. Name found in text/file/header (very high confidence)
-        # 2. Name not found but similarity is very high (catch edge cases)
-        # 3. File contains person's name at any threshold
+        # 1. Name found in text/header (very high confidence)
+        # 2. Name found in file AND this is an attribute query (trust file scope for attributes)
+        # 3. Very high similarity (catch edge cases)
         name_match = name_found_in_text or name_found_in_header
+        file_scope_match = name_found_in_file and is_attribute_query
         
         if (name_match and similarity >= 0.3) or \
-           (name_found_in_file and similarity >= 0.4) or \
+           (file_scope_match and similarity >= 0.25) or \
            similarity >= min_similarity:
             filtered.append(res)
             logger.info(
                 f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_in_text={name_found_in_text}, "
-                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, file='{file_name}'"
+                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, "
+                f"file_scope_match={file_scope_match}, file='{file_name}'"
             )
             print(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, name_match={name_match}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT: sim={similarity:.3f}, name_match={name_match}, "
+                f"file_scope={file_scope_match}, file='{file_name}'"
             )
         else:
             logger.info(
                 f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, name_in_text={name_found_in_text}, "
-                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, file='{file_name}'"
+                f"name_in_header={name_found_in_header}, name_in_file={name_found_in_file}, "
+                f"file_scope_match={file_scope_match}, file='{file_name}'"
             )
-            print(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, file='{file_name}'")
+            print(f"❌ [filter] Result {i} FILTERED OUT: sim={similarity:.3f}, file='{file_name}'")
     
     logger.info(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")
     print(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")

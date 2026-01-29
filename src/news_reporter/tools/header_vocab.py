@@ -395,3 +395,48 @@ def extract_person_names(query: str) -> List[str]:
     """
     names, _ = extract_person_names_and_mode(query)
     return names
+
+
+def extract_attribute_keywords(query: str) -> List[str]:
+    """Extract attribute keywords from query for enhanced keyword search.
+    
+    For queries like "Tell me Kevin Skills", extracts both person names AND
+    attribute terms to ensure keyword search finds relevant sections.
+    
+    Attribute keywords include: skill, experience, education, role, project,
+    certification, responsibility, background, expertise, ability, etc.
+    
+    Args:
+        query: User query text
+        
+    Returns:
+        List of attribute keywords found in query (lowercase)
+    """
+    attribute_map = {
+        # Skills and competencies
+        'skill': ['skill', 'skills', 'ability', 'expertise', 'competency', 'proficiency'],
+        'experience': ['experience', 'background', 'work', 'worked', 'working'],
+        'education': ['education', 'degree', 'certified', 'certification', 'trained', 'training'],
+        'role': ['role', 'position', 'title', 'job', 'responsibility', 'responsibilities'],
+        'project': ['project', 'projects', 'achievement', 'accomplishment'],
+        
+        # Resume/profile sections
+        'technical': ['technical', 'technology', 'tech'],
+        'top': ['top', 'main', 'key', 'primary'],
+    }
+    
+    query_lower = (query or "").lower()
+    keywords = []
+    
+    # Check for each attribute type
+    for attr_type, terms in attribute_map.items():
+        for term in terms:
+            if term in query_lower:
+                # Use first term as canonical form
+                canonical = terms[0]
+                if canonical not in keywords:
+                    keywords.append(canonical)
+                break
+    
+    logger.debug(f"[AttributeKeywords] Extracted from '{query[:50]}...': {keywords}")
+    return keywords

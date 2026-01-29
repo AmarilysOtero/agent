@@ -158,11 +158,24 @@ def filter_results_by_exact_match(
     for i, res in enumerate(results, 1):
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
-        hybrid_score = res.get("hybrid_score", similarity)
-        keyword_score = res.get("keyword_score", 0.0)
-        file_name = res.get("file_name", "?")
-        header_text = res.get("header_text", "").lower() if res.get("header_text") else ""
-        keywords_list = [k.lower() for k in (res.get("keywords") or [])]
+        
+        # Normalize field names - support multiple variations
+        hybrid_score = res.get("hybrid_score") or res.get("hybridScore") or res.get("hybrid") or similarity
+        keyword_score = res.get("keyword_score") or res.get("keywordScore") or res.get("kw_score") or 0.0
+        
+        file_name = res.get("file_name") or res.get("fileName") or res.get("file") or "?"
+        
+        # Header text - check multiple possible keys
+        header_raw = res.get("header_text") or res.get("headerText") or res.get("header") or ""
+        header_text = header_raw.lower() if header_raw else ""
+        
+        # Keywords - check multiple possible keys
+        keywords_raw = res.get("keywords") or res.get("keyword_list") or []
+        keywords_list = [k.lower() for k in keywords_raw] if keywords_raw else []
+        
+        # DEBUG: Print what we're actually receiving
+        logger.info(f"[DEBUG] Result {i}: header_text='{header_raw}', keywords={keywords_raw[:3] if keywords_raw else []}, hybrid={hybrid_score:.3f}, kw_score={keyword_score:.3f}")
+        print(f"[DEBUG] Result {i}: header='{header_raw}', kw_score={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
         
         # Check if ANY of the person names appear in text or header
         name_found_in_text = any(name in text for name in person_names_lower)
@@ -177,6 +190,11 @@ def filter_results_by_exact_match(
             any(attr in header_text for attr in attribute_keywords) or
             any(attr in keywords_list for attr in attribute_keywords)
         )
+        
+        # DEBUG: Show attribute detection
+        if is_attribute_query:
+            logger.info(f"[DEBUG] Result {i} attr detection: is_attr_match={is_attribute_match}, header_text='{header_text}', has_attr_keyword={any(attr in keywords_list for attr in attribute_keywords)}")
+            print(f"[DEBUG] Result {i} attr: match={is_attribute_match}, header='{header_text}'")
         
         # 🔥 ATTRIBUTE QUERY MODE: Structural chunks (Skills, Experience) don't need name in text
         # They score low on embeddings but high on keyword/header signals

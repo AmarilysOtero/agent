@@ -128,11 +128,65 @@ def filter_results_by_exact_match(
     if not is_person_query:
         logger.info(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
         print(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
-        # IMPORTANT: Preserve graph_supporting_evidence chunks (high-confidence graph facts)
-        filtered = [
-            res for res in results 
-            if res.get("similarity", 0.0) >= 0.3 or res.get("source") == "graph_supporting_evidence"
-        ]
+        
+        # SPECIAL CASE: Detect relationship queries even in generic mode
+        # If query asks about "relationship between X and Y", keep low-similarity results
+        relationship_keywords = ['relationship', 'connection', 'connect', 'between', 'work together']
+        query_lower = query.lower()
+        is_relationship_query_generic = any(keyword in query_lower for keyword in relationship_keywords)
+        
+        # Count potential names in query
+        import re
+        capitalized_words = re.findall(r'\b[A-Z][a-z]+\b', query)
+        common_words = {'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 
+                        'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'I', 'Is', 'Are'}
+        potential_names = [w for w in capitalized_words if w not in common_words]
+        
+        # For relationship queries with multiple names, be more lenient with similarity
+        if is_relationship_query_generic and len(potential_names) >= 2:
+            logger.info(f"🔗 [filter] Detected relationship query in generic mode: {potential_names}")
+            print(f"🔗 [filter] Relationship query with potential names: {potential_names}")
+            # Keep results that mention any of the potential names, even with low similarity
+            # Also look for organization keywords (DXC, work, employment, role, position) for relationship context
+            filtered = []
+            org_keywords = ['dxc', 'work', 'position', 'role', 'employment', 'company', 'organization', 'currently', 'hired', 'hired at', 'employed']
+            
+            for res in results:
+                source = res.get("source") or res.get("metadata", {}).get("source")
+                if source == "graph_supporting_evidence":
+                    filtered.append(res)
+                    continue
+                
+                text = res.get("text", "").lower()
+                header_text = (res.get("header_text") or res.get("metadata", {}).get("header_text") or "").lower()
+                file_name = (res.get("file") or "").lower()
+                
+                # Check if ANY potential name appears in text, header, or file
+                name_found = any(name.lower() in text or name.lower() in header_text or name.lower() in file_name for name in potential_names)
+                
+                # Check if this chunk has organization context (employment, work details)
+                has_org_context = any(keyword in text or keyword in header_text for keyword in org_keywords)
+                
+                # Keep if:
+                # 1. Name is found (high priority) - include intro sections showing the person
+                # 2. Name + org context found - shows employment/role information (BEST for relationships)
+                # 3. High similarity (standard threshold)
+                # OR just org keyword + name in file/header (employment sections for people)
+                if name_found or (has_org_context and any(n.lower() in file_name for n in potential_names)) or res.get("similarity", 0.0) >= 0.3:
+                    filtered.append(res)
+                    if name_found and has_org_context:
+                        logger.info(f"✅ [filter] Kept result (relationship query, NAME+ORG): {res.get('header_text', '')[:50]}")
+                    elif name_found:
+                        logger.info(f"✅ [filter] Kept result (relationship query, NAME): {res.get('header_text', '')[:50]}")
+                    elif has_org_context:
+                        logger.info(f"✅ [filter] Kept result (relationship query, ORG): {res.get('header_text', '')[:50]}")
+        else:
+            # Standard generic mode: just similarity threshold
+            filtered = [
+                res for res in results 
+                if res.get("similarity", 0.0) >= 0.3 or res.get("source") == "graph_supporting_evidence"
+            ]
+        
         logger.info(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         return filtered
@@ -145,6 +199,27 @@ def filter_results_by_exact_match(
         logger.info(f"📋 [filter] Person mode but no person names - using similarity threshold")
         return [res for res in results if res.get("similarity", 0.0) >= 0.3]
     
+    # Detect if query is asking about relationships between multiple people
+    # Keywords: relationship, connection, work together, know each other, etc.
+    # Also check for multiple capitalized words that look like names
+    relationship_keywords = [
+        'relationship', 'connection', 'connect', 'work together', 'worked with',
+        'know each other', 'collaborate', 'related', 'between'
+    ]
+    query_lower = query.lower()
+    
+    # Count potential person names in query (capitalized words that aren't common words)
+    import re
+    capitalized_words = re.findall(r'\b[A-Z][a-z]+\b', query)
+    common_words = {'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 
+                    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'I', 'Is', 'Are'}
+    potential_names = [w for w in capitalized_words if w not in common_words]
+    
+    is_relationship_query = (
+        (len(potential_names) >= 2 or len(person_names_lower) >= 2) and 
+        any(keyword in query_lower for keyword in relationship_keywords)
+    )
+    
     # Detect if query contains attribute keywords (skills, experience, education, etc.)
     # For attribute queries, we're less strict about name appearing in chunk text
     attribute_keywords = [
@@ -152,14 +227,21 @@ def filter_results_by_exact_match(
         'role', 'position', 'project', 'achievement', 'responsibility',
         'background', 'expertise', 'ability', 'competency', 'proficiency'
     ]
-    query_lower = query.lower()
     is_attribute_query = any(keyword in query_lower for keyword in attribute_keywords)
     
-    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
-    print(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
+    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, potential_names={potential_names}, is_attribute_query={is_attribute_query}, is_relationship_query={is_relationship_query}")
+    print(f"🔍 [filter] Person mode: person_names={person_names_lower}, potential_names={potential_names}, is_attribute_query={is_attribute_query}, is_relationship_query={is_relationship_query}")
     
     filtered = []
     for i, res in enumerate(results, 1):
+        # Always preserve graph supporting evidence (high-confidence graph facts)
+        source = res.get("source") or res.get("metadata", {}).get("source")
+        if source == "graph_supporting_evidence":
+            filtered.append(res)
+            logger.info(f"✅ [filter] Result {i} KEPT (GRAPH EVIDENCE): source={source}")
+            print(f"✅ [filter] Result {i} KEPT (GRAPH EVIDENCE)")
+            continue
+        
         # RAW DEBUG: Print all keys and a sample of the dict for Result 3
         if i == 3:
             logger.info(f"[DEBUG-KEYS-3] Result 3 top-level keys: {list(res.keys())}")
@@ -195,8 +277,13 @@ def filter_results_by_exact_match(
         print(f"[DEBUG] Result {i}: header='{header_raw}', kw_score={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
         
         # Check if ANY of the person names appear in text or header
-        name_found_in_text = any(name in text for name in person_names_lower)
-        name_found_in_header = any(name in header_text for name in person_names_lower)
+        # Also check for potential names from query if it's a relationship query
+        names_to_check = person_names_lower.copy()
+        if is_relationship_query and potential_names:
+            names_to_check.extend([n.lower() for n in potential_names])
+        
+        name_found_in_text = any(name in text for name in names_to_check)
+        name_found_in_header = any(name in header_text for name in names_to_check)
         
         # Check file name for person's name
         file_name_lower = file_name.lower() if file_name else ""
@@ -243,14 +330,25 @@ def filter_results_by_exact_match(
                 continue
         
         # 🔥 PERSON IDENTITY MODE: Requires name in text/header for verification
-        # Standard similarity threshold
-        if similarity < 0.3:
+        # For relationship queries: Keep ALL chunks that mention ANY of the people, regardless of similarity
+        # Standard similarity threshold only for non-relationship queries
+        if not is_relationship_query and similarity < 0.3:
             logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
             continue
         
         name_match = name_found_in_text or name_found_in_header
         
-        if name_match or similarity >= min_similarity:
+        # For relationship queries: Keep if ANY person name matches
+        if is_relationship_query and name_match:
+            filtered.append(res)
+            logger.info(
+                f"✅ [filter] Result {i} KEPT (RELATIONSHIP QUERY): similarity={similarity:.3f}, "
+                f"name_in_text={name_found_in_text}, name_in_header={name_found_in_header}, "
+                f"file='{file_name}'"
+            )
+            print(f"✅ [filter] Result {i} KEPT (RELATIONSHIP): sim={similarity:.3f}, name_match={name_match}")
+        # For other person queries: Keep if name matches or high similarity
+        elif not is_relationship_query and (name_match or similarity >= min_similarity):
             filtered.append(res)
             logger.info(
                 f"✅ [filter] Result {i} KEPT (PERSON): similarity={similarity:.3f}, "
@@ -469,6 +567,90 @@ class AiSearchAgent:
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
         print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
         
+        # ========== SUMMARY ANALYSIS: Semantic, Keyword, Graph ==========
+        logger.info(f"")
+        logger.info(f"🔍 [RETRIEVAL SUMMARY] Analyzing {len(results)} results...")
+        print(f"🔍 [RETRIEVAL SUMMARY] Analyzing {len(results)} results...")
+        
+        # Collect statistics for each signal type
+        semantic_stats = []
+        keyword_stats = []
+        graph_stats = []
+        
+        for res in results:
+            similarity = res.get("similarity", 0.0)
+            vector_score = res.get("metadata", {}).get("vector_score", 0.0)
+            keyword_score = res.get("metadata", {}).get("keyword_score", 0.0)
+            hybrid_score = res.get("hybrid_score", 0.0)
+            source = res.get("source", "vector")
+            
+            # Track semantic signals
+            if vector_score > 0 or similarity > 0:
+                semantic_stats.append({
+                    'similarity': similarity,
+                    'vector_score': vector_score,
+                    'file': res.get("file_name", "?"),
+                    'header': res.get("metadata", {}).get("header_text", "N/A")
+                })
+            
+            # Track keyword signals
+            if keyword_score > 0:
+                keyword_stats.append({
+                    'keyword_score': keyword_score,
+                    'file': res.get("file_name", "?"),
+                    'header': res.get("metadata", {}).get("header_text", "N/A")
+                })
+            
+            # Track graph signals
+            if source == 'graph_traversal':
+                graph_stats.append({
+                    'hybrid_score': hybrid_score,
+                    'entity1': res.get("metadata", {}).get("entity1", "?"),
+                    'entity2': res.get("metadata", {}).get("entity2", "?"),
+                    'connection': res.get("metadata", {}).get("connection_type", "?"),
+                    'via': res.get("metadata", {}).get("via", "?")
+                })
+        
+        # Log semantic analysis
+        logger.info(f"")
+        logger.info(f"📊 [SEMANTIC ANALYSIS]")
+        logger.info(f"   Total with semantic signals: {len(semantic_stats)}")
+        if semantic_stats:
+            avg_similarity = sum(s['similarity'] for s in semantic_stats) / len(semantic_stats)
+            max_similarity = max(s['similarity'] for s in semantic_stats)
+            logger.info(f"   Avg similarity: {avg_similarity:.3f}, Max: {max_similarity:.3f}")
+            logger.info(f"   Top semantic matches:")
+            for s in sorted(semantic_stats, key=lambda x: x['similarity'], reverse=True)[:3]:
+                logger.info(f"     - {s['file']}: similarity={s['similarity']:.3f}, header='{s['header']}'")
+        
+        # Log keyword analysis
+        logger.info(f"")
+        logger.info(f"🔑 [KEYWORD ANALYSIS]")
+        logger.info(f"   Total with keyword matches: {len(keyword_stats)}")
+        if keyword_stats:
+            avg_keyword = sum(k['keyword_score'] for k in keyword_stats) / len(keyword_stats)
+            max_keyword = max(k['keyword_score'] for k in keyword_stats)
+            logger.info(f"   Avg keyword score: {avg_keyword:.3f}, Max: {max_keyword:.3f}")
+            logger.info(f"   Top keyword matches:")
+            for k in sorted(keyword_stats, key=lambda x: x['keyword_score'], reverse=True)[:3]:
+                logger.info(f"     - {k['file']}: keyword_score={k['keyword_score']:.3f}, header='{k['header']}'")
+        
+        # Log graph analysis
+        logger.info(f"")
+        logger.info(f"🔗 [GRAPH ANALYSIS]")
+        logger.info(f"   Total graph connections found: {len(graph_stats)}")
+        if graph_stats:
+            logger.info(f"   Graph connections:")
+            for g in graph_stats:
+                logger.info(f"     - {g['entity1']} <-[::{g['connection']}]-> {g['entity2']} via {g['via']}")
+        else:
+            logger.info(f"   No graph connections discovered (single entity or no relationships found)")
+        
+        logger.info(f"")
+        
+        logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        
         # Log detailed information about each result
         if results:
             logger.info(f"📋 [AiSearchAgent] Detailed results from GraphRAG:")
@@ -522,6 +704,42 @@ class AiSearchAgent:
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
         print(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
+        
+        # ========== FILTER SUMMARY ANALYSIS ==========
+        logger.info(f"")
+        logger.info(f"📊 [FILTER SUMMARY]")
+        
+        # Analyze what passed filtering
+        passed_by_similarity = 0
+        passed_by_name = 0
+        passed_by_graph = 0
+        removed_count = len(results) - len(filtered_results)
+        
+        for res in filtered_results:
+            source = res.get("source", "vector")
+            similarity = res.get("similarity", 0.0)
+            
+            if source == 'graph_traversal':
+                passed_by_graph += 1
+            elif similarity >= 0.3:
+                passed_by_similarity += 1
+            else:
+                passed_by_name += 1
+        
+        logger.info(f"   Kept {len(filtered_results)} results:")
+        logger.info(f"     - By similarity (>= 0.3): {passed_by_similarity}")
+        logger.info(f"     - By name matching: {passed_by_name}")
+        logger.info(f"     - By graph discovery: {passed_by_graph}")
+        logger.info(f"   Removed {removed_count} results (low similarity, no match)")
+        
+        # Show what was removed
+        if removed_count > 0:
+            removed_results = [r for r in results if r not in filtered_results]
+            logger.info(f"   Sample removed (low similarity):")
+            for r in removed_results[:3]:
+                logger.info(f"     - {r.get('file_name', '?')}: similarity={r.get('similarity', 0):.3f}, header='{r.get('metadata', {}).get('header_text', 'N/A')}'")
+        
+        logger.info(f"")
         
         # Log filtered results details
         if filtered_results:

@@ -1,146 +1,110 @@
 from __future__ import annotations
 import json
-import os
 import logging
-from pathlib import Path
-from typing import List, Dict, Any, Optional
+import re
+from typing import List, Dict, Any, Optional, Tuple, Set
 from pydantic import BaseModel, Field, ValidationError
 from ..foundry_runner import run_foundry_agent, run_foundry_agent_json
-from azure.identity import DefaultAzureCredential
-from azure.ai.projects import AIProjectClient
-from azure.core.exceptions import HttpResponseError
 
 logger = logging.getLogger(__name__)
 
-def _load_env():
-    """Load .env from the project root"""
-    try:
-        from dotenv import load_dotenv
-        here = Path(__file__).resolve()
-        candidates = [
-            here.parents[2] / ".env",  # repo root
-            here.parents[1] / ".env",
-            Path.cwd() / ".env",
-        ]
-        for p in candidates:
-            if p.exists():
-                load_dotenv(p)
-                logger.info(f"Loaded .env from: {p}")
-                break
-    except Exception as e:
-        logger.warning(f"Failed to load .env: {e}")
-
-
-_load_env()
-
-def get_ai_project_client() -> AIProjectClient:
-    conn = os.getenv("AI_PROJECT_CONNECTION_STRING")
-    if not conn:
-        raise ValueError("AI_PROJECT_CONNECTION_STRING is not set")
-
-    from ..tools.util import parse_connection_string
-    parts = parse_connection_string(conn)
-    credential = DefaultAzureCredential()
-
-    return AIProjectClient(
-        endpoint=parts["endpoint"],
-        project=parts["project"],
-        subscription_id=parts["subscription_id"],
-        resource_group_name=parts["resource_group"],
-        account_name=parts["account"],
-        credential=credential,
-    )
-
-def list_agents_from_foundry() -> List[Dict[str, Any]]:
-    """
-    List all available agents from Azure AI Foundry.
+def infer_header_from_chunk(text: str, file_name: str = "") -> tuple[str, list[str]]:
+    """Infer header context from chunk text when header_text is N/A.
     
-    Returns:
-        List of agent dictionaries with id, name, model, description, etc.
-    """
-    try:
-        # Ensure OPENAI_API_VERSION is set for the SDK
-        if "OPENAI_API_VERSION" not in os.environ:
-            os.environ["OPENAI_API_VERSION"] = "2024-05-01-preview"
-            logger.info("Set default OPENAI_API_VERSION to 2024-05-01-preview for agents")
-
-        client = get_ai_project_client()
-
-        listing = client.agents.list_agents()
-        print(f"Listing: {listing}")
-
-        agents: List[Dict[str, Any]] = []
-
-        # In the current SDK, `listing` is an iterable of Agent objects.
-        # We still keep a fallback for any response shape that has `.data`/`.value`.
-        iterable = None
-
-        # If the SDK ever returns a wrapper with `.data` or `.value`, use it
-        maybe_data = getattr(listing, "data", None) or getattr(listing, "value", None)
-        if maybe_data is not None:
-            iterable = maybe_data
-        else:
-            # Normal case: pageable iterator
-            iterable = listing
-
-        for agent in iterable:
-            agent_dict = {
-                "id": getattr(agent, "id", None) or getattr(agent, "value", None) or "",
-                "name": getattr(agent, "name", "Unknown"),
-                "model": getattr(agent, "model", ""),
-                "description": getattr(agent, "description", ""),
-                "created_at": getattr(agent, "created_at", None),
-                "instructions": getattr(agent, "instructions", ""),
-            }
-            agents.append(agent_dict)
-
-        logger.info(
-            "Successfully listed %d agents from Foundry: %s",
-            len(agents),
-            [a["name"] for a in agents],
-        )
-        return agents
-
-    except HttpResponseError as e:
-        logger.error(f"HTTP error listing agents from Foundry: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Failed to list agents from Foundry: {e}")
-        raise
-
-def extract_person_names(query: str) -> List[str]:
-    """Extract potential person names from query (capitalized words that might be names)
+    Generic patterns only—no hardcoded keywords.
+    Pattern detection: "Lines that look like headers" (short, capitalized, structured).
     
     Args:
-        query: User query text
+        text: Chunk text to analyze
+        file_name: Original file name for additional context
         
     Returns:
-        List of potential person names (capitalized words)
+        Tuple of (inferred_header, parent_headers)
     """
-    # Split query into words
-    words = query.split()
-    # Extract capitalized words that are likely names (length > 2, starts with capital)
-    names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
-    # Remove common words that start with capital but aren't names
-    # Expanded to include query verbs like "List", "Name", etc.
-    common_words = {
-        'The', 'This', 'That', 'These', 'Those', 
-        'What', 'When', 'Where', 'Who', 'Why', 'How', 
-        'Tell', 'Show', 'Give', 'Find', 'Search', 'Get',
-        'List', 'Name', 'Count', 'Sum', 'Calculate', 'Compute',
-        'Return', 'Display', 'Print', 'Output'
-    }
-    names = [n for n in names if n not in common_words]
-    return names
+    if not text or not text.strip():
+        return "N/A", []
+    
+    lines = text.split('\n')
+    inferred_header = "N/A"
+    parent_headers = []
+    
+    # Look for header patterns in the first few lines (purely structural, no keywords)
+    for line in lines[:5]:  # Check first 5 lines
+        stripped = line.strip()
+        if not stripped:
+            continue
+        
+        # Generic header detection (no domain keywords):
+        # 1. All caps short line
+        # 2. Title case short line
+        # 3. Line ending with colon or dash (structural marker)
+        
+        is_all_caps = stripped.isupper() and len(stripped) > 1
+        is_title_case_short = (
+            len(stripped) < 80 and
+            stripped[0].isupper() and
+            not stripped.endswith('.') and
+            not stripped[0].isdigit()
+        )
+        has_structural_marker = stripped.endswith((':',  '-', '–', '—'))
+        
+        # If any generic header pattern matches
+        if (is_all_caps or 
+            (is_title_case_short and (len(stripped) < 50 or has_structural_marker or ' ' not in stripped))):
+            
+            inferred_header = stripped
+            logger.debug(f"[InferHeader] Detected header from generic pattern: '{inferred_header}'")
+            break
+    
+    # If still no header but file name has context, use it
+    if inferred_header == "N/A" and file_name:
+        # Extract meaningful parts from file name
+        name_parts = file_name.replace('.pdf', '').replace('.docx', '').replace('.xlsx', '')
+        if name_parts and len(name_parts) > 5:  # Reasonable file name
+            inferred_header = f"[From {name_parts}]"
+            logger.debug(f"[InferHeader] Using file name as context: '{inferred_header}'")
+    
+    return inferred_header, parent_headers
 
 
-def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min_similarity: float = 0.88) -> List[Dict[str, Any]]:
-    """Filter search results to require query name appears in chunk text or very high similarity
+# Import context-aware person name extraction from header_vocab module
+# This uses corpus-learned vocabulary instead of hardcoded keyword lists
+try:
+    from ..tools.header_vocab import extract_person_names_and_mode, extract_person_names
+except ImportError:
+    # Fallback if header_vocab module not available
+    logger.warning("header_vocab module not available, using basic name extraction")
+    
+    def extract_person_names(query: str) -> List[str]:
+        """Basic fallback: Extract capitalized words that might be names"""
+        words = query.split()
+        names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
+        return names
+    
+    def extract_person_names_and_mode(query: str, vocab_set: Optional[Set[str]] = None) -> Tuple[List[str], bool]:
+        """Fallback: Extract names and always return is_person_query=False"""
+        return extract_person_names(query), False
+
+
+def filter_results_by_exact_match(
+    results: List[Dict[str, Any]], 
+    query: str, 
+    min_similarity: float = 0.88,
+    is_person_query: Optional[bool] = None,
+    person_names: Optional[List[str]] = None
+) -> List[Dict[str, Any]]:
+    """Filter search results based on query type (person-centric vs generic).
+    
+    For person-centric queries: requires name to appear in chunk or file scope match.
+    For attribute queries (skills/experience): trusts file scope - keeps chunks from person's file
+    For generic queries: only applies similarity threshold, no name enforcement.
     
     Args:
         results: List of search result dictionaries
         query: Original query text
-        min_similarity: Minimum similarity to keep result without exact match
+        min_similarity: Minimum similarity to keep result without exact match (person mode)
+        is_person_query: If provided, uses this instead of re-detecting
+        person_names: If provided, uses these instead of re-extracting
         
     Returns:
         Filtered list of results
@@ -148,92 +112,157 @@ def filter_results_by_exact_match(results: List[Dict[str, Any]], query: str, min
     if not results:
         return results
     
-    # Extract potential name words from query using the same function that filters common words
-    names = extract_person_names(query)
-    query_words = [n.lower() for n in names]
-    
-    # If no capitalized words, apply minimum similarity threshold only
-    if not query_words:
-        # Still filter out very low similarity results
-        return [res for res in results if res.get("similarity", 0.0) >= 0.3]
-    
-    # Get first name (first name word) - critical for distinguishing names
-    first_name = query_words[0] if query_words else None
-    last_name = query_words[-1] if len(query_words) > 1 else None
+    # Use provided values or detect from query
+    if is_person_query is None or person_names is None:
+        detected_names, detected_mode = extract_person_names_and_mode(query)
+        if person_names is None:
+            person_names = detected_names
+        if is_person_query is None:
+            is_person_query = detected_mode
     
     logger.info(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
-    logger.info(f"🔍 [filter_results_by_exact_match] Extracted names: {names}, query_words: {query_words}")
-    logger.info(f"🔍 [filter_results_by_exact_match] first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
-    print(f"🔍 [filter_results_by_exact_match] Filtering {len(results)} results for query '{query}'")
-    print(f"🔍 [filter_results_by_exact_match] first_name='{first_name}', last_name='{last_name}', min_similarity={min_similarity}")
+    logger.info(f"🔍 [filter_results_by_exact_match] is_person_query={is_person_query}, person_names={person_names}")
+    print(f"🔍 [filter_results_by_exact_match] is_person_query={is_person_query}, person_names={person_names}")
+    
+    # ✅ GENERIC MODE: No name enforcement, just similarity threshold
+    if not is_person_query:
+        logger.info(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
+        print(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
+        filtered = [res for res in results if res.get("similarity", 0.0) >= 0.3]
+        logger.info(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
+        print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
+        return filtered
+    
+    # ✅ PERSON MODE: Lenient matching with file scope awareness
+    person_names_lower = [n.lower() for n in (person_names or [])]
+    
+    if not person_names_lower:
+        # Person mode but no valid names - fall back to similarity only
+        logger.info(f"📋 [filter] Person mode but no person names - using similarity threshold")
+        return [res for res in results if res.get("similarity", 0.0) >= 0.3]
+    
+    # Detect if query contains attribute keywords (skills, experience, education, etc.)
+    # For attribute queries, we're less strict about name appearing in chunk text
+    attribute_keywords = [
+        'skill', 'experience', 'education', 'qualification', 'certification',
+        'role', 'position', 'project', 'achievement', 'responsibility',
+        'background', 'expertise', 'ability', 'competency', 'proficiency'
+    ]
+    query_lower = query.lower()
+    is_attribute_query = any(keyword in query_lower for keyword in attribute_keywords)
+    
+    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
+    print(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
     
     filtered = []
     for i, res in enumerate(results, 1):
+        # RAW DEBUG: Print all keys and a sample of the dict for Result 3
+        if i == 3:
+            logger.info(f"[DEBUG-KEYS-3] Result 3 top-level keys: {list(res.keys())}")
+            logger.info(f"[DEBUG-KEYS-3] Result 3 metadata keys: {list(res.get('metadata', {}).keys())}")
+            logger.info(f"[DEBUG-RAW-3] header_text in res? {res.get('header_text')}")
+            logger.info(f"[DEBUG-RAW-3] header_text in metadata? {res.get('metadata', {}).get('header_text')}")
+            logger.info(f"[DEBUG-RAW-3] keyword_score in res? {res.get('keyword_score')}")
+            logger.info(f"[DEBUG-RAW-3] keyword_score in metadata? {res.get('metadata', {}).get('keyword_score')}")
+            print(f"[DEBUG-KEYS-3] Result 3 keys: {list(res.keys())}")
+        
         text = res.get("text", "").lower()
         similarity = res.get("similarity", 0.0)
-        file_name = res.get("file_name", "?")
-        text_preview = text[:100].replace("\n", " ")
         
-        # Apply absolute minimum similarity threshold (reject very low scores)
+        # Get metadata dict first
+        metadata = res.get("metadata", {})
+        
+        # Normalize field names - check metadata first, then top-level
+        hybrid_score = res.get("hybrid_score") or metadata.get("hybrid_score") or similarity
+        keyword_score = metadata.get("keyword_score") or res.get("keyword_score") or 0.0
+        
+        file_name = res.get("file_name") or res.get("file") or "?"
+        
+        # Header text - check metadata first, then top-level
+        header_raw = metadata.get("header_text") or res.get("header_text") or res.get("header") or ""
+        header_text = header_raw.lower() if header_raw else ""
+        
+        # Keywords - check metadata first, then top-level
+        keywords_raw = metadata.get("keywords") or res.get("keywords") or []
+        keywords_list = [k.lower() for k in keywords_raw] if keywords_raw else []
+        
+        # DEBUG: Print what we're actually receiving
+        logger.info(f"[DEBUG] Result {i}: header_text='{header_raw}' (from metadata or top-level), keywords={keywords_raw[:3] if keywords_raw else []}, hybrid={hybrid_score:.3f}, kw_score={keyword_score:.3f}")
+        print(f"[DEBUG] Result {i}: header='{header_raw}', kw_score={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
+        
+        # Check if ANY of the person names appear in text or header
+        name_found_in_text = any(name in text for name in person_names_lower)
+        name_found_in_header = any(name in header_text for name in person_names_lower)
+        
+        # Check file name for person's name
+        file_name_lower = file_name.lower() if file_name else ""
+        name_found_in_file = any(name in file_name_lower for name in person_names_lower)
+        
+        # Check if this chunk is actually about the requested attribute
+        is_attribute_match = (
+            any(attr in header_text for attr in attribute_keywords) or
+            any(attr in keywords_list for attr in attribute_keywords)
+        )
+        
+        # DEBUG: Show attribute detection
+        if is_attribute_query:
+            logger.info(f"[DEBUG] Result {i} attr detection: is_attr_match={is_attribute_match}, header_text='{header_text}', has_attr_keyword={any(attr in keywords_list for attr in attribute_keywords)}")
+            print(f"[DEBUG] Result {i} attr: match={is_attribute_match}, header='{header_text}'")
+        
+        # 🔥 ATTRIBUTE QUERY MODE: Structural chunks (Skills, Experience) don't need name in text
+        # They score low on embeddings but high on keyword/header signals
+        if is_attribute_query and name_found_in_file and is_attribute_match:
+            # Keep if ANY signal is strong (header match, keyword score, or hybrid score)
+            if header_text and any(attr in header_text for attr in attribute_keywords):
+                # Strong signal: header explicitly says "Skills", "Experience", etc.
+                filtered.append(res)
+                logger.info(
+                    f"✅ [filter] Result {i} KEPT (ATTRIBUTE): sim={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                    f"header='{res.get('header_text', '')}', file='{file_name}'"
+                )
+                print(f"✅ [filter] Result {i} KEPT (ATTRIBUTE): header='{res.get('header_text', '')}', hybrid={hybrid_score:.3f}")
+                continue
+            elif keyword_score > 0 or hybrid_score >= 0.45:
+                # Good keyword/hybrid match from person's file
+                filtered.append(res)
+                logger.info(
+                    f"✅ [filter] Result {i} KEPT (ATTRIBUTE): sim={similarity:.3f}, hybrid={hybrid_score:.3f}, "
+                    f"kw_score={keyword_score:.3f}, file='{file_name}'"
+                )
+                print(f"✅ [filter] Result {i} KEPT (ATTRIBUTE): kw={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
+                continue
+            else:
+                logger.info(
+                    f"❌ [filter] Result {i} FILTERED OUT (WEAK ATTRIBUTE): sim={similarity:.3f}, "
+                    f"hybrid={hybrid_score:.3f}, kw={keyword_score:.3f}"
+                )
+                continue
+        
+        # 🔥 PERSON IDENTITY MODE: Requires name in text/header for verification
+        # Standard similarity threshold
         if similarity < 0.3:
-            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3 (absolute minimum), file='{file_name}'")
-            print(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3 (absolute minimum), file='{file_name}'")
+            logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
             continue
         
-        # Check if first name appears in text (required for name queries)
-        # This prevents "Axel Torres" from matching "Alexis Torres" queries
-        first_name_found = first_name in text if first_name else True
+        name_match = name_found_in_text or name_found_in_header
         
-        # If we have both first and last name, require both to match
-        if first_name and last_name:
-            last_name_found = last_name in text
-            name_match = first_name_found and last_name_found
-        else:
-            # Only first name available, require it to match
-            name_match = first_name_found
-        
-        # Also check if file name contains the person's name (useful when text matching fails)
-        # This helps when the chunk text doesn't contain the name but the file name does
-        file_name_lower = file_name.lower() if file_name else ""
-        file_contains_name = False
-        if first_name and last_name:
-            # Check if file contains both names, or at least the last name (common in file names)
-            file_contains_name = (first_name in file_name_lower and last_name in file_name_lower) or \
-                                 (last_name in file_name_lower)  # Last name alone is often in file names
-        elif first_name:
-            file_contains_name = first_name in file_name_lower
-        
-        # Keep if: 
-        # 1. Name matches in text AND similarity >= 0.3, OR
-        # 2. File name contains the person's name AND similarity >= 0.4 (slightly higher for file match), OR
-        # 3. Similarity is very high (>= min_similarity)
-        if (name_match and similarity >= 0.3) or \
-           (file_contains_name and similarity >= 0.4) or \
-           similarity >= min_similarity:
+        if name_match or similarity >= min_similarity:
             filtered.append(res)
             logger.info(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
+                f"✅ [filter] Result {i} KEPT (PERSON): similarity={similarity:.3f}, "
+                f"name_in_text={name_found_in_text}, name_in_header={name_found_in_header}, "
+                f"file='{file_name}'"
             )
-            print(
-                f"✅ [filter] Result {i} KEPT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
-            )
+            print(f"✅ [filter] Result {i} KEPT (PERSON): sim={similarity:.3f}, name_match={name_match}")
         else:
             logger.info(
-                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"last_name_match={last_name_found if (first_name and last_name) else 'N/A'}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, similarity >= min_similarity={similarity >= min_similarity}, "
-                f"file='{file_name}', text_preview='{text_preview}...'"
+                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, "
+                f"name_match={name_match}, file='{file_name}'"
             )
-            print(
-                f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f}, first_name_match={first_name_found}, "
-                f"name_match={name_match}, file_contains_name={file_contains_name}, file='{file_name}'"
-            )
+            print(f"❌ [filter] Result {i} FILTERED OUT: sim={similarity:.3f}, name_match={name_match}")
     
-    logger.info(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
-    print(f"📊 [filter_results_by_exact_match] Filtered {len(results)} results down to {len(filtered)} results")
+    logger.info(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")
+    print(f"📊 [filter_results_by_exact_match] Person mode: kept {len(filtered)} of {len(results)} results")
     return filtered
 
 # Lazy import for Azure Search to avoid import errors when using Neo4j only
@@ -382,25 +411,55 @@ class AiSearchAgent:
             logger.warning("CSV query tools not available, skipping CSV queries")
             csv_query_available = False
         
-        # Extract person names from query for keyword filtering
-        person_names = extract_person_names(query)
+        # Extract person names and determine if query is person-centric
+        # Uses corpus-learned vocabulary for context-aware classification
+        from ..tools.header_vocab import extract_attribute_keywords
+        
+        person_names, is_person_query = extract_person_names_and_mode(query)
         
         logger.info(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
-        logger.info(f"🔍 [AiSearchAgent] Extracted person names: {person_names}")
+        logger.info(f"🔍 [AiSearchAgent] Extracted person names: {person_names}, is_person_query: {is_person_query}")
         print(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
-        print(f"🔍 [AiSearchAgent] Extracted person names: {person_names}")
+        print(f"🔍 [AiSearchAgent] person_names={person_names}, is_person_query={is_person_query}")
         
-        # Use improved search parameters to reduce false matches
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={person_names}, keyword_boost=0.4")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={person_names}, keyword_boost=0.4")
+        # Build keyword list: person names + attribute keywords (e.g., skills)
+        # For "Tell me Kevin Skills" → keywords=['kevin', 'skills']
+        keywords = []
+        if is_person_query and person_names:
+            keywords.extend(person_names)
+        
+        # Add attribute keywords for richer matching
+        attribute_kws = extract_attribute_keywords(query)
+        if attribute_kws:
+            keywords.extend(attribute_kws)
+            logger.info(f"🔍 [AiSearchAgent] Added attribute keywords: {attribute_kws}")
+        
+        # Remove duplicates while preserving order
+        keywords = list(dict.fromkeys(keywords))
+        
+        keyword_boost = 0.4 if keywords else 0.0
+        
+        # PHASE 5: Query Classification for Structural Routing
+        query_intent = self._classify_query_intent(query, person_names or [])
+        logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
+        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        
+        # NOTE: Section-based routing will be implemented when section-aware search endpoints are added to graphrag_search tool
+        # For now, using existing hybrid search with enhanced keyword matching
         
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
             similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
-            keywords=person_names if person_names else None,
+            keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=0.4  # Increase keyword weight for name matching
+            keyword_boost=keyword_boost,
+            is_person_query=is_person_query,
+            enable_coworker_expansion=True,  # Enable coworker expansion for person queries
+            person_names=person_names
         )
 
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
@@ -421,15 +480,21 @@ class AiSearchAgent:
                 vector_score = metadata.get("vector_score", 0.0)
                 keyword_score = metadata.get("keyword_score", 0.0)
                 
+                # Try to get header_text from metadata first, then from top-level
+                header_text = metadata.get("header_text", res.get("header_text", "N/A"))
+                parent_headers = metadata.get("parent_headers", res.get("parent_headers", []))
+                
                 logger.info(
                     f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
                     f"vector_score={vector_score:.3f}, keyword_score={keyword_score:.3f}, "
+                    f"header_text='{header_text}', parent_headers={parent_headers}, "
                     f"file='{file_name}', chunk_id='{chunk_id[:50]}...', "
                     f"text_preview='{text_preview}...'"
                 )
                 print(
                     f"   Result {i}: similarity={similarity:.3f}, hybrid_score={hybrid_score:.3f}, "
                     f"vector_score={vector_score:.3f}, keyword_score={keyword_score:.3f}, "
+                    f"header_text='{header_text}', parent_headers={parent_headers}, "
                     f"file='{file_name}', text_preview='{text_preview}...'"
                 )
         else:
@@ -439,14 +504,16 @@ class AiSearchAgent:
         if not results:
             return "No results found in Neo4j GraphRAG."
 
-        # Filter results to require exact name match or very high similarity
-        logger.info(f"🔍 [AiSearchAgent] Filtering {len(results)} results with filter_results_by_exact_match (min_similarity=0.7)")
-        print(f"🔍 [AiSearchAgent] Filtering {len(results)} results with filter_results_by_exact_match (min_similarity=0.7)")
+        # Filter results - mode-aware filtering based on query type
+        logger.info(f"🔍 [AiSearchAgent] Filtering {len(results)} results (is_person_query={is_person_query})")
+        print(f"🔍 [AiSearchAgent] Filtering {len(results)} results (is_person_query={is_person_query})")
         
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
-            min_similarity=0.7  # Very high threshold for results without exact match
+            min_similarity=0.3,
+            is_person_query=is_person_query,
+            person_names=person_names
         )
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
@@ -460,8 +527,11 @@ class AiSearchAgent:
                 similarity = res.get("similarity", 0.0)
                 text_preview = res.get("text", "")[:150].replace("\n", " ")
                 file_name = res.get("file_name", "?")
-                logger.info(f"   Filtered {i}: similarity={similarity:.3f}, file='{file_name}', text_preview='{text_preview}...'")
-                print(f"   Filtered {i}: similarity={similarity:.3f}, file='{file_name}', text_preview='{text_preview}...'")
+                metadata = res.get("metadata", {})
+                header_text = metadata.get("header_text", "N/A")
+                parent_headers = metadata.get("parent_headers", [])
+                logger.info(f"   Filtered {i}: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}', text_preview='{text_preview}...'")
+                print(f"   Filtered {i}: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}', text_preview='{text_preview}...'")
         
         # Limit to top 8 after filtering
         filtered_results = filtered_results[:8]
@@ -692,6 +762,7 @@ class AiSearchAgent:
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
             file_path = res.get("file_path", "")
+            similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
             if file_path.lower().endswith('.csv'):
@@ -713,6 +784,22 @@ class AiSearchAgent:
                 metadata_parts.append(f"similarity:{res['similarity']:.2f}")
             if "metadata" in res and res["metadata"]:
                 meta = res["metadata"]
+                # Try to get header_text from metadata first, then from top-level
+                header_text = meta.get("header_text", res.get("header_text", "N/A"))
+                parent_headers = meta.get("parent_headers", res.get("parent_headers", []))
+                
+                # Infer header if missing (for PDFs without font metadata)
+                if header_text == "N/A":
+                    chunk_text = res.get("text", "")
+                    inferred_header, _ = infer_header_from_chunk(chunk_text, file_name)
+                    if inferred_header != "N/A":
+                        header_text = inferred_header
+                        logger.debug(f"[AiSearchAgent] Inferred header from chunk text: '{header_text}'")
+                
+                # Debug log for each chunk being added to findings
+                logger.info(f"🔍 [AiSearchAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
+                print(f"🔍 [AiSearchAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
+                
                 if meta.get("hop_count", 0) > 0:
                     metadata_parts.append(f"hops:{meta['hop_count']}")
                 if meta.get("vector_score") is not None:
@@ -727,6 +814,10 @@ class AiSearchAgent:
                     metadata_parts.append(f"size:{meta['chunk_size']}")
                 if meta.get("file_id"):
                     metadata_parts.append(f"file_id:{meta['file_id']}")
+                if header_text != "N/A":
+                    metadata_parts.append(f"header:{header_text}")
+                if parent_headers:
+                    metadata_parts.append(f"parents:{len(parent_headers)}")
             
             metadata_str = f" [{', '.join(metadata_parts)}]" if metadata_parts else ""
             
@@ -747,6 +838,110 @@ class AiSearchAgent:
                 logger.info(f"📝 Included full chunk text ({len(text)} characters) for file: {file_name}")
 
         return "\n".join(findings)
+    
+    def _classify_query_intent(self, query: str, person_names: List[str]) -> dict:
+        """Determine if query is section-based or semantic
+        
+        Detects:
+        1. Section-based with person scope (person + attribute)
+        2. Section-based cross-document (attribute only, no person)
+        3. Semantic-based (general question)
+        
+        Examples:
+            "Kevin's Industry Experience" → section_based_scoped
+            "What are Kevin's skills?" → section_based_scoped
+            "Tell me about machine learning" → semantic
+            "All resumes with Python skills" → section_based_cross_document
+            
+        Args:
+            query: User query text
+            person_names: List of person names extracted from query
+            
+        Returns:
+            Dictionary with type, routing, section_query, file_scope
+        """
+        query_lower = query.lower()
+        
+        # Attribute keywords (structural sections)
+        attribute_keywords = [
+            'skill', 'experience', 'education', 'qualification',
+            'role', 'position', 'project', 'certification',
+            'background', 'expertise', 'training', 'achievement',
+            'industry', 'professional', 'technical', 'employment',
+            'work', 'career', 'competenc', 'capabilit'
+        ]
+        
+        # Check for person name
+        has_person = any(name.lower() in query_lower for name in person_names)
+        
+        # Check for attribute keyword
+        has_attribute = any(keyword in query_lower for keyword in attribute_keywords)
+        
+        # Extract attribute phrase if present
+        attribute_match = None
+        if has_attribute:
+            attribute_match = self._extract_attribute_phrase(query, attribute_keywords)
+        
+        # Classify
+        if has_person and has_attribute:
+            return {
+                'type': 'section_based_scoped',
+                'routing': 'hard',
+                'person_names': person_names,
+                'section_query': attribute_match,
+                'file_scope': True
+            }
+        elif has_attribute and not has_person:
+            return {
+                'type': 'section_based_cross_document',
+                'routing': 'hard',
+                'section_query': attribute_match,
+                'file_scope': False
+            }
+        else:
+            return {
+                'type': 'semantic',
+                'routing': 'soft',
+                'section_query': None,
+                'file_scope': has_person
+            }
+    
+    def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -> str:
+        """Extract section-like phrase around attribute keyword
+        
+        Example:
+            "Kevin's industry experience" → "industry experience"
+            "technical skills summary" → "technical skills"
+            
+        Args:
+            query: User query
+            attribute_keywords: List of attribute keywords
+            
+        Returns:
+            Extracted attribute phrase or first keyword found
+        """
+        words = query.lower().split()
+        
+        # Find first keyword that appears
+        for i, word in enumerate(words):
+            word_clean = word.strip('.,!?;:\'"')
+            # Check if any attribute keyword is in this word
+            for keyword in attribute_keywords:
+                if keyword in word_clean:
+                    # Take 1-2 words before + keyword + 1 word after
+                    start = max(0, i - 1)
+                    end = min(len(words), i + 2)
+                    phrase = ' '.join(words[start:end])
+                    # Clean up
+                    phrase = phrase.strip('.,!?;:\'"')
+                    return phrase
+        
+        # Fallback: return first keyword found
+        for keyword in attribute_keywords:
+            if keyword in query.lower():
+                return keyword
+        
+        return "attribute"
 
 
 # ---------- SQL AGENT (PostgreSQL → CSV → Vector Fallback) ----------
@@ -862,12 +1057,14 @@ class SQLAgent:
         
         if csv_query_available:
             # Get some initial results to find CSV path
-            person_names = extract_person_names(query)
+            # For CSV queries, we don't need person-mode filtering
+            person_names, is_person_query = extract_person_names_and_mode(query)
+            keywords = person_names if (is_person_query and person_names) else None
             initial_results = graphrag_search(
                 query=query,
                 top_k=5,
                 similarity_threshold=0.7,
-                keywords=person_names if person_names else None,
+                keywords=keywords,
                 keyword_match_type="any"
             )
             
@@ -947,20 +1144,28 @@ class SQLAgent:
         logger.info("SQLAgent: Falling back to Vector/GraphRAG search")
         from ..tools.neo4j_graphrag import graphrag_search
         
-        person_names = extract_person_names(query)
+        # Use context-aware name extraction
+        person_names, is_person_query = extract_person_names_and_mode(query)
+        keywords = person_names if (is_person_query and person_names) else None
+        keyword_boost = 0.4 if keywords else 0.0
+        
         results = graphrag_search(
             query=query,
             top_k=12,
             similarity_threshold=0.75,
-            keywords=person_names if person_names else None,
+            keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=0.4
+            keyword_boost=keyword_boost
         )
         
         if not results:
             return "No results found in PostgreSQL SQL, CSV, or Vector search."
         
-        filtered_results = filter_results_by_exact_match(results, query, min_similarity=0.7)
+        # Pass is_person_query to filter so it knows whether to enforce name matching
+        filtered_results = filter_results_by_exact_match(
+            results, query, min_similarity=0.3, 
+            is_person_query=is_person_query, person_names=person_names
+        )
         filtered_results = filtered_results[:8]
         
         if not filtered_results:
@@ -973,6 +1178,23 @@ class SQLAgent:
             text = res.get("text", "").replace("\n", " ")
             file_path = res.get("file_path", "")
             file_name = res.get("file_name", "Unknown")
+            similarity = res.get("similarity", 0.0)
+            metadata = res.get("metadata", {})
+            # Try to get header_text from metadata first, then from top-level
+            header_text = metadata.get("header_text", res.get("header_text", "N/A"))
+            parent_headers = metadata.get("parent_headers", res.get("parent_headers", []))
+            
+            # Infer header if missing (for PDFs without font metadata)
+            if header_text == "N/A":
+                chunk_text = res.get("text", "")
+                inferred_header, _ = infer_header_from_chunk(chunk_text, file_name)
+                if inferred_header != "N/A":
+                    header_text = inferred_header
+                    logger.debug(f"[SQLAgent] Inferred header from chunk text: '{header_text}'")
+            
+            # Debug log for each chunk being added to findings
+            logger.info(f"🔍 [SQLAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
+            print(f"🔍 [SQLAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
             
             if file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
@@ -1025,27 +1247,34 @@ class Neo4jGraphRAGAgent:
             logger.warning("CSV query tools not available, skipping CSV queries")
             csv_query_available = False
         
-        # Extract person names from query for keyword filtering
-        person_names = extract_person_names(query)
+        # Extract person names and determine if query is person-centric
+        # Uses corpus-learned vocabulary for context-aware classification
+        person_names, is_person_query = extract_person_names_and_mode(query)
+        
+        # Only use keywords for person-centric queries
+        keywords = person_names if (is_person_query and person_names) else None
+        keyword_boost = 0.4 if keywords else 0.0
         
         # Use improved search parameters to reduce false matches
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
             similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
-            keywords=person_names if person_names else None,
+            keywords=keywords,
             keyword_match_type="any",
-            keyword_boost=0.4  # Increase keyword weight for name matching
+            keyword_boost=keyword_boost
         )
 
         if not results:
             return "No results found in Neo4j GraphRAG."
 
-        # Filter results to require exact name match or very high similarity
+        # Filter results - mode-aware filtering based on query type
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
-            min_similarity=0.7  # Very high threshold for results without exact match
+            min_similarity=0.3,
+            is_person_query=is_person_query,
+            person_names=person_names
         )
         
         # Limit to top 8 after filtering
@@ -1276,6 +1505,7 @@ class Neo4jGraphRAGAgent:
             file_name = res.get("file_name", "Unknown")
             directory = res.get("directory_name", "")
             file_path = res.get("file_path", "")
+            similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
             if file_path.lower().endswith('.csv'):
@@ -1297,6 +1527,22 @@ class Neo4jGraphRAGAgent:
                 metadata_parts.append(f"similarity:{res['similarity']:.2f}")
             if "metadata" in res and res["metadata"]:
                 meta = res["metadata"]
+                # Try to get header_text from metadata first, then from top-level
+                header_text = meta.get("header_text", res.get("header_text", "N/A"))
+                parent_headers = meta.get("parent_headers", res.get("parent_headers", []))
+                
+                # Infer header if missing (for PDFs without font metadata)
+                if header_text == "N/A":
+                    chunk_text = res.get("text", "")
+                    inferred_header, _ = infer_header_from_chunk(chunk_text, file_name)
+                    if inferred_header != "N/A":
+                        header_text = inferred_header
+                        logger.debug(f"[Neo4jGraphRAGAgent] Inferred header from chunk text: '{header_text}'")
+                
+                # Debug log for each chunk being added to findings
+                logger.info(f"🔍 [Neo4jGraphRAGAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
+                print(f"🔍 [Neo4jGraphRAGAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
+                
                 if meta.get("hop_count", 0) > 0:
                     metadata_parts.append(f"hops:{meta['hop_count']}")
                 if meta.get("vector_score") is not None:
@@ -1311,6 +1557,10 @@ class Neo4jGraphRAGAgent:
                     metadata_parts.append(f"size:{meta['chunk_size']}")
                 if meta.get("file_id"):
                     metadata_parts.append(f"file_id:{meta['file_id']}")
+                if header_text != "N/A":
+                    metadata_parts.append(f"header:{header_text}")
+                if parent_headers:
+                    metadata_parts.append(f"parents:{len(parent_headers)}")
             
             metadata_str = f" [{', '.join(metadata_parts)}]" if metadata_parts else ""
             
@@ -1333,49 +1583,64 @@ class Neo4jGraphRAGAgent:
         return "\n".join(findings)
 
 
-# ---------- REPORTER (Foundry) ----------
+# ---------- ASSISTANT (Foundry) ----------
 
-class NewsReporterAgent:
+class AssistantAgent:
+    """Generate natural language responses using RAG context"""
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, topic: str, latest_news: str) -> str:
-        content = (
-            f"Topic: {topic}\n"
-            f"Latest info:\n{latest_news}\n"
-            # "Write a 60-90s news broadcast script."
-            "Write a description about the information in the tone of a news reporter." 
+    async def run(self, query: str, context: str) -> str:
+        logger.info(f"🤖 [AGENT INVOKED] AssistantAgent (ID: {self._id})")
+        print(f"🤖 [AGENT INVOKED] AssistantAgent (ID: {self._id})")
+        
+        # If no context found, allow LLM to provide helpful general guidance
+        context_instruction = "the context above" if context and context.strip() else "general knowledge"
+        fallback_permission = "" if context and context.strip() else "\n- If no specific documentation is available, you may provide general best-practice guidance."
+        
+        prompt = (
+            f"User Question: {query}\n\n"
+            f"Retrieved Context:\n{context if context and context.strip() else '(No specific documentation found in knowledge base)'}\n\n"
+            "Instructions:\n"
+            f"- Answer the user's question using {context_instruction}\n"
+            f"- Be conversational, concise, and accurate{fallback_permission}\n"
+            "- Cite specific details from the context when available\n"
+            "- If citing context, mention the source"
         )
-        logger.info(f"🤖 [AGENT INVOKED] NewsReporterAgent (ID: {self._id})")
-        print(f"🤖 [AGENT INVOKED] NewsReporterAgent (ID: {self._id})")
-        print("NewsReporterAgent: using Foundry agent:", self._id)  # keep print
+        print("AssistantAgent: using Foundry agent:", self._id)  # keep print
         try:
-            return run_foundry_agent(self._id, content)
+            return run_foundry_agent(self._id, prompt)
         except RuntimeError as e:
-            logger.error("NewsReporterAgent Foundry error: %s", e)
+            logger.error("AssistantAgent Foundry error: %s", e)
             raise RuntimeError(
-                f"Reporter agent failed: {str(e)}. "
+                f"Assistant agent failed: {str(e)}. "
                 "Please check your Foundry access and agent configuration."
             ) from e
 
 # ---------- REVIEWER (Foundry, strict JSON) ----------
 
 class ReviewAgent:
+    """Review assistant responses for accuracy and completeness"""
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, topic: str, candidate_script: str) -> dict:
+    async def run(self, query: str, candidate_response: str) -> dict:
         """
-        Foundry system prompt already defines the JSON schema. We still remind at user layer.
+        Review assistant response and decide if it needs improvement.
         Returns a dict with keys: decision, reason, suggested_changes, revised_script.
-        Return ONLY STRICT JSON (no markdown, no prose) as per your schema.
         """
         prompt = (
-            f"Topic: {topic}\n\n"
-            f"Candidate script:\n{candidate_script}\n\n"
-            # "Evaluate factual accuracy, clarity, neutral tone, explicit dates, and 60-90s length. "
-            "Evaluate factual accuracy, relevance, and tone of a news reporter. " 
-            "Return ONLY STRICT JSON (no markdown, no prose) as per your schema."
+            f"User Query: {query}\n\n"
+            f"Assistant Response:\n{candidate_response}\n\n"
+            "Review the response for:\n"
+            "1. Accuracy - Does it correctly answer the question?\n"
+            "2. Completeness - Is the answer sufficient?\n"
+            "3. Clarity - Is it easy to understand?\n\n"
+            "Return ONLY STRICT JSON (no markdown, no prose) with keys:\n"
+            '"decision": "accept" or "revise"\n'
+            '"reason": brief explanation\n'
+            '"suggested_changes": what to improve (empty if accept)\n'
+            '"revised_script": improved version (empty if accept)'
         )
         logger.info(f"🤖 [AGENT INVOKED] ReviewAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] ReviewAgent (ID: {self._id})")
@@ -1401,14 +1666,18 @@ class ReviewAgent:
                 "decision": decision if decision in {"accept", "revise"} else "revise",
                 "reason": data.get("reason", ""),
                 "suggested_changes": data.get("suggested_changes", ""),
-                "revised_script": data.get("revised_script", candidate_script),
+                "revised_script": data.get("revised_script", candidate_response),
             }
         except Exception as e:
             logger.error("Review parse error: %s", e)
-            # Fail-safe: accept last script to avoid infinite loops
+            # Fail-safe: accept last response to avoid infinite loops
             return {
                 "decision": "accept",
                 "reason": "parse_error",
                 "suggested_changes": "",
-                "revised_script": candidate_script,
+                "revised_script": candidate_response,
             }
+
+
+# Backward compatibility alias
+NewsReporterAgent = AssistantAgent

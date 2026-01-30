@@ -452,7 +452,7 @@ async def add_message(
             filtered_results = filter_results_by_exact_match(
                 search_results,
                 user_message_content,
-                min_similarity=0.7
+                min_similarity=0.3
             )
             
             # Limit to top 8 after filtering

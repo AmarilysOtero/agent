@@ -511,7 +511,7 @@ class AiSearchAgent:
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
-            min_similarity=0.7,
+            min_similarity=0.3,
             is_person_query=is_person_query,
             person_names=person_names
         )
@@ -1163,7 +1163,7 @@ class SQLAgent:
         
         # Pass is_person_query to filter so it knows whether to enforce name matching
         filtered_results = filter_results_by_exact_match(
-            results, query, min_similarity=0.7, 
+            results, query, min_similarity=0.3, 
             is_person_query=is_person_query, person_names=person_names
         )
         filtered_results = filtered_results[:8]
@@ -1272,7 +1272,7 @@ class Neo4jGraphRAGAgent:
         filtered_results = filter_results_by_exact_match(
             results, 
             query, 
-            min_similarity=0.7,
+            min_similarity=0.3,
             is_person_query=is_person_query,
             person_names=person_names
         )

@@ -57,27 +57,16 @@ class WorkflowResponse(BaseModel):
 @router.get("/agents")
 async def list_foundry_agents():
     """
-    List all available workflow agents from Azure AI Foundry environment.
-    
-    Returns:
-        List of agents with id, name, model, description, etc.
+    List all available workflow agents from Azure AI Foundry (API only, no hardcoded config).
+    Uses the same implementation as /api/agents/all.
     """
     try:
-        from ..agents.agents import list_agents_from_foundry
-        try:
-            agents = list_agents_from_foundry()
-            print(f"try agents: ${agents}")
-        except Exception as foundry_error:
-            print(f"Foundry queries failed: {foundry_error}")
-            # Return empty list rather than crashing
-            return []
-        
-        print(f"agents: ${agents}")
-
-        print(f"Returned {len(agents)} workflow agents: {[a.get('name') for a in agents]}")
+        from ..services.agent_service import list_all_foundry_agents
+        agents = list_all_foundry_agents()
         return agents
+    except HTTPException:
+        raise
     except ValueError as e:
-        # Configuration error
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list workflow agents: {str(e)}")

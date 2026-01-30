@@ -18,8 +18,27 @@ logger = logging.getLogger(__name__)
 
 
 def _get_id(obj: Any) -> str:
-    """Extract ID from agent object"""
-    return getattr(obj, "id", None) or getattr(obj, "value", None) or ""
+    """Extract ID from agent object (handles SDK models and dicts)"""
+    if obj is None:
+        return ""
+    # Attribute access (SDK model)
+    for attr in ("id", "assistant_id", "value"):
+        v = getattr(obj, attr, None)
+        if v and isinstance(v, str):
+            return v
+    # Dict access (REST response)
+    if isinstance(obj, dict):
+        return obj.get("id") or obj.get("assistant_id") or obj.get("value") or ""
+    return ""
+
+
+def _get_attr(obj: Any, *attrs: str, default: str = "") -> str:
+    """Extract first non-empty string from obj (attr or dict key)"""
+    for a in attrs:
+        v = obj.get(a) if isinstance(obj, dict) else getattr(obj, a, None)
+        if v is not None and isinstance(v, str) and v.strip():
+            return v.strip()
+    return default
 
 
 def _explain_http(e: HttpResponseError, ctx: str) -> str:
@@ -152,7 +171,7 @@ def update_foundry_agent(
     model: Optional[str] = None,
     instructions: Optional[str] = None,
     description: Optional[str] = None,
-    tools: Optional[List[str]] = None
+    tools: Optional[List[Any]] = None,
 ) -> Dict[str, Any]:
     """Update an existing agent in Foundry"""
     try:
@@ -294,7 +313,7 @@ def list_all_foundry_agents() -> List[Dict[str, Any]]:
     try:
         client = get_foundry_client()
         agents_ops = client.agents
-        
+
         # Try to list agents
         result = None
         if hasattr(agents_ops, "list_agents"):
@@ -304,34 +323,43 @@ def list_all_foundry_agents() -> List[Dict[str, Any]]:
         else:
             logger.warning("No list method found on agents_ops")
             return []
-        
-        # Extract agents from result
-        agents = []
+
+        # Extract agents from result (handle data, value, or ItemPaged)
+        raw = None
         if hasattr(result, "data"):
-            agents = result.data
+            raw = result.data
         elif hasattr(result, "value"):
-            agents = result.value
-        elif hasattr(result, "__iter__"):
-            # It's iterable (ItemPaged)
-            agents = list(result)
-        else:
-            logger.warning(f"Could not extract agents from result: {type(result)}")
+            raw = result.value
+        elif hasattr(result, "__iter__") and not isinstance(result, (str, bytes)):
+            raw = result
+        if raw is None:
+            logger.warning("Could not extract agents from result: type=%s", type(result))
             return []
-        
+
+        # Ensure we have a list (ItemPaged/iterator -> full list)
+        agents = list(raw) if hasattr(raw, "__iter__") and not isinstance(raw, (str, bytes)) else [raw]
+
         # Convert to dict format
         agent_list = []
-        for agent in agents:
+        for i, agent in enumerate(agents):
             agent_id = _get_id(agent)
-            if agent_id:
-                agent_list.append({
-                    "id": agent_id,
-                    "name": getattr(agent, "name", "") or getattr(agent, "display_name", ""),
-                    "model": getattr(agent, "model", ""),
-                    "instructions": getattr(agent, "instructions", ""),
-                    "description": getattr(agent, "description", "")
-                })
-        
-        logger.info(f"Listed {len(agent_list)} agents from Foundry")
+            if not agent_id:
+                if i == 0:
+                    logger.warning(
+                        "Agent object has no id (tried id, assistant_id, value). "
+                        "Sample: %s",
+                        repr(agent)[:200] if agent else "None",
+                    )
+                continue
+            agent_list.append({
+                "id": agent_id,
+                "name": _get_attr(agent, "name", "display_name"),
+                "model": _get_attr(agent, "model"),
+                "instructions": _get_attr(agent, "instructions"),
+                "description": _get_attr(agent, "description"),
+            })
+
+        logger.info("Listed %d agents from Foundry", len(agent_list))
         return agent_list
         
     except HttpResponseError as e:

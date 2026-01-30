@@ -218,10 +218,65 @@ def healthz():
     return {"status": "ok"}
 
 
-# Agents endpoint for workflow builder
+# Agent Management Endpoints
+# IMPORTANT: These routes must be registered BEFORE the workflows router
+# to avoid any potential route conflicts
+
+class CreateAgentRequest(BaseModel):
+    """Request model for creating an agent"""
+    name: str
+    model: str
+    instructions: str
+    description: Optional[str] = None
+    tools: Optional[List[str]] = None
+
+
+class UpdateAgentRequest(BaseModel):
+    """Request model for updating an agent"""
+    name: Optional[str] = None
+    model: Optional[str] = None
+    instructions: Optional[str] = None
+    description: Optional[str] = None
+    tools: Optional[List[str]] = None
+
+
+# Register POST route FIRST to ensure it's available before GET
+@app.post("/api/agents", name="create_agent")
+async def create_agent(request: CreateAgentRequest):
+    """Create a new agent in Foundry
+    
+    Required fields:
+    - name: Agent name (string)
+    - model: Model deployment name (e.g., 'gpt-4o-mini', 'gpt-4o')
+    - instructions: System instructions for the agent (string)
+    
+    Optional fields:
+    - description: Agent description (defaults to name if not provided)
+    - tools: List of tool names to enable for the agent
+    """
+    try:
+        logging.info(f"[POST /api/agents] Creating agent: name={request.name}, model={request.model}")
+        from .services.agent_service import create_foundry_agent
+        agent = create_foundry_agent(
+            name=request.name,
+            model=request.model,
+            instructions=request.instructions,
+            description=request.description,
+            tools=request.tools
+        )
+        logging.info(f"[POST /api/agents] Successfully created agent: {agent.get('id', 'unknown')}")
+        return JSONResponse(agent, status_code=201)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("[POST /api/agents] Failed to create agent")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Agents endpoint for workflow builder (GET must come after POST to avoid route conflicts)
 @app.get("/api/agents")
 async def get_agents():
-    """Get list of available agents for workflow configuration"""
+    """Get list of available agents for workflow configuration (from config)"""
     try:
         config = Settings.load()
         agents = []
@@ -276,6 +331,69 @@ async def get_agents():
         logging.exception("Failed to get agents list")
         # Return empty list on error so frontend doesn't break
         return []
+
+
+@app.get("/api/agents/all")
+async def list_agents():
+    """List all agents from Foundry (not just config)"""
+    try:
+        from .services.agent_service import list_all_foundry_agents
+        agents = list_all_foundry_agents()
+        return agents
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to list agents")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/agents/{agent_id}")
+async def get_agent_details(agent_id: str):
+    """Get details of a specific agent"""
+    try:
+        from .services.agent_service import get_foundry_agent
+        agent = get_foundry_agent(agent_id)
+        return agent
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to get agent")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/agents/{agent_id}")
+async def update_agent(agent_id: str, request: UpdateAgentRequest):
+    """Update an existing agent"""
+    try:
+        from .services.agent_service import update_foundry_agent
+        agent = update_foundry_agent(
+            agent_id=agent_id,
+            name=request.name,
+            model=request.model,
+            instructions=request.instructions,
+            description=request.description,
+            tools=request.tools
+        )
+        return agent
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to update agent")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/agents/{agent_id}")
+async def delete_agent(agent_id: str):
+    """Delete an agent from Foundry"""
+    try:
+        from .services.agent_service import delete_foundry_agent
+        success = delete_foundry_agent(agent_id)
+        return {"success": success, "message": f"Agent {agent_id} deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to delete agent")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # SQL Generation Endpoints

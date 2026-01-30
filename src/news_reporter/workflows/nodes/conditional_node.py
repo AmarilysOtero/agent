@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 import logging
 
 from .base import BaseNode
-from ..graph_schema import NodeConfig
+from ...models.graph_schema import NodeConfig
 from ..workflow_state import WorkflowState
 from ..agent_runner import AgentRunner
 from ..condition_evaluator import ConditionEvaluator

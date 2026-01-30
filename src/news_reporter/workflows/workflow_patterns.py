@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-from .graph_schema import GraphDefinition
+from ..models.graph_schema import GraphDefinition
 from .workflow_state import WorkflowState
 
 logger = logging.getLogger(__name__)

@@ -160,7 +160,7 @@ class TestWorkflowDefinitionValidation:
     
     def test_workflow_validation_errors(self):
         """Test that invalid workflows are detected"""
-        from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+        from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
         
         # Create workflow with invalid edge (references non-existent node)
         nodes = [NodeConfig(id="node1", type="agent", agent_id="agent1")]
@@ -174,7 +174,7 @@ class TestWorkflowDefinitionValidation:
     
     def test_workflow_validation_success(self):
         """Test that valid workflows pass validation"""
-        from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+        from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
         
         # Create valid workflow
         nodes = [
@@ -213,7 +213,7 @@ class TestErrorHandling:
     
     def test_workflow_validation_catches_errors(self):
         """Test that workflow validation catches various error types"""
-        from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+        from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
         
         # Test missing agent_id
         nodes = [NodeConfig(id="node1", type="agent", agent_id=None)]

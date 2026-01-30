@@ -41,7 +41,7 @@ async def run_graph_workflow(
         if workflow_definition:
             logger.debug(f"Loading workflow from definition dict (entry_node_id: {workflow_definition.get('entry_node_id', 'triage')})")
             # Convert workflow definition dict to GraphDefinition
-            from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+            from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
             
             try:
                 # Substitute agent IDs if needed

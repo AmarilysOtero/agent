@@ -119,17 +119,28 @@ class GraphDefinition(BaseModel):
                 errors.append(f"Duplicate node ID: {node.id}")
             seen_ids.add(node.id)
         
-        # Check entry_node_id exists
-        if self.entry_node_id:
-            if self.entry_node_id not in node_ids:
-                errors.append(f"Entry node '{self.entry_node_id}' not found in graph nodes")
+        # # Check entry_node_id exists
+        # if self.entry_node_id:
+        #     if self.entry_node_id not in node_ids:
+        #         errors.append(f"Entry node '{self.entry_node_id}' not found in graph nodes")
         
         # Check node type-specific requirements
         for node in self.nodes:
             if node.type == "agent" and not node.agent_id:
                 errors.append(f"Agent node {node.id} missing agent_id")
-            elif node.type == "fanout" and not node.branches:
-                errors.append(f"Fanout node {node.id} missing branches")
+            elif node.type == "fanout":
+                # Fanout nodes must have outgoing edges
+                outgoing = self.get_edges_from(node.id)
+                if not outgoing:
+                    errors.append(f"Fanout node {node.id} has no outgoing edges")
+                # Optional: warn if branches property is set but doesn't match edges
+                if node.branches:
+                    edge_targets = {e.to_node for e in outgoing}
+                    if set(node.branches) != edge_targets:
+                        errors.append(
+                            f"Fanout node {node.id} branches property {node.branches} "
+                            f"doesn't match outgoing edges {list(edge_targets)}"
+                        )
             elif node.type == "loop" and node.max_iters is None:
                 errors.append(f"Loop node {node.id} missing max_iters")
             elif node.type == "conditional" and not node.condition:

@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig
 from ..config import Settings
 
 

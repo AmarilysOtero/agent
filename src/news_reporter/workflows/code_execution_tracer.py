@@ -231,6 +231,7 @@ class CodeExecutionTracer:
                 # Write final state
                 f.write('\n# Final State\n')
                 f.write('# ' + '=' * 76 + '\n')
+                f.write(f'# Goal: {state_snapshot.get("goal", "None")}\n')
                 f.write(f'# Final output length: {len(final_output) if final_output else 0}\n')
                 if final_output:
                     f.write(f'# Final output (first 500 chars): {final_output[:500]}...\n')
@@ -238,6 +239,17 @@ class CodeExecutionTracer:
                 if state_snapshot.get("latest"):
                     latest = state_snapshot["latest"]
                     f.write(f'# Latest (first 200 chars): {latest[:200] if isinstance(latest, str) else latest}...\n')
+                
+                # Show outputs namespace (key state for chaining)
+                outputs = state_snapshot.get("outputs", {})
+                if outputs:
+                    f.write(f'# Outputs: {list(outputs.keys())}\n')
+                    for node_id, output in outputs.items():
+                        output_preview = str(output)[:100] if output else "None"
+                        f.write(f'#   {node_id}: {output_preview}...\n')
+                else:
+                    f.write('# Outputs: {}\n')
+                    
                 f.write(f'# Conditional results: {state_snapshot.get("conditional", {})}\n')
                 f.write(f'# Loop state: {state_snapshot.get("loop_state", {})}\n')
             

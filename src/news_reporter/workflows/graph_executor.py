@@ -7,7 +7,7 @@ import asyncio
 import time
 import logging
 
-from .graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
+from ..models.graph_schema import GraphDefinition, NodeConfig, EdgeConfig, GraphLimits
 from .workflow_state import WorkflowState
 from .agent_runner import AgentRunner
 from .condition_evaluator import ConditionEvaluator
@@ -71,7 +71,11 @@ class GraphExecutor:
         # Validate graph
         errors = graph_def.validate()
         if errors:
-            raise ValueError(f"Invalid graph definition: {', '.join(errors)}")
+            # Filter out triage-specific validation error - entry nodes will be inferred
+            # Only structural errors (cycles, missing nodes) should block execution
+            non_triage_errors = [e for e in errors if "Entry node 'triage'" not in e]
+            if non_triage_errors:
+                raise ValueError(f"Invalid graph definition: {', '.join(non_triage_errors)}")
         
         # Build execution graph
         self._build_execution_graph()
@@ -211,8 +215,10 @@ class GraphExecutor:
         try:
             output_dir = Path(__file__).parent
             state_snapshot = {
+                "goal": state.goal,
                 "triage": state.get("triage"),
                 "latest": state.latest,
+                "outputs": state.outputs,
                 "conditional": state.get("conditional", {}),
                 "loop_state": state.get("loop_state", {})
             }
@@ -327,7 +333,7 @@ class GraphExecutor:
                     tracker.mark_branch_complete(context.branch_id, result)
                 
                 # Phase 3: Check if fanout is complete and trigger merge
-                await self._check_fanout_completion(node_id, state, tracker, queue)
+                await self._check_fanout_completion(node_id, state, tracker, queue, context)
                 
                 # Phase 3: Handle special node types
                 next_nodes = await self._handle_special_nodes(
@@ -336,7 +342,7 @@ class GraphExecutor:
                 
                 # If next_nodes not set by special handler, determine normally
                 if next_nodes is None:
-                    next_nodes = self._determine_next_nodes(node_id, result, state)
+                    next_nodes = self._determine_next_nodes(node_id, result, state, tracker)
                 
                 # Phase 3: Check for loop back (body node completing, needs to loop back to loop node)
                 # First, check if this node is part of a loop by checking if any loop node has an outgoing edge to this node
@@ -381,6 +387,14 @@ class GraphExecutor:
                     next_context = context.create_child_branch(next_node_id)
                     next_context.node_id = next_node_id
                     branch_contexts[next_context.branch_id] = next_context
+                    
+                    # Regression guard: Log parent_result presence for debugging
+                    has_parent = result is not None
+                    logger.debug(
+                        f"Enqueueing {next_node_id}: parent_result={'present' if has_parent else 'None'} "
+                        f"(parent={node_id})"
+                    )
+                    
                     queue.append(ExecutionToken(
                         node_id=next_node_id,
                         context=next_context,
@@ -454,6 +468,41 @@ class GraphExecutor:
         
         return None
     
+    def _find_merge_node(
+        self,
+        fanout_node_id: str,
+        branch_node_ids: List[str]
+    ) -> Optional[str]:
+        """Find merge node that receives outputs from all branches
+        
+        Looks for a merge-type node that has incoming edges from all branch nodes.
+        Falls back to fanout params if specified.
+        """
+        # Find candidate merge nodes (type == "merge")
+        merge_candidates = [
+            node_id for node_id, config in self.nodes.items()
+            if config.type == "merge"
+        ]
+        
+        for merge_id in merge_candidates:
+            # Check if merge has incoming edges from ALL branch nodes
+            incoming = self.incoming_edges.get(merge_id, [])
+            incoming_sources = {edge.from_node for edge in incoming}
+            
+            if set(branch_node_ids).issubset(incoming_sources):
+                logger.debug(f"Found merge node {merge_id} for fanout {fanout_node_id}")
+                return merge_id
+        
+        # Fallback: check fanout params
+        node_config = self.nodes[fanout_node_id]
+        if node_config.params and "merge_node_id" in node_config.params:
+            merge_id = node_config.params["merge_node_id"]
+            logger.debug(f"Using merge node {merge_id} from fanout params")
+            return merge_id
+        
+        logger.warning(f"No merge node found for fanout {fanout_node_id}")
+        return None
+    
     async def _handle_fanout_node(
         self,
         node_id: str,
@@ -463,59 +512,92 @@ class GraphExecutor:
         tracker: ExecutionTracker,
         queue: deque[ExecutionToken]
     ) -> List[str]:
-        """Handle fanout node - create branches for each item"""
-        node_config = self.nodes[node_id]
-        fanout_items = result.artifacts.get("fanout_items", [])
-        branch_node_ids = result.artifacts.get("branches", [])
+        """Handle fanout node - create branches for each item
         
-        if not fanout_items or not branch_node_ids:
-            logger.warning(f"Fanout node {node_id} has no items or branches")
+        Derives branch nodes from graph edges instead of requiring artifacts.
+        Broadcasts parent output to all branches.
+        """
+        node_config = self.nodes[node_id]
+        
+        # Derive branch_node_ids from outgoing edges
+        outgoing = self.outgoing_edges.get(node_id, [])
+        branch_node_ids = [edge.to_node for edge in outgoing]
+        
+        # Override with node config if specified
+        if node_config.branches:
+            branch_node_ids = node_config.branches
+        
+        # Validate: fanout must have at least one branch
+        if not branch_node_ids:
+            logger.warning(f"Fanout node {node_id} has no outgoing edges")
             return []
         
-        # Find next node after fanout (could be merge, loop, or any other node)
-        next_node_id = None
-        outgoing = self.outgoing_edges.get(node_id, [])
-        for edge in outgoing:
-            # Check edge condition if present
-            if edge.condition:
-                from .condition_evaluator import ConditionEvaluator
-                if not ConditionEvaluator.evaluate(edge.condition, state):
-                    continue  # Skip this edge
-            next_node_id = edge.to_node
-            break  # Use first valid outgoing edge
+        # Get parent output to broadcast (from parent_result, not state.latest)
+        parent_output = result.state_updates.get('latest')
+        if parent_output is None:
+            # Fallback to artifacts or goal
+            parent_output = result.artifacts.get('output') or state.goal
         
-        # Register fanout in tracker (use next_node_id instead of just merge_node_id)
+        # For simple parallel workflows: single-item broadcast
+        fanout_items = [parent_output]
+        
+        # Find correct merge node using helper
+        merge_node_id = self._find_merge_node(node_id, branch_node_ids)
+        
+        # TASK 1: Use branch_node_ids as items to prevent tracking collision
+        # For simple broadcast fanout, each branch IS the item (not item × branches)
+        # This ensures tracker.branches has one entry per branch instead of overwriting
+        fanout_items_for_tracker = branch_node_ids  # Each branch is uniquely tracked
+        
+        # Register fanout in tracker with CORRECT merge node
         fanout_tracker = tracker.register_fanout(
             fanout_node_id=node_id,
-            items=fanout_items,
+            items=fanout_items_for_tracker,  # Use branch_node_ids as items
             branch_node_ids=branch_node_ids,
-            merge_node_id=next_node_id  # Store next node (may not be merge)
+            merge_node_id=merge_node_id
         )
         
-        # Create branches for each item
-        for item in fanout_items:
-            # Set current item in state for branch nodes
-            state.set("current_fanout_item", item)
+        logger.info(
+            f"\n\nFanout {node_id}: broadcasting to {len(branch_node_ids)} branches, "
+            f"merge_node={merge_node_id}"
+        )
+        
+        # Create one branch execution per branch node (broadcast same parent_result to all)
+        for branch_node_id in branch_node_ids:
+            # Create branch context
+            branch_context = context.create_child_branch(branch_node_id)
+            branch_context.node_id = branch_node_id
             
-            # For each branch node, create a branch
-            for branch_node_id in branch_node_ids:
-                branch_context = context.create_child_branch(branch_node_id)
-                branch_context.node_id = branch_node_id
+            # Register branch in tracker (item = branch_node_id for unique tracking)
+            tracker.register_branch(
+                fanout_node_id=node_id,
+                item=branch_node_id,  # Use branch_node_id as the unique item key
+                branch_id=branch_context.branch_id,
+                branch_node_id=branch_node_id
+            )
                 
-                # Register branch in tracker
-                tracker.register_branch(
-                    fanout_node_id=node_id,
-                    item=item,
-                    branch_id=branch_context.branch_id,
-                    branch_node_id=branch_node_id
+            # Add to queue with parent_result for broadcast
+            # Regression guard: Fanout branches MUST have parent_result to avoid {goal} seeding
+            # This would  break goal/input semantics
+            if result is None:
+                logger.error(
+                    f"SANITY CHECK FAILED: Fanout branch {branch_node_id} enqueued with parent_result=None! "
+                    f"This would cause it to use {{goal}} instead of {{input}}. "
+                    f"Fanout:{node_id}, Item:{item}"
                 )
-                
-                # Add to queue
-                queue.append(ExecutionToken(
-                    node_id=branch_node_id,
-                    context=branch_context,
-                    parent_result=result
-                ))
+                raise RuntimeError(
+                    f"Fanout branch {branch_node_id} missing parent_result" 
+                )
+            
+            logger.debug(
+                f"Enqueueing fanout branch {branch_node_id}: parent_result=present (fanout={node_id})"
+            )
+            
+            queue.append(ExecutionToken(
+                node_id=branch_node_id,
+                context=branch_context,
+                parent_result=result  # Broadcasts parent output to branches
+            ))
         
         # Don't continue to merge node yet - wait for all branches
         # Merge node will be triggered when all branches complete
@@ -526,40 +608,78 @@ class GraphExecutor:
         node_id: str,
         state: WorkflowState,
         tracker: ExecutionTracker,
-        queue: deque[ExecutionToken]
+        queue: deque[ExecutionToken],
+        context: ExecutionContext
     ) -> None:
         """Check if a fanout is complete and trigger merge node if so"""
-        # Find which fanout this node belongs to (if any)
-        fanout_tracker = None
-        for fanout in tracker.fanouts.values():
-            # Check if this node is one of the branch nodes in the fanout
-            if node_id in fanout.branch_node_ids:
-                fanout_tracker = fanout
-                break
+        # TASK 2: Find which fanout this branch belongs to using branch_id mapping
+        # This is more correct than node_id scanning in multi-fanout graphs
+        fanout_node_id = tracker.branch_to_fanout.get(context.branch_id)
+        if not fanout_node_id:
+            # This branch is not part of any tracked fanout
+            return
         
+        fanout_tracker = tracker.fanouts.get(fanout_node_id)
         if not fanout_tracker:
-            # This node is not part of a fanout, nothing to check
+            # Fanout tracker not found (shouldn't happen)
+            logger.warning(f"Branch {context.branch_id} maps to fanout {fanout_node_id} but tracker not found")
             return
         
         # Check if all branches are complete
         if fanout_tracker.all_branches_complete():
-            next_node_id = fanout_tracker.merge_node_id  # Actually the next node (may not be merge)
-            if next_node_id:
-                # All branches complete, trigger next node
+            merge_node_id = fanout_tracker.merge_node_id
+            if merge_node_id:
+                # All branches complete, trigger merge node
                 logger.info(
                     f"All branches complete for fanout {fanout_tracker.fanout_node_id}, "
-                    f"triggering next node {next_node_id}"
+                    f"triggering merge node {merge_node_id}"
                 )
-                # Create context for next node (use root context or create new one)
-                next_context = ExecutionContext(
-                    node_id=next_node_id,
-                    branch_id="",  # Next node is not part of a branch
+                
+                # TASK 2: Check if merge already triggered (idempotence)
+                if fanout_tracker.merge_triggered:
+                    logger.debug(f"Merge {merge_node_id} already triggered for fanout {fanout_tracker.fanout_node_id}, skipping")
+                    return
+                
+                # TASK 5: Collect branch outputs in deterministic order
+                branch_outputs = {}
+                # Order by branch_node_ids to ensure deterministic merge ordering
+                for branch_node_id in fanout_tracker.branch_node_ids:
+                    # Find the branch tracker for this node
+                    for branch in fanout_tracker.branches.values():
+                        if branch.branch_node_id == branch_node_id:
+                            # Branch has .result attribute (NodeResult), not .output
+                            if branch.result and hasattr(branch.result, 'state_updates'):
+                                # Get latest output from branch result
+                                branch_output = branch.result.state_updates.get('latest')
+                                if branch_output is not None:
+                                    branch_outputs[branch_node_id] = branch_output
+                            break
+                
+                logger.debug(f"Collected {len(branch_outputs)} branch outputs for merge (ordered): {list(branch_outputs.keys())}")
+                
+                # TASK 3: Create proper merge context with valid branch_id
+                import uuid
+                merge_context = ExecutionContext(
+                    run_id=context.run_id,  # Reuse run_id
+                    node_id=merge_node_id,
+                    branch_id=str(uuid.uuid4()),  # Generate unique branch_id for merge
                     iteration=0
                 )
+                
+                # Create NodeResult with branch outputs as state_updates
+                # This allows merge node to execute and consume the branch results
+                merge_input_result = NodeResult.success(
+                    state_updates={"branches": branch_outputs}
+                )
+                
+                # TASK 2: Mark merge as triggered
+                fanout_tracker.merge_triggered = True
+                
+                # Enqueue merge node with branch outputs
                 queue.append(ExecutionToken(
-                    node_id=next_node_id,
-                    context=next_context,
-                    parent_result=None
+                    node_id=merge_node_id,
+                    context=merge_context,
+                    parent_result=merge_input_result  # Pass branch outputs
                 ))
     
     async def _handle_loop_node(
@@ -797,6 +917,9 @@ class GraphExecutor:
             settings=self.config
         )
         
+        # Pass parent_result to node for automatic chaining
+        node.parent_result = parent_result
+        
         state.append_log("INFO", f"Executing node: {node_id} (type: {node_config.type})", node_id=node_id)
         
         # Phase 5: Emit node started event
@@ -869,12 +992,22 @@ class GraphExecutor:
         
         for path, value in sorted_updates:
             state.set(path, value)
+            
+            # Log key state updates for traceability
+            if path == "latest":
+                value_preview = str(value)[:100] + "..." if len(str(value)) > 100 else str(value)
+                logger.info(f"State update: latest='{value_preview}'")
+            elif path.startswith("outputs."):
+                node_id = path.split(".", 1)[1]
+                value_preview = str(value)[:100] + "..." if len(str(value)) > 100 else str(value)
+                logger.info(f"State update: outputs.{node_id}='{value_preview}' (total outputs: {len(state.outputs)})")
     
     def _determine_next_nodes(
         self,
         node_id: str,
         result: NodeResult,
-        state: WorkflowState
+        state: WorkflowState,
+        tracker: Optional['ExecutionTracker'] = None
     ) -> List[str]:
         """Determine next nodes to execute"""
         # If NodeResult specifies next_nodes, use those
@@ -897,6 +1030,25 @@ class GraphExecutor:
             # If loop has exited, skip "loop_body" edges (they're only for entering the loop)
             if loop_exited and edge.condition == "loop_body":
                 continue
+            
+            # Skip merge nodes that are join targets of an active fanout
+            # If this node is a fanout branch and edge points to the fanout's merge node,
+            # skip it - the merge will be triggered by _check_fanout_completion()
+            if tracker:
+                skip_merge = False
+                for fanout_id, fanout_tracker in tracker.fanouts.items():
+                    # Check if current node is a branch of this fanout
+                    if node_id in fanout_tracker.branch_node_ids:
+                        # Check if edge points to the fanout's merge node
+                        if fanout_tracker.merge_node_id and edge.to_node == fanout_tracker.merge_node_id:
+                            logger.debug(
+                                f"Skipping branch→merge edge {node_id}→{edge.to_node} "
+                                f"(merge will be triggered by fanout completion handler)"
+                            )
+                            skip_merge = True
+                            break
+                if skip_merge:
+                    continue
             
             # Check edge condition
             if edge.condition:

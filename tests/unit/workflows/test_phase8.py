@@ -14,7 +14,7 @@ from src.news_reporter.workflows.workflow_debugger import WorkflowDebugger, Brea
 from src.news_reporter.workflows.workflow_governance import WorkflowGovernance, PolicyType, PolicySeverity
 from src.news_reporter.workflows.workflow_ai import WorkflowAI, AITaskType
 from src.news_reporter.workflows.workflow_documentation import WorkflowDocumentation, DocumentationType
-from src.news_reporter.workflows.graph_schema import GraphDefinition, NodeConfig
+from src.news_reporter.models.graph_schema import GraphDefinition, NodeConfig
 
 
 class TestWorkflowCost:

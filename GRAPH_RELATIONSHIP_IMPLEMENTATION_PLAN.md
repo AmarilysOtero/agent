@@ -4,6 +4,7 @@
 
 **Current Issue:**
 Query: "Is there any relationship between Kevin and Alexis?"
+
 - ❌ Returns: "No relationship found"
 - ✅ Graph has: `(Kevin)-[:AT_ORGANIZATION]->(DXC)<-[:AT_ORGANIZATION]-(Alexis)`
 
@@ -36,6 +37,7 @@ Vector search filters results by `similarity >= 0.3` BEFORE graph expansion, rem
 **Why Generic:** Every document type can produce `Chunk → MENTIONS → Entity`. Works for resumes, financials, policies, contracts, etc.
 
 **Add Function:**
+
 ```python
 def extract_seed_entities_from_chunks(
     chunk_ids: List[str],
@@ -49,7 +51,7 @@ def extract_seed_entities_from_chunks(
     Args:
         chunk_ids: List of chunk IDs from hybrid retrieval
         max_entities: Maximum number of entities to return
-        
+
     Returns:
         List of dicts: [{entity_id, name, type, mention_count, avg_conf}]
     """
@@ -78,6 +80,7 @@ def extract_seed_entities_from_chunks(
 ```
 
 **Notes:**
+
 - Uses `c.id OR c.chunk_id` because chunk IDs may be stored under either property
 - Uses `coalesce(e.id, e.entity_id, internal id)` because entity IDs vary
 - Uses `MENTIONS` relationship which exists in the graph
@@ -94,6 +97,7 @@ def extract_seed_entities_from_chunks(
 **Goal:** Given seed entities, discover real connections via bounded paths, and gather supporting chunks for citations.
 
 **Key Improvements:**
+
 - No filename matching
 - No broad `MATCH (e)` over all nodes
 - No direction assumptions (uses undirected paths)
@@ -101,6 +105,7 @@ def extract_seed_entities_from_chunks(
 - Returns paths + evidence chunks (citations), not "synthetic chunks with similarity 0.9"
 
 **Add Function:**
+
 ```python
 def discover_graph_connections_between_entities(
     seed_entities: List[Dict],
@@ -113,13 +118,13 @@ def discover_graph_connections_between_entities(
     - picks top entity pairs from seed_entities
     - finds bounded shortest paths between them
     - returns structured path objects (not fake chunks)
-    
+
     Args:
         seed_entities: List of entity dicts from extract_seed_entities_from_chunks
         max_pairs: Maximum entity pairs to test
         max_hops: Maximum path length (default 3 hops)
         max_paths: Maximum paths to return
-        
+
     Returns:
         List of path dicts with structure information
     """
@@ -171,36 +176,37 @@ def discover_graph_connections_between_entities(
 
 **Phase 2b: Pull Supporting Chunks for Citations**
 
-This ensures your fGraph-Aware Reranking**
+This ensures your fGraph-Aware Reranking\*\*
 
 **File:** `neo4j_backend/services/graphrag_retrieval.py`
 
 **Add Function:**
+
 ```python
 def rerank_with_graph_awareness(
-    results: List[Dict], 
+    results: List[Dict],
     path_entities: List[str],
     min_similarity: float = 0.3
 ) -> List[Dict]:
     """Rank results - boost chunks mentioning path entities, preserve supporting evidence
-    
+
     Args:
         results: Combined list of vector and graph-supporting chunks
         path_entities: Entity names from discovered graph paths
         min_similarity: Threshold for vector results (not applied to graph-supporting chunks)
-        
+
     Returns:
         Filtered and ranked results
     """
     filtered = []
     path_entities_lower = [e.lower() for e in path_entities]
-    
+
     for result in results:
         # Always keep graph-supporting chunks (from Phase 2b)
         if result.get('source') == 'graph_supporting_evidence':
             filtered.append(result)
             continue
-        
+
         # For vector/hybrid results, apply threshold
         if result.get('similarity', 0) >= min_similarity:
             # Boost chunks that mention path entities (graph-aware boosting)
@@ -209,43 +215,45 @@ def rerank_with_graph_awareness(
                 result['hybrid_score'] = result.get('hybrid_score', 0) * 1.15
                 result['metadata'] = result.get('metadata', {})
                 result['metadata']['graph_boosted'] = True
-            
+
             filtered.append(result)
-    
+
     # Sort by hybrid_score descending
     filtered.sort(key=lambda x: x.get('hybrid_score', 0), reverse=True)
-    
+
     return filtered
 ```
 
 **Key Changes:**
+
 - Preserves `graph_supporting_evidence` chunks (real text, citable)
 - Boosts vector chunks that mention path entities (15% boost)
 - Ensures at least some top chunks even if similarity < 0.3 for relationship queries
 - No synthetic chunks with artificial 0.9 scores
 
 **Purpose:** Graph-aware reranking that preserves citations and boosts relevant evidence
-    with driver.session() as session:
-        rows = session.run(cypher, names=path_entity_names, max_chunks=max_chunks)
-        chunks = []
-        for row in rows:
-            chunks.append({
-                'id': row['chunk_id'],
-                'text': row['text'],
-                'file_id': row['doc_id'],
-                'similarity': row['similarity'],
-                'hybrid_score': row['hybrid_score'],
-                'keyword_score': row['keyword_score'],
-                'source': 'graph_supporting_evidence',
-                'metadata': {
-                    'entity_name': row['entity_name'],
-                    'type': 'supporting_chunk'
-                }
-            })
-        return chunks
-```
+with driver.session() as session:
+rows = session.run(cypher, names=path_entity_names, max_chunks=max_chunks)
+chunks = []
+for row in rows:
+chunks.append({
+'id': row['chunk_id'],
+'text': row['text'],
+'file_id': row['doc_id'],
+'similarity': row['similarity'],
+'hybrid_score': row['hybrid_score'],
+'keyword_score': row['keyword_score'],
+'source': 'graph_supporting_evidence',
+'metadata': {
+'entity_name': row['entity_name'],
+'type': 'supporting_chunk'
+}
+})
+return chunks
 
-**Purpose:** 
+````
+
+**Purpose:**
 - Generic graph traversal - works for ANY entities, ANY relationships
 - Uses undirected shortest paths (no direction assumptions)
 - Bounded by max_hops to prevent performance issues
@@ -261,31 +269,31 @@ def rerank_with_graph_awareness(
 ```python
 def rerank_results(results: List[Dict], min_similarity: float = 0.3) -> List[Dict]:
     """Rank results - preserve graph discoveries, filter vector results
-    
+
     Args:
         results: Combined list of vector and graph results
         min_similarity: Threshold for vector results (not applied to graph results)
-        
+
     Returns:
         Filtered and ranked results
     """
     filtered = []
-    
+
     for result in results:
         # Always keep graph traversal results (high-confidence facts)
         if result.get('source') == 'graph_traversal':
             filtered.append(result)
             continue
-        
+
         # For vector/hybrid results, apply threshold
         if result.get('similarity', 0) >= min_similarity:
             filtered.append(result)
-    
+
     # Sort by hybrid_score descending
     filtered.sort(key=lambda x: x.get('hybrid_score', 0), reverse=True)
-    
+
     return filtered
-```
+````
 
 **Purpose:** Preserve graph facts, filter only vector results.
 
@@ -298,6 +306,7 @@ def rerank_results(results: List[Dict], min_similarity: float = 0.3) -> List[Dic
 **Current Function:** `hybrid_retrieve()`
 
 **Change From:**
+
 ```python
 def hybrid_retrieve(query: str, top_k: int = 10, **kwargs) -> Dict:
     # Get semantic results
@@ -305,70 +314,70 @@ def hybrid_retrieve(query: str, top_k: int = 10, **kwargs) -> Dict:
     semantic_results = semantic_search(query, top_k=top_k * 3)
     keyword_results = keyword_search(query, top_k=top_k * 2)
     all_results = semantic_results + keyword_results
-    
+
     # Extract chunk IDs for entity seeding
     chunk_ids = [r.get('id', r.get('chunk_id')) for r in all_results[:15] if r.get('id') or r.get('chunk_id')]
-    
+
     # 2. Seed entities from graph mentions (GENERIC - works for any doc type)
     seed_entities = extract_seed_entities_from_chunks(chunk_ids, max_entities=15)
-    
+
     path_entity_names = []
-    
+
     if len(seed_entities) >= 2:
         logger.info(f"🔗 Detected {len(seed_entities)} entities via MENTIONS - checking graph connections")
-        
+
         # 3. Discover paths between entities
         paths = discover_graph_connections_between_entities(
-            seed_entities, 
-            max_pairs=20, 
-            max_hops=3, 
+            seed_entities,
+            max_pairs=20,
+            max_hops=3,
             max_paths=10
         )
-        
+
         if paths:
             logger.info(f"✅ Found {len(paths)} graph paths")
-            
+
             # Collect entity names from paths
             for path in paths:
                 path_entity_names.extend(path['path_nodes'])
             path_entity_names = list(set(path_entity_names))  # Deduplicate
-            
+
             # 4. Fetch supporting chunks for citations
             supporting_chunks = fetch_supporting_chunks_for_path_entities(
                 path_entity_names,
                 max_chunks=12
             )
-            
+
             logger.info(f"📄 Fetched {len(supporting_chunks)} supporting chunks for citations")
             all_results.extend(supporting_chunks)
-    
+
     # 5. NOW filter and rank (after graph expansion, with graph-aware boosting)
     filtered = rerank_with_graph_awareness(
-        all_results, 
+        all_results,
         path_entity_names=path_entity_names,
         min_similarity=0.3
     dcoding)"""
-    
+
     # 1. High-recall retrieval (get more candidates)
     semantic_results = semantic_search(query, top_k=top_k * seed_entities_from_chunks()` | ➕ Add new function |
 | `neo4j_backend/services/graphrag_retrieval.py` | `discover_graph_connections_between_entities()` | ➕ Add new function |
 | `neo4j_backend/services/graphrag_retrieval.py` | `fetch_supporting_chunks_for_path_entities()` | ➕ Add new function |
 | `neo4j_backend/services/graphrag_retrieval.py` | `rerank_with_graph_awarenes
-    
+
     # 2. Detect if graph expansion needed (GENERIC check)
     entities = extract_entities_from_results(all_results[:15])
-    
+
     if len(entities) >= 2:
         logger.info(f"🔗 Detected {len(entities)} entities - checking graph connections")
         graph_results = discover_graph_connections(entities)
-        
+
         if graph_results:
             logger.info(f"✅ Found {len(graph_results)} graph connections")
             all_results.extend(graph_results)
-    
+
     # 3. NOW filter and rank (after graph expansion)
     filtered = rerank_results(all_results, min_similarity=0.3)
-    
+
     return {'chunks': filtered[:top_k]}
 ```
 
@@ -378,18 +387,19 @@ def hybrid_retrieve(query: str, top_k: int = 10, **kwargs) -> Dict:
 
 ## Files to Modify
 
-| File | Function | Change Type |
-|------|----------|-------------|
-| `neo4j_backend/services/graphrag_retrieval.py` | `extract_entities_from_results()` | ➕ Add new function |
-| `neo4j_backend/services/graphrag_retrieval.py` | `discover_graph_connections()` | ➕ Add new function |
-| `neo4j_backend/services/graphrag_retrieval.py` | `rerank_results()` | ➕ Add new function |
-| `neo4j_backend/services/graphrag_retrieval.py` | `hybrid_retrieve()` | 🔄 Modify flow (reorder operations) |
+| File                                           | Function                          | Change Type                         |
+| ---------------------------------------------- | --------------------------------- | ----------------------------------- |
+| `neo4j_backend/services/graphrag_retrieval.py` | `extract_entities_from_results()` | ➕ Add new function                 |
+| `neo4j_backend/services/graphrag_retrieval.py` | `discover_graph_connections()`    | ➕ Add new function                 |
+| `neo4j_backend/services/graphrag_retrieval.py` | `rerank_results()`                | ➕ Add new function                 |
+| `neo4j_backend/services/graphrag_retrieval.py` | `hybrid_retrieve()`               | 🔄 Modify flow (reorder operations) |
 
 ---
 
 ## Testing Plan
 
 ### **Test 1: Relationship Query**
+
 ```python
 query = "Is there any relationship between Kevin and Alexis?"
 
@@ -405,6 +415,7 @@ query = "Is there any relationship between Kevin and Alexis?"
 ```
 
 ### **Test 2: Single Entity Query (No Graph)**
+
 ```python
 query = "What are Alexis's skills?"
 
@@ -418,6 +429,7 @@ query = "What are Alexis's skills?"
 ```
 
 ### **Test 3: No Relationship Found**
+
 ```python
 query = "Is there any relationship between Kevin and John Doe?"
 
@@ -434,7 +446,9 @@ query = "Is there any relationship between Kevin and John Doe?"
 ---
 
 ## Verification Checklist
+
 seeding uses MENTIONS relationships (not filenames)
+
 - [ ] Entity extraction works for any document type (resumes, financials, policies)
 - [ ] Graph query uses bounded shortest paths (max 3 hops)
 - [ ] Graph query returns results for Kevin-Alexis relationship
@@ -453,6 +467,7 @@ seeding uses MENTIONS relationships (not filenames)
 ## Expected Behavior Changes
 
 ### **Before:**
+
 ```
 Query: "Is there any relationship between Kevin and Alexis?"
 → Hybrid search: 12 results (similarity 0.22-0.29)
@@ -461,6 +476,7 @@ Query: "Is there any relationship between Kevin and Alexis?"
 ```
 
 ### **After:**
+
 ```
 Query: "Is there any relationship between Kevin and Alexis?"
 → Hybrid search: 12 results (similarity 0.22-0.29)
@@ -495,16 +511,17 @@ Query: "Is there any relationship between Kevin and Alexis?"
 ## Implementation Order
 
 1. ✅ Create this imseed_entities_from_chunks()` function (Phase 1)
-3. ⏭️ Add `discover_graph_connections_between_entities()` function (Phase 2)
-4. ⏭️ Add `fetch_supporting_chunks_for_path_entities()` function (Phase 2b)
-5. ⏭️ Add `rerank_with_graph_awareness()` function (Phase 3)
-6. ⏭️ Modify `hybrid_retrieve()` to use new flow (Phase 4)
-7. ⏭️ Test with Kevin-Alexis relationship query
+2. ⏭️ Add `discover_graph_connections_between_entities()` function (Phase 2)
+3. ⏭️ Add `fetch_supporting_chunks_for_path_entities()` function (Phase 2b)
+4. ⏭️ Add `rerank_with_graph_awareness()` function (Phase 3)
+5. ⏭️ Modify `hybrid_retrieve()` to use new flow (Phase 4)
+6. ⏭️ Test with Kevin-Alexis relationship query
+7. ⏭️ Verify existing queries still work
 8. ⏭️ Verify existing queries still work
-9. ⏭️ Verify existing queries still work
-8. ⏭️ Commit and push changes
+9. ⏭️ Commit and push changes
 
 --- via MENTIONS)
+
 - Solution is **truly generic** and works across any domain (resumes, financials, policies, contracts, etc.)
 - Filtering happens **after** graph expansion (not before)
 - Graph facts come with **citable text chunks** (not synthetic high-scoring chunks)
@@ -514,14 +531,15 @@ Query: "Is there any relationship between Kevin and Alexis?"
 
 ## Why This Approach Is Generic
 
-| Aspect | Generic Approach | Avoids |
-|--------|------------------|---------|
-| **Entity Detection** | Via `Chunk → MENTIONS → Entity` relationships | Filename parsing, person-specific metadata |
-| **Entity Resolution** | Match only `:Entity` nodes by stable IDs | Broad `MATCH (e)` matching random nodes |
-| **Connection Discovery** | Bounded shortest paths (undirected) | Direction assumptions, unbounded graph explosions |
-| **Evidence** | Real chunks that mention entities | Synthetic chunks with artificial scores |
-| **Citations** | Supporting chunks pulled from graph | Graph structure alone (non-verifiable) |
-| **Boosting** | Graph-aware reranking of real chunks | Fake high-scoring "chunks" |
+| Aspect                   | Generic Approach                              | Avoids                                            |
+| ------------------------ | --------------------------------------------- | ------------------------------------------------- |
+| **Entity Detection**     | Via `Chunk → MENTIONS → Entity` relationships | Filename parsing, person-specific metadata        |
+| **Entity Resolution**    | Match only `:Entity` nodes by stable IDs      | Broad `MATCH (e)` matching random nodes           |
+| **Connection Discovery** | Bounded shortest paths (undirected)           | Direction assumptions, unbounded graph explosions |
+| **Evidence**             | Real chunks that mention entities             | Synthetic chunks with artificial scores           |
+| **Citations**            | Supporting chunks pulled from graph           | Graph structure alone (non-verifiable)            |
+| **Boosting**             | Graph-aware reranking of real chunks          | Fake high-scoring "chunks"                        |
+
 - This is a **control-flow change**, not an architectural redesign
 - Graph expansion is **adaptive** (only when multiple entities detected)
 - Solution is **generic** and works across any domain

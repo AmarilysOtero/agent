@@ -128,7 +128,11 @@ def filter_results_by_exact_match(
     if not is_person_query:
         logger.info(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
         print(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
-        filtered = [res for res in results if res.get("similarity", 0.0) >= 0.3]
+        # IMPORTANT: Preserve graph_supporting_evidence chunks (high-confidence graph facts)
+        filtered = [
+            res for res in results 
+            if res.get("similarity", 0.0) >= 0.3 or res.get("source") == "graph_supporting_evidence"
+        ]
         logger.info(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         return filtered

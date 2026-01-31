@@ -987,13 +987,13 @@ class AiSearchAgent:
             similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
-            if file_path.lower().endswith('.csv'):
+            if file_path and file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
-            elif file_path.lower().endswith('.pdf'):
+            elif file_path and file_path.lower().endswith('.pdf'):
                 source_note = "[PDF Document]"
-            elif file_path.lower().endswith(('.doc', '.docx')):
+            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
                 source_note = "[Word Document]"
-            elif file_path.lower().endswith(('.xls', '.xlsx')):
+            elif file_path and file_path.lower().endswith(('.xls', '.xlsx')):
                 source_note = "[Excel Document]"
             else:
                 source_note = "[Document]"
@@ -1418,11 +1418,11 @@ class SQLAgent:
             logger.info(f"🔍 [SQLAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
             print(f"🔍 [SQLAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
             
-            if file_path.lower().endswith('.csv'):
+            if file_path and file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
-            elif file_path.lower().endswith('.pdf'):
+            elif file_path and file_path.lower().endswith('.pdf'):
                 source_note = "[PDF Document]"
-            elif file_path.lower().endswith(('.doc', '.docx')):
+            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
                 source_note = "[Word Document]"
             else:
                 source_note = "[Document]"
@@ -1730,13 +1730,13 @@ class Neo4jGraphRAGAgent:
             similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
-            if file_path.lower().endswith('.csv'):
+            if file_path and file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
-            elif file_path.lower().endswith('.pdf'):
+            elif file_path and file_path.lower().endswith('.pdf'):
                 source_note = "[PDF Document]"
-            elif file_path.lower().endswith(('.doc', '.docx')):
+            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
                 source_note = "[Word Document]"
-            elif file_path.lower().endswith(('.xls', '.xlsx')):
+            elif file_path and file_path.lower().endswith(('.xls', '.xlsx')):
                 source_note = "[Excel Document]"
             else:
                 source_note = "[Document]"

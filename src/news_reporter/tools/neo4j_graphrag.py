@@ -121,7 +121,9 @@ class Neo4jGraphRAGRetriever:
         keyword_boost: float = 0.3,
         is_person_query: bool = False,
         enable_coworker_expansion: bool = True,
-        person_names: Optional[List[str]] = None
+        person_names: Optional[List[str]] = None,
+        section_query: Optional[str] = None,
+        use_section_routing: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Hybrid GraphRAG retrieval with keyword + semantic search:
@@ -144,6 +146,8 @@ class Neo4jGraphRAGRetriever:
             is_person_query: Flag indicating person-centric query for coworker expansion
             enable_coworker_expansion: Enable coworker graph traversal for person queries
             person_names: Resolved person names for entity-based expansion
+            section_query: Optional structural section query (e.g., "Skills", "Industry Experience")
+            use_section_routing: Enable section-aware retrieval routing
         
         Returns:
             List of chunk dicts with: text, file_name, file_path, similarity, hybrid_score, metadata
@@ -167,6 +171,7 @@ class Neo4jGraphRAGRetriever:
                 "keyword_boost": keyword_boost,
                 "is_person_query": is_person_query,
                 "enable_coworker_expansion": enable_coworker_expansion,
+                "use_section_routing": use_section_routing,
             }
             
             # Add optional parameters
@@ -178,6 +183,8 @@ class Neo4jGraphRAGRetriever:
                 payload["keywords"] = keywords
             if person_names:
                 payload["person_names"] = person_names
+            if section_query:
+                payload["section_query"] = section_query
             
             logger.info(f"🔍 [hybrid_retrieve] Querying Neo4j GraphRAG API: {url}")
             logger.info(f"🔍 [hybrid_retrieve] Payload: {payload}")
@@ -288,7 +295,9 @@ def graphrag_search(
     keyword_boost: float = 0.3,
     is_person_query: bool = False,
     enable_coworker_expansion: bool = True,
-    person_names: Optional[List[str]] = None
+    person_names: Optional[List[str]] = None,
+    section_query: Optional[str] = None,
+    use_section_routing: bool = False
 ) -> List[Dict[str, Any]]:
     """
     Convenience function for GraphRAG search (matches Azure Search API style)
@@ -306,6 +315,8 @@ def graphrag_search(
         is_person_query: Flag indicating person-centric query for coworker expansion
         enable_coworker_expansion: Enable coworker graph traversal for person queries
         person_names: Resolved person names for entity-based expansion
+        section_query: Optional structural section query (e.g., "Skills", "Industry Experience")
+        use_section_routing: Enable section-aware retrieval routing
     
     Returns:
         List of chunk results (compatible with Azure Search format)
@@ -327,7 +338,9 @@ def graphrag_search(
         keyword_boost=keyword_boost,
         is_person_query=is_person_query,
         enable_coworker_expansion=enable_coworker_expansion,
-        person_names=person_names
+        person_names=person_names,
+        section_query=section_query,
+        use_section_routing=use_section_routing
     )
     
     logger.info(f"📊 [graphrag_search] hybrid_retrieve returned {len(results)} results")

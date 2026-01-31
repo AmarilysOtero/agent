@@ -544,14 +544,12 @@ class AiSearchAgent:
         # PHASE 5: Query Classification for Structural Routing
         query_intent = self._classify_query_intent(query, person_names or [])
         logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
-        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
         
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, section_query={query_intent.get('section_query')}, use_section_routing={query_intent['routing'] == 'hard'}")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, routing={query_intent['routing']}")
         
-        # NOTE: Section-based routing will be implemented when section-aware search endpoints are added to graphrag_search tool
-        # For now, using existing hybrid search with enhanced keyword matching
-        
+        # Call graphrag_search with section routing parameters for hard routing
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
@@ -561,7 +559,9 @@ class AiSearchAgent:
             keyword_boost=keyword_boost,
             is_person_query=is_person_query,
             enable_coworker_expansion=True,  # Enable coworker expansion for person queries
-            person_names=person_names
+            person_names=person_names,
+            section_query=query_intent.get('section_query') if query_intent['routing'] == 'hard' else None,
+            use_section_routing=query_intent['routing'] == 'hard'
         )
 
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
@@ -704,6 +704,33 @@ class AiSearchAgent:
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
         print(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
+        
+        # PHASE 5: Additional filtering based on query intent (structural vs semantic)
+        if query_intent['routing'] == 'hard':
+            # Hard routing: strict filtering for section-based queries
+            logger.info(f"🔍 [IntentFilter] Applying HARD routing filter for {query_intent['type']}")
+            intent_filtered = []
+            for res in filtered_results:
+                header_text = res.get("metadata", {}).get("header_text", "").lower()
+                section_query_lower = (query_intent.get('section_query') or "").lower()
+                
+                # For hard routing, keep results that match the section query
+                if section_query_lower and section_query_lower in header_text:
+                    intent_filtered.append(res)
+                    logger.debug(f"  ✓ Kept: header='{header_text}' (matches section_query='{section_query_lower}')")
+                elif not section_query_lower:
+                    # If no section query, keep all
+                    intent_filtered.append(res)
+            
+            if intent_filtered:
+                filtered_results = intent_filtered
+                logger.info(f"  ✅ Hard routing filter: {len(intent_filtered)} results kept (exact section match)")
+            else:
+                # Fallback: use all results if none match exactly
+                logger.warning(f"  ⚠️ Hard routing filter: no exact matches, using all results")
+        else:
+            # Soft routing: semantic-based, use all filtered results
+            logger.info(f"🔍 [IntentFilter] Using SOFT routing (semantic) for {query_intent['type']}")
         
         # ========== FILTER SUMMARY ANALYSIS ==========
         logger.info(f"")

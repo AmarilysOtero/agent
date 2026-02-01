@@ -345,25 +345,21 @@ Workflows are defined as JSON graphs with:
 ### Node Types
 
 1. **Agent Node** (`type: "agent"`)
-
    - Executes a single agent (TriageAgent, SQLAgent, NewsReporterAgent, etc.)
    - Maps inputs/outputs to workflow state
    - Example: `triage`, `search_sql`, `report_branch`, `review`
 
 2. **Conditional Node** (`type: "conditional"`)
-
    - Routes execution based on condition evaluation
    - Uses safe expression evaluator (no `eval()`)
    - Example: `select_search`, `should_search`
 
 3. **Fanout Node** (`type: "fanout"`)
-
    - Executes multiple branches in parallel
    - Creates isolated execution contexts per branch
    - Example: `report_fanout` - runs reporter for each reporter_id
 
 4. **Loop Node** (`type: "loop"`)
-
    - Iterative execution with max iterations
    - Re-enqueues body node until termination condition
    - Example: `review_loop` - reviews until accepted (max 3 passes)
@@ -387,7 +383,6 @@ REPORT_FANOUT → REVIEW_LOOP → [REVIEW → REPORTER_IMPROVE] → STITCH
 1. **TRIAGE Node**: Runs `TriageAgent`, writes to `state.triage`, `state.selected_search`, `state.database_id`
 
 2. **SELECT_SEARCH Node** (Conditional): Routes based on `triage.preferred_agent`:
-
    - If `"sql"` → `search_sql` node
    - If Neo4j enabled → `search_neo4j` node
    - Otherwise → `search_aisearch` node
@@ -395,17 +390,14 @@ REPORT_FANOUT → REVIEW_LOOP → [REVIEW → REPORTER_IMPROVE] → STITCH
 3. **SEARCH Nodes**: Execute selected search agent, write to `state.latest`
 
 4. **SHOULD_SEARCH Node** (Conditional): Checks if search should run:
-
    - Condition: `"ai_search" in triage.intents or ...`
 
 5. **REPORT_FANOUT Node**: Fan-out execution:
-
    - Creates branch per `reporter_id` from config
    - Each branch runs `report_branch` node in parallel
    - Writes to `state.drafts[reporter_id]`
 
 6. **REVIEW_LOOP Node**: Loop with max 3 iterations:
-
    - Body: `review` → `reporter_improve` (if not accepted)
    - Terminates when: `verdicts[reporter_id][-1].decision == "accept"` OR `max_iters` reached
    - Writes to `state.verdicts[reporter_id]` and `state.final[reporter_id]`
@@ -614,7 +606,6 @@ class IntentResult(BaseModel):
 **Agent Types**:
 
 1. **SQLAgent** (`agents/agents.py`, lines 800-900):
-
    - Used when `preferred_agent == "sql"` AND `agent_id_aisearch_sql` is configured
    - Executes SQL queries against PostgreSQL databases
    - Converts results to CSV format
@@ -622,7 +613,6 @@ class IntentResult(BaseModel):
    - **Function**: `run(self, goal: str, database_id: Optional[str] = None) -> str`
 
 2. **Neo4jGraphRAGAgent** (`agents/agents.py`, lines 600-700):
-
    - Used when `use_neo4j_search == True` AND `agent_id_neo4j_search` is configured
    - Performs hybrid GraphRAG search on Neo4j
    - Cost-efficient alternative to Azure Search
@@ -715,7 +705,6 @@ async def run(self, query: str, database_id: Optional[str] = None) -> str:
    ```
 
    **Schema Search Process** (in Neo4j Backend):
-
    - **Semantic Search**: Embeds query → finds relevant tables/columns by similarity
    - **Keyword Search**: Matches query terms against table/column names
    - **Graph Expansion**: Expands via relationships (e.g., table-column relationships)
@@ -856,10 +845,10 @@ async def run(self, goal: str) -> str:
     # Step 1.1: Extract person names from query
     person_names = self._extract_person_names(goal)
     is_person_query = len(person_names) > 0
-    
+
     # Step 1.2: Classify query intent
     query_intent = self._classify_query_intent(goal, person_names)
-    
+
     # Query intent structure:
     # {
     #     'type': 'section_based_scoped' | 'section_based_cross_document' | 'semantic',
@@ -884,17 +873,17 @@ async def run(self, goal: str) -> str:
 def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -> str:
     """
     Extract clean section query, EXCLUDING person names.
-    
+
     Examples:
         "Kevin's industry experience" → "experience"
         "Alexis Skills section only" → "skills"
         "technical skills summary" → "technical skills"
     """
     # Exclude person names and stop words
-    stop_words = {'what', 'are', 'is', 'the', 'tell', 'me', 'about', 
-                  'show', 'get', 'find', 'list', 'give', 'only', 
+    stop_words = {'what', 'are', 'is', 'the', 'tell', 'me', 'about',
+                  'show', 'get', 'find', 'list', 'give', 'only',
                   'section', 'from', 'of', "'s", 's'}
-    
+
     # Extract core attribute phrase (excluding person names)
     # Returns clean keyword like "skills" instead of "alexis skills section"
 ```
@@ -910,7 +899,7 @@ def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -
         keyword_boost = 0.4
     else:
         keyword_boost = 0.3
-    
+
     # Step 2.2: Call GraphRAG with section routing parameters
     results = await graphrag_search(
         query=goal,
@@ -967,12 +956,12 @@ When `use_section_routing=True` and `section_query` is provided:
 ```python
     # Step 3.1: Filter by person name (for person queries)
     filtered = self.filter_results_by_exact_match(
-        results, 
-        goal, 
+        results,
+        goal,
         is_person_query=is_person_query,
         person_names=person_names
     )
-    
+
     # Step 3.2: Apply intent-specific filtering
     if query_intent['routing'] == 'hard':
         # HARD routing: Trust section routing results
@@ -981,10 +970,10 @@ When `use_section_routing=True` and `section_query` is provided:
     else:
         # SOFT routing: Standard hybrid filtering
         filtered = [r for r in filtered if r.get('hybrid_score', 0) >= 0.3]
-    
+
     # Step 3.3: Format as context
     context = format_search_results(filtered)
-    
+
     # Step 3.4: Call Foundry agent with context
     result = run_foundry_agent(
         agent_id=self.agent_id,
@@ -992,19 +981,19 @@ When `use_section_routing=True` and `section_query` is provided:
         thread_id=thread_id,
         context=context
     )
-    
+
     return result
 ```
 
 **Query Classification Examples**:
 
-| Query | Classification | Routing | Section Query | Execution |
-|-------|---------------|---------|---------------|-----------|
-| "Alexis Skills section only" | `section_based_scoped` | `hard` | `"skills"` | Section-scoped search on Alexis's file |
-| "Kevin's industry experience" | `section_based_scoped` | `hard` | `"experience"` | Section-scoped search on Kevin's file |
-| "All Python skills" | `section_based_cross_document` | `hard` | `"python skills"` | Cross-document section search |
-| "Tell me about AI" | `semantic` | `soft` | `None` | Semantic search with section boosting |
-| "What projects did Sarah work on?" | `section_based_scoped` | `hard` | `"projects"` | Section-scoped search on Sarah's file |
+| Query                              | Classification                 | Routing | Section Query     | Execution                              |
+| ---------------------------------- | ------------------------------ | ------- | ----------------- | -------------------------------------- |
+| "Alexis Skills section only"       | `section_based_scoped`         | `hard`  | `"skills"`        | Section-scoped search on Alexis's file |
+| "Kevin's industry experience"      | `section_based_scoped`         | `hard`  | `"experience"`    | Section-scoped search on Kevin's file  |
+| "All Python skills"                | `section_based_cross_document` | `hard`  | `"python skills"` | Cross-document section search          |
+| "Tell me about AI"                 | `semantic`                     | `soft`  | `None`            | Semantic search with section boosting  |
+| "What projects did Sarah work on?" | `section_based_scoped`         | `hard`  | `"projects"`      | Section-scoped search on Sarah's file  |
 
 **Benefits of Section Routing**:
 
@@ -1151,19 +1140,23 @@ Query Classification sends to backend:
 ### Integration Points
 
 **1. Agent Layer** (`agents/agents.py`):
+
 - `_classify_query_intent()`: Detects section-based queries
 - `_extract_attribute_phrase()`: Extracts clean section query
 - Passes `section_query` and `use_section_routing` to GraphRAG
 
 **2. GraphRAG Client** (`tools/neo4j_graphrag.py`):
+
 - `hybrid_retrieve()`: Accepts section routing parameters
 - Sends payload with `section_query` and `use_section_routing` flags
 
 **3. Backend Router** (`routers/graphrag.py`):
+
 - `GraphRAGQuery` model accepts `section_query` and `use_section_routing`
 - Passes parameters to retrieval service
 
 **4. Retrieval Service** (`services/graphrag_retrieval.py`):
+
 - **HARD routing check** (line 130):
   ```python
   if use_section_routing and section_query:
@@ -1174,18 +1167,21 @@ Query Classification sends to backend:
 ### Retrieval Strategies
 
 **HARD Routing** (Structure-Driven):
+
 - Query: "Alexis Skills section only"
 - Process: Section embedding → find matching sections → return chunks from those sections
 - Result: High precision, enforces document structure
 - Metadata returned: `section_name`, `section_similarity`, `routing: hard_section`
 
 **SOFT Routing** (Semantic with Boosting):
+
 - Query: "Tell me about AI"
 - Process: Full query embedding → find chunks semantically + boost if in relevant sections
 - Result: Better recall, more flexible
 - Metadata returned: `routing: soft`, section info optional
 
 **CROSS-DOCUMENT**:
+
 - Query: "All Python skills"
 - Process: Search for "python skills" sections across all documents
 - Result: Finds matching sections in multiple files
@@ -1193,13 +1189,13 @@ Query Classification sends to backend:
 
 ### Query Examples and Execution
 
-| Query | Intent | Routing | Execution |
-|-------|--------|---------|-----------|
-| "Alexis Skills section only" | section_based_scoped | HARD | Find "Skills" section in Alexis's file, return its chunks |
-| "Kevin's industry experience" | section_based_scoped | HARD | Find "Experience/Industry" section in Kevin's file |
-| "All Python skills" | section_based_cross_document | HARD | Find "Skills" sections across all files, filter for Python |
-| "Tell me about machine learning" | semantic | SOFT | Semantic search + section boosting if in Projects section |
-| "What's Sarah's background?" | section_based_scoped | HARD | Find "Education/Background" section in Sarah's file |
+| Query                            | Intent                       | Routing | Execution                                                  |
+| -------------------------------- | ---------------------------- | ------- | ---------------------------------------------------------- |
+| "Alexis Skills section only"     | section_based_scoped         | HARD    | Find "Skills" section in Alexis's file, return its chunks  |
+| "Kevin's industry experience"    | section_based_scoped         | HARD    | Find "Experience/Industry" section in Kevin's file         |
+| "All Python skills"              | section_based_cross_document | HARD    | Find "Skills" sections across all files, filter for Python |
+| "Tell me about machine learning" | semantic                     | SOFT    | Semantic search + section boosting if in Projects section  |
+| "What's Sarah's background?"     | section_based_scoped         | HARD    | Find "Education/Background" section in Sarah's file        |
 
 ### Benefits
 
@@ -1208,11 +1204,12 @@ Query Classification sends to backend:
 ✅ **Semantic Fuzzy Matching**: Embeds section names for "Skills" ≈ "Technical Expertise"  
 ✅ **No False Positives**: Structural constraints prevent semantic drift  
 ✅ **Cross-Document Discovery**: Find equivalent sections across multiple documents  
-✅ **Hierarchical Understanding**: Preserves section parent-child relationships  
+✅ **Hierarchical Understanding**: Preserves section parent-child relationships
 
 ### Current Status
 
 **✅ Implemented**:
+
 - Section and SectionType node definitions in schema
 - Section extraction and embedding during ingestion
 - Section hierarchy creation (PARENT_SECTION)
@@ -1222,6 +1219,7 @@ Query Classification sends to backend:
 - Debug logging and monitoring
 
 **Verified in Graph**:
+
 ```
 Node Types:  File, Chunk, Section, SectionType (19 total)
 Relationships: HAS_SECTION (34), PARENT_SECTION (29), IN_SECTION (36), INSTANCE_OF (35)
@@ -1229,6 +1227,7 @@ Section Similarity: "skills" → "Skills" section = 0.8653 (above 0.50 threshold
 ```
 
 **⏳ Pending**:
+
 - Neo4j backend service restart (to load new code into memory)
 - Full integration test with section-based query
 - Cross-document section clustering (SectionType discovery)
@@ -1314,25 +1313,25 @@ File
 
 **Section Similarity Scoring**:
 
-| Section Query | Section Name | Similarity | Match? |
-|--------------|--------------|------------|--------|
-| "skills" | "Skills" | 0.8653 | ✓ Yes (0.86 > 0.50) |
-| "skills" | "Technical Expertise" | 0.7821 | ✓ Yes (0.78 > 0.50) |
-| "skills" | "Core Competencies" | 0.6912 | ✓ Yes (0.69 > 0.50) |
-| "skills" | "Education" | 0.2145 | ✗ No (0.21 < 0.50) |
-| "experience" | "Industry Experience" | 0.8234 | ✓ Yes (0.82 > 0.50) |
-| "experience" | "Professional Background" | 0.7456 | ✓ Yes (0.75 > 0.50) |
+| Section Query | Section Name              | Similarity | Match?              |
+| ------------- | ------------------------- | ---------- | ------------------- |
+| "skills"      | "Skills"                  | 0.8653     | ✓ Yes (0.86 > 0.50) |
+| "skills"      | "Technical Expertise"     | 0.7821     | ✓ Yes (0.78 > 0.50) |
+| "skills"      | "Core Competencies"       | 0.6912     | ✓ Yes (0.69 > 0.50) |
+| "skills"      | "Education"               | 0.2145     | ✗ No (0.21 < 0.50)  |
+| "experience"  | "Industry Experience"     | 0.8234     | ✓ Yes (0.82 > 0.50) |
+| "experience"  | "Professional Background" | 0.7456     | ✓ Yes (0.75 > 0.50) |
 
 **Comparison: Section Routing vs. Semantic Search**:
 
-| Query: "Alexis Skills section only" | Section Routing (HARD) | Semantic Search (SOFT) |
-|-------------------------------------|------------------------|------------------------|
-| **Method** | 1. Embed "skills" → Find Section nodes<br>2. Traverse IN_SECTION → Get chunks | 1. Embed full query → Find chunks directly |
-| **Precision** | High - structural constraint | Medium - semantic similarity |
-| **Section Match** | 0.86 similarity to "Skills" section | N/A - no section matching |
-| **Graph Traversal** | Yes - IN_SECTION relationships | No - direct chunk search |
-| **Result Metadata** | `section_name: "Skills"`<br>`section_similarity: 0.86`<br>`routing: hard_section` | `routing: soft`<br>No section info |
-| **False Positives** | Low - structure enforces correctness | Higher - may match "skill" in wrong section |
+| Query: "Alexis Skills section only" | Section Routing (HARD)                                                            | Semantic Search (SOFT)                      |
+| ----------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Method**                          | 1. Embed "skills" → Find Section nodes<br>2. Traverse IN_SECTION → Get chunks     | 1. Embed full query → Find chunks directly  |
+| **Precision**                       | High - structural constraint                                                      | Medium - semantic similarity                |
+| **Section Match**                   | 0.86 similarity to "Skills" section                                               | N/A - no section matching                   |
+| **Graph Traversal**                 | Yes - IN_SECTION relationships                                                    | No - direct chunk search                    |
+| **Result Metadata**                 | `section_name: "Skills"`<br>`section_similarity: 0.86`<br>`routing: hard_section` | `routing: soft`<br>No section info          |
+| **False Positives**                 | Low - structure enforces correctness                                              | Higher - may match "skill" in wrong section |
 
 **Key Implementation Details**:
 
@@ -1451,7 +1450,6 @@ async def run(self, goal: str, script: str) -> Dict[str, Any]:
 3. **Hybrid Retrieval Process** (`Neo4jGraphRAGRetriever.hybrid_retrieve()`, lines 57-140):
 
    The hybrid retrieval combines multiple search strategies:
-
    - **Vector Search**: Embed query → find top-k chunks by similarity
    - **Keyword Search**: Text matching on chunk keywords (see [Keyword Search Details](#keyword-search-details) below)
    - **Graph Expansion**: 1-2 hops via `SEMANTICALLY_SIMILAR` relationships
@@ -1462,7 +1460,6 @@ async def run(self, goal: str, script: str) -> Dict[str, Any]:
 Keyword search is a critical component of the hybrid retrieval system that complements semantic (vector) search:
 
 1. **Keyword Extraction**:
-
    - **Automatic**: If `keywords=None`, keywords are automatically extracted from the query
    - **Manual**: Keywords can be explicitly provided (e.g., person names extracted from query)
    - **Person Name Extraction**: In `routers/chat_sessions.py`, person names are extracted from queries for targeted filtering:
@@ -1472,7 +1469,6 @@ Keyword search is a critical component of the hybrid retrieval system that compl
      ```
 
 2. **Keyword Matching**:
-
    - **Match Type**: Controlled by `keyword_match_type` parameter:
      - `"any"` (OR): Chunk matches if ANY keyword appears in chunk keywords
      - `"all"` (AND): Chunk matches if ALL keywords appear in chunk keywords
@@ -1480,14 +1476,12 @@ Keyword search is a critical component of the hybrid retrieval system that compl
    - **Matching Location**: Keywords are matched against the `keywords` property stored on Chunk nodes in Neo4j
 
 3. **Keyword Boost**:
-
    - **Parameter**: `keyword_boost` (default: 0.3, range: 0.0 to 1.0)
    - **Purpose**: Controls the weight of keyword matches in the final hybrid score
    - **Scoring**: `hybrid_score = similarity_score + (keyword_match_score * keyword_boost)`
    - **Effect**: Higher `keyword_boost` values give more weight to exact keyword matches
 
 4. **Integration with Vector Search**:
-
    - Keywords are used alongside vector similarity for retrieval
    - Chunks that match keywords get a boost in their final hybrid score
    - This helps surface relevant chunks even if vector similarity is slightly lower
@@ -1807,24 +1801,24 @@ def recursive_serialize(obj):
 
 ## Key Code Files and Functions
 
-| Component                  | File                            | Function/Class                             | Lines   |
-| -------------------------- | ------------------------------- | ------------------------------------------ | ------- |
-| **API Endpoint**           | `routers/chat_sessions.py`      | `add_message()`                            | 373-545 |
-| **Authentication**         | `routers/auth.py`               | `get_current_user()`                       | 278-295 |
-| **Workflow Orchestration** | `workflows/workflow_factory.py` | `run_sequential_goal()`                    | 11-120  |
-| **Triage Agent**           | `agents/agents.py`              | `TriageAgent.run()`                        | 148-200 |
-| **SQL Agent**              | `agents/agents.py`              | `SQLAgent.run()`                           | 800-900 |
-| **Neo4j GraphRAG Agent**   | `agents/agents.py`              | `Neo4jGraphRAGAgent.run()`                 | 600-700 |
-| **Azure Search Agent**     | `agents/agents.py`              | `AiSearchAgent.run()`                      | 400-700 |
-| **Query Classification**   | `agents/agents.py`              | `AiSearchAgent._classify_query_intent()`   | 1100-1220 |
-| **Section Query Extraction** | `agents/agents.py`            | `AiSearchAgent._extract_attribute_phrase()` | 1157-1220 |
-| **Reporter Agent**         | `agents/agents.py`              | `NewsReporterAgent.run()`                  | 300-400 |
-| **Review Agent**           | `agents/agents.py`              | `ReviewAgent.run()`                        | 500-600 |
-| **Neo4j Search**           | `tools/neo4j_graphrag.py`       | `graphrag_search()`                        | 286-355 |
-| **Neo4j Retriever**        | `tools/neo4j_graphrag.py`       | `Neo4jGraphRAGRetriever.hybrid_retrieve()` | 110-220  |
-| **Section Scoped Search**  | `neo4j_backend/services/graphrag_retrieval.py` | `section_scoped_search()` | 1911-2100 |
-| **Foundry Runner**         | `foundry_runner.py`             | `run_foundry_agent()`                      | 100-200 |
-| **Foundry JSON Runner**    | `foundry_runner.py`             | `run_foundry_agent_json()`                 | 200-300 |
+| Component                    | File                                           | Function/Class                              | Lines     |
+| ---------------------------- | ---------------------------------------------- | ------------------------------------------- | --------- |
+| **API Endpoint**             | `routers/chat_sessions.py`                     | `add_message()`                             | 373-545   |
+| **Authentication**           | `routers/auth.py`                              | `get_current_user()`                        | 278-295   |
+| **Workflow Orchestration**   | `workflows/workflow_factory.py`                | `run_sequential_goal()`                     | 11-120    |
+| **Triage Agent**             | `agents/agents.py`                             | `TriageAgent.run()`                         | 148-200   |
+| **SQL Agent**                | `agents/agents.py`                             | `SQLAgent.run()`                            | 800-900   |
+| **Neo4j GraphRAG Agent**     | `agents/agents.py`                             | `Neo4jGraphRAGAgent.run()`                  | 600-700   |
+| **Azure Search Agent**       | `agents/agents.py`                             | `AiSearchAgent.run()`                       | 400-700   |
+| **Query Classification**     | `agents/agents.py`                             | `AiSearchAgent._classify_query_intent()`    | 1100-1220 |
+| **Section Query Extraction** | `agents/agents.py`                             | `AiSearchAgent._extract_attribute_phrase()` | 1157-1220 |
+| **Reporter Agent**           | `agents/agents.py`                             | `NewsReporterAgent.run()`                   | 300-400   |
+| **Review Agent**             | `agents/agents.py`                             | `ReviewAgent.run()`                         | 500-600   |
+| **Neo4j Search**             | `tools/neo4j_graphrag.py`                      | `graphrag_search()`                         | 286-355   |
+| **Neo4j Retriever**          | `tools/neo4j_graphrag.py`                      | `Neo4jGraphRAGRetriever.hybrid_retrieve()`  | 110-220   |
+| **Section Scoped Search**    | `neo4j_backend/services/graphrag_retrieval.py` | `section_scoped_search()`                   | 1911-2100 |
+| **Foundry Runner**           | `foundry_runner.py`                            | `run_foundry_agent()`                       | 100-200   |
+| **Foundry JSON Runner**      | `foundry_runner.py`                            | `run_foundry_agent_json()`                  | 200-300   |
 
 ---
 

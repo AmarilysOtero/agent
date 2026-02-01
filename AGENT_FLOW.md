@@ -1016,7 +1016,224 @@ When `use_section_routing=True` and `section_query` is provided:
 
 ---
 
-## Neo4j Backend Section Routing Implementation
+## Structural Index Implementation
+
+### Overview
+
+The structural index adds first-class **Section nodes** to the graph to enable document structure-aware retrieval. Instead of relying purely on semantic similarity, queries can now use document structure (section headers) to find relevant content.
+
+**Schema Extension** (from `STRUCTURAL_INDEX_IMPLEMENTATION.md`):
+
+### Node Types
+
+**1. Section Node** (Document-Specific Instance)
+
+```python
+Section {
+    id: str,              # "file123:section:Level_2_Technical_Expertise"
+    file_id: str,         # Reference to parent File
+    level: int,           # 1, 2, 3 (hierarchy depth)
+    name: str,            # "Technical Expertise" (exact header_text)
+    normalized_name: str, # "technical_expertise" (lowercase)
+    path: str,            # "Level 1: Profile > Level 2: Technical Expertise"
+    parent_path: str,     # "Level 1: Profile" or null for top-level
+    chunk_count: int,     # Number of chunks in this section
+    start_chunk_idx: int, # First chunk index in file
+    end_chunk_idx: int,   # Last chunk index in file
+    embedding: [float],   # 1536-dim vector of section name
+    createdAt: datetime
+}
+```
+
+**2. SectionType Node** (Cross-Document Pattern)
+
+```python
+SectionType {
+    id: str,              # "section_type:skills"
+    canonical_name: str,  # "Skills" (learned from clustering)
+    normalized_name: str, # "skills"
+    member_count: int,    # Number of Section instances
+    centroid: [float],    # 1536-dim centroid of all member embeddings
+    common_variants: [str], # ["Skills", "Technical Expertise", "Core Competencies"]
+    createdAt: datetime,
+    updatedAt: datetime
+}
+```
+
+### Relationship Types
+
+```python
+# Document structure
+(f:File)-[:HAS_SECTION]->(s:Section)
+
+# Section hierarchy
+(parent:Section)-[:PARENT_SECTION]->(child:Section)
+
+# Section contains chunks
+(s:Section)-[:IN_SECTION]->(c:Chunk)
+
+# Section belongs to type (cross-document)
+(s:Section)-[:INSTANCE_OF]->(st:SectionType)
+```
+
+**Real Example from Schema Discovery** (from logs):
+
+```
+HAS_SECTION: 34 edges
+PARENT_SECTION: 29 edges
+IN_SECTION: 36 edges
+INSTANCE_OF: 35 edges
+```
+
+### Ingestion Pipeline
+
+**When a document is uploaded**:
+
+1. **Extract Sections from Chunks** (`extract_sections_from_chunks()`):
+   - Analyzes chunk metadata (header_text, header_path, header_level)
+   - Creates unique Section definitions for each header path
+   - Determines section hierarchy from header levels
+
+2. **Generate Section Embeddings** (`generate_section_embeddings()`):
+   - Embeds section names using Azure OpenAI text-embedding-3-small
+   - Creates 1536-dimensional vectors for semantic matching
+
+3. **Create Section Nodes** (`create_section_nodes()`):
+   - MERGE Section nodes into Neo4j
+   - Store metadata: level, name, path, chunk_count, boundaries
+
+4. **Build Section Hierarchy** (`create_section_hierarchy()`):
+   - Create PARENT_SECTION relationships
+   - Maps parent paths to parent Section nodes
+   - Preserves document structure
+
+5. **Link Section → Chunk** (`link_sections_to_chunks()`):
+   - Create IN_SECTION relationships
+   - Maps chunks to their containing sections via chunk indices
+
+6. **Discover Section Types** (Optional, `SectionClusteringService`):
+   - Cluster sections by embedding similarity (DBSCAN)
+   - Create SectionType nodes from clusters
+   - Learn that "Skills" ≈ "Technical Expertise" ≈ "Core Competencies"
+   - Create INSTANCE_OF relationships
+
+### Query Routing Based on Structure
+
+**Classification Process**:
+
+The Agent's query classification determines if a query should use structural routing:
+
+```
+Query: "Alexis Skills section only"
+  ├─ Extract person names: ["Alexis"]
+  ├─ Detect attribute keywords: "skills" found
+  └─ Classification: section_based_scoped, routing=hard
+
+Query Classification sends to backend:
+  section_query: "skills"
+  use_section_routing: True
+  file_id: <Alexis's file>
+```
+
+**Section Matching Process** (in backend):
+
+```
+1. Embed section_query "skills" → vector
+2. Find Section nodes with high cosine similarity:
+   - "Skills" section: 0.8653 ✓ MATCH
+   - "Technical Expertise": 0.7821 ✓ MATCH
+   - "Education": 0.2145 ✗ NO MATCH (< 0.50 threshold)
+3. Traverse IN_SECTION to get chunks from matching sections
+4. Rank chunks by combined score:
+   combined_score = section_similarity * 0.6 + chunk_similarity * 0.4
+```
+
+### Integration Points
+
+**1. Agent Layer** (`agents/agents.py`):
+- `_classify_query_intent()`: Detects section-based queries
+- `_extract_attribute_phrase()`: Extracts clean section query
+- Passes `section_query` and `use_section_routing` to GraphRAG
+
+**2. GraphRAG Client** (`tools/neo4j_graphrag.py`):
+- `hybrid_retrieve()`: Accepts section routing parameters
+- Sends payload with `section_query` and `use_section_routing` flags
+
+**3. Backend Router** (`routers/graphrag.py`):
+- `GraphRAGQuery` model accepts `section_query` and `use_section_routing`
+- Passes parameters to retrieval service
+
+**4. Retrieval Service** (`services/graphrag_retrieval.py`):
+- **HARD routing check** (line 130):
+  ```python
+  if use_section_routing and section_query:
+      results = self.section_scoped_search(...)
+  ```
+- Falls back to hybrid search if `use_section_routing=False`
+
+### Retrieval Strategies
+
+**HARD Routing** (Structure-Driven):
+- Query: "Alexis Skills section only"
+- Process: Section embedding → find matching sections → return chunks from those sections
+- Result: High precision, enforces document structure
+- Metadata returned: `section_name`, `section_similarity`, `routing: hard_section`
+
+**SOFT Routing** (Semantic with Boosting):
+- Query: "Tell me about AI"
+- Process: Full query embedding → find chunks semantically + boost if in relevant sections
+- Result: Better recall, more flexible
+- Metadata returned: `routing: soft`, section info optional
+
+**CROSS-DOCUMENT**:
+- Query: "All Python skills"
+- Process: Search for "python skills" sections across all documents
+- Result: Finds matching sections in multiple files
+- Example: "Skills" sections from 5 different resumes with Python mentioned
+
+### Query Examples and Execution
+
+| Query | Intent | Routing | Execution |
+|-------|--------|---------|-----------|
+| "Alexis Skills section only" | section_based_scoped | HARD | Find "Skills" section in Alexis's file, return its chunks |
+| "Kevin's industry experience" | section_based_scoped | HARD | Find "Experience/Industry" section in Kevin's file |
+| "All Python skills" | section_based_cross_document | HARD | Find "Skills" sections across all files, filter for Python |
+| "Tell me about machine learning" | semantic | SOFT | Semantic search + section boosting if in Projects section |
+| "What's Sarah's background?" | section_based_scoped | HARD | Find "Education/Background" section in Sarah's file |
+
+### Benefits
+
+✅ **Structural Precision**: Uses document structure instead of text matching  
+✅ **Efficient Traversal**: Graph relationships (IN_SECTION) ensure accuracy  
+✅ **Semantic Fuzzy Matching**: Embeds section names for "Skills" ≈ "Technical Expertise"  
+✅ **No False Positives**: Structural constraints prevent semantic drift  
+✅ **Cross-Document Discovery**: Find equivalent sections across multiple documents  
+✅ **Hierarchical Understanding**: Preserves section parent-child relationships  
+
+### Current Status
+
+**✅ Implemented**:
+- Section and SectionType node definitions in schema
+- Section extraction and embedding during ingestion
+- Section hierarchy creation (PARENT_SECTION)
+- Section-to-chunk linking (IN_SECTION)
+- Query classification in Agent
+- Section routing in backend (`section_scoped_search()`)
+- Debug logging and monitoring
+
+**Verified in Graph**:
+```
+Node Types:  File, Chunk, Section, SectionType (19 total)
+Relationships: HAS_SECTION (34), PARENT_SECTION (29), IN_SECTION (36), INSTANCE_OF (35)
+Section Similarity: "skills" → "Skills" section = 0.8653 (above 0.50 threshold)
+```
+
+**⏳ Pending**:
+- Neo4j backend service restart (to load new code into memory)
+- Full integration test with section-based query
+- Cross-document section clustering (SectionType discovery)
+
+---
 
 ### Location: `neo4j_backend/services/graphrag_retrieval.py`
 

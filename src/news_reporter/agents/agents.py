@@ -711,7 +711,9 @@ class AiSearchAgent:
             logger.info(f"🔍 [IntentFilter] Applying HARD routing filter for {query_intent['type']}")
             intent_filtered = []
             for res in filtered_results:
-                header_text = res.get("metadata", {}).get("header_text", "").lower()
+                # Safely get header_text - handle None values
+                header_text = res.get("metadata", {}).get("header_text") or ""
+                header_text = header_text.lower() if header_text else ""
                 section_query_lower = (query_intent.get('section_query') or "").lower()
                 
                 # For hard routing, keep results that match the section query

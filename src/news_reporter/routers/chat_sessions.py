@@ -432,20 +432,30 @@ async def add_message(
         try:
             try:
                 from ..tools.neo4j_graphrag import graphrag_search
+                from ..agents.agents import AiSearchAgent
             except ImportError:
                 from src.news_reporter.tools.neo4j_graphrag import graphrag_search
+                from src.news_reporter.agents.agents import AiSearchAgent
             
             # Extract person names from query for keyword filtering
             person_names = extract_person_names(user_message_content)
             
-            # Search Neo4j GraphRAG
+            # Classify query intent for section-based routing
+            agent = AiSearchAgent()
+            query_intent = agent._classify_query_intent(user_message_content, person_names or [])
+            
+            # Search Neo4j GraphRAG with section routing parameters
             search_results = graphrag_search(
                 query=user_message_content,
                 top_k=12,
                 similarity_threshold=0.75,
                 keywords=person_names if person_names else None,
                 keyword_match_type="any",
-                keyword_boost=0.4
+                keyword_boost=0.4,
+                is_person_query=bool(person_names),
+                person_names=person_names,
+                section_query=query_intent.get('section_query') if query_intent['routing'] == 'hard' else None,
+                use_section_routing=query_intent['routing'] == 'hard'
             )
             
             # Filter results to require exact name match or very high similarity

@@ -190,6 +190,7 @@ class Neo4jGraphRAGRetriever:
             logger.info(f"🔍 [hybrid_retrieve] Payload: {payload}")
             print(f"🔍 [hybrid_retrieve] Querying Neo4j GraphRAG API: {url}")
             print(f"🔍 [hybrid_retrieve] Payload: query='{query[:100]}...', top_k_vector={top_k_vector}, similarity_threshold={similarity_threshold}, keywords={keywords}")
+            print(f"🔍 [hybrid_retrieve] SECTION: section_query={section_query}, use_section_routing={use_section_routing}")
             
             logger.info(f"Querying Neo4j GraphRAG: '{query[:100]}...' (timeout: 120s)")
             start_time = time.time()

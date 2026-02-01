@@ -1158,19 +1158,24 @@ class AiSearchAgent:
             }
     
     def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -> str:
-        """Extract section-like phrase around attribute keyword
+        """Extract section-like phrase around attribute keyword, EXCLUDING person names
         
         Example:
             "Kevin's industry experience" → "industry experience"
             "technical skills summary" → "technical skills"
+            "Alexis Skills section only" → "skills"
             
         Args:
             query: User query
             attribute_keywords: List of attribute keywords
             
         Returns:
-            Extracted attribute phrase or first keyword found
+            Extracted attribute phrase or first keyword found (clean, no person names)
         """
+        # Common words to exclude from section queries (person names, query words)
+        stop_words = {'what', 'are', 'is', 'the', 'tell', 'me', 'about', 'show', 'get', 
+                      'find', 'list', 'give', 'only', 'section', 'from', 'of', "'s", 's'}
+        
         words = query.lower().split()
         
         # Find first keyword that appears
@@ -1179,20 +1184,47 @@ class AiSearchAgent:
             # Check if any attribute keyword is in this word
             for keyword in attribute_keywords:
                 if keyword in word_clean:
-                    # Take 1-2 words before + keyword + 1 word after
-                    start = max(0, i - 1)
-                    end = min(len(words), i + 2)
-                    phrase = ' '.join(words[start:end])
-                    # Clean up
+                    # Build phrase: include adjacent modifying words, but NOT person names or stop words
+                    phrase_words = []
+                    
+                    # Check word before (only if it's a relevant modifier, not a person name)
+                    if i > 0:
+                        prev_word = words[i-1].strip('.,!?;:\'"')
+                        # Include if it's a modifier like "industry", "professional", "technical"
+                        # Exclude if it looks like a person name (capitalized in original, not in stop_words)
+                        is_modifier = prev_word in attribute_keywords or prev_word in ['industry', 'professional', 'technical', 'key', 'core', 'main', 'top']
+                        is_stop = prev_word in stop_words
+                        # Check if original word was capitalized (likely person name)
+                        orig_words = query.split()
+                        is_capitalized_name = i > 0 and orig_words[i-1][0].isupper() and prev_word not in attribute_keywords
+                        
+                        if is_modifier and not is_stop and not is_capitalized_name:
+                            phrase_words.append(prev_word)
+                    
+                    # Add the keyword word itself
+                    phrase_words.append(word_clean)
+                    
+                    # Check word after (only if relevant)
+                    if i < len(words) - 1:
+                        next_word = words[i+1].strip('.,!?;:\'"')
+                        if next_word not in stop_words and next_word in attribute_keywords:
+                            phrase_words.append(next_word)
+                    
+                    phrase = ' '.join(phrase_words)
                     phrase = phrase.strip('.,!?;:\'"')
-                    return phrase
+                    
+                    # Final cleanup: just return the core keyword if phrase is too long or includes garbage
+                    if len(phrase_words) > 2:
+                        return keyword
+                    
+                    return phrase if phrase else keyword
         
         # Fallback: return first keyword found
         for keyword in attribute_keywords:
             if keyword in query.lower():
                 return keyword
         
-        return "attribute"
+        return "skills"  # Default to skills as most common section type
 
 
 # ---------- SQL AGENT (PostgreSQL → CSV → Vector Fallback) ----------

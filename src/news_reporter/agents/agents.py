@@ -543,13 +543,16 @@ class AiSearchAgent:
         
         # PHASE 5: Query Classification for Structural Routing
         query_intent = self._classify_query_intent(query, person_names or [])
-        logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
-        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
+        logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
         
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, section_query={query_intent.get('section_query')}, use_section_routing={query_intent['routing'] == 'hard'}")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, routing={query_intent['routing']}")
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
         
-        # Call graphrag_search with section routing parameters for hard routing
+        # NOTE: Section-based routing will be implemented when section-aware search endpoints are added to graphrag_search tool
+        # For now, using existing hybrid search with enhanced keyword matching
+        
+        # Call graphrag_search with base parameters
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
@@ -559,9 +562,7 @@ class AiSearchAgent:
             keyword_boost=keyword_boost,
             is_person_query=is_person_query,
             enable_coworker_expansion=True,  # Enable coworker expansion for person queries
-            person_names=person_names,
-            section_query=query_intent.get('section_query') if query_intent['routing'] == 'hard' else None,
-            use_section_routing=query_intent['routing'] == 'hard'
+            person_names=person_names
         )
 
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
@@ -704,35 +705,6 @@ class AiSearchAgent:
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
         print(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
-        
-        # PHASE 5: Additional filtering based on query intent (structural vs semantic)
-        if query_intent['routing'] == 'hard':
-            # Hard routing: strict filtering for section-based queries
-            logger.info(f"🔍 [IntentFilter] Applying HARD routing filter for {query_intent['type']}")
-            intent_filtered = []
-            for res in filtered_results:
-                # Safely get header_text - handle None values
-                header_text = res.get("metadata", {}).get("header_text") or ""
-                header_text = header_text.lower() if header_text else ""
-                section_query_lower = (query_intent.get('section_query') or "").lower()
-                
-                # For hard routing, keep results that match the section query
-                if section_query_lower and section_query_lower in header_text:
-                    intent_filtered.append(res)
-                    logger.debug(f"  ✓ Kept: header='{header_text}' (matches section_query='{section_query_lower}')")
-                elif not section_query_lower:
-                    # If no section query, keep all
-                    intent_filtered.append(res)
-            
-            if intent_filtered:
-                filtered_results = intent_filtered
-                logger.info(f"  ✅ Hard routing filter: {len(intent_filtered)} results kept (exact section match)")
-            else:
-                # Fallback: use all results if none match exactly
-                logger.warning(f"  ⚠️ Hard routing filter: no exact matches, using all results")
-        else:
-            # Soft routing: semantic-based, use all filtered results
-            logger.info(f"🔍 [IntentFilter] Using SOFT routing (semantic) for {query_intent['type']}")
         
         # ========== FILTER SUMMARY ANALYSIS ==========
         logger.info(f"")
@@ -1158,24 +1130,19 @@ class AiSearchAgent:
             }
     
     def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -> str:
-        """Extract section-like phrase around attribute keyword, EXCLUDING person names
+        """Extract section-like phrase around attribute keyword
         
         Example:
             "Kevin's industry experience" → "industry experience"
             "technical skills summary" → "technical skills"
-            "Alexis Skills section only" → "skills"
             
         Args:
             query: User query
             attribute_keywords: List of attribute keywords
             
         Returns:
-            Extracted attribute phrase or first keyword found (clean, no person names)
+            Extracted attribute phrase or first keyword found
         """
-        # Common words to exclude from section queries (person names, query words)
-        stop_words = {'what', 'are', 'is', 'the', 'tell', 'me', 'about', 'show', 'get', 
-                      'find', 'list', 'give', 'only', 'section', 'from', 'of', "'s", 's'}
-        
         words = query.lower().split()
         
         # Find first keyword that appears
@@ -1184,47 +1151,20 @@ class AiSearchAgent:
             # Check if any attribute keyword is in this word
             for keyword in attribute_keywords:
                 if keyword in word_clean:
-                    # Build phrase: include adjacent modifying words, but NOT person names or stop words
-                    phrase_words = []
-                    
-                    # Check word before (only if it's a relevant modifier, not a person name)
-                    if i > 0:
-                        prev_word = words[i-1].strip('.,!?;:\'"')
-                        # Include if it's a modifier like "industry", "professional", "technical"
-                        # Exclude if it looks like a person name (capitalized in original, not in stop_words)
-                        is_modifier = prev_word in attribute_keywords or prev_word in ['industry', 'professional', 'technical', 'key', 'core', 'main', 'top']
-                        is_stop = prev_word in stop_words
-                        # Check if original word was capitalized (likely person name)
-                        orig_words = query.split()
-                        is_capitalized_name = i > 0 and orig_words[i-1][0].isupper() and prev_word not in attribute_keywords
-                        
-                        if is_modifier and not is_stop and not is_capitalized_name:
-                            phrase_words.append(prev_word)
-                    
-                    # Add the keyword word itself
-                    phrase_words.append(word_clean)
-                    
-                    # Check word after (only if relevant)
-                    if i < len(words) - 1:
-                        next_word = words[i+1].strip('.,!?;:\'"')
-                        if next_word not in stop_words and next_word in attribute_keywords:
-                            phrase_words.append(next_word)
-                    
-                    phrase = ' '.join(phrase_words)
+                    # Take 1-2 words before + keyword + 1 word after
+                    start = max(0, i - 1)
+                    end = min(len(words), i + 2)
+                    phrase = ' '.join(words[start:end])
+                    # Clean up
                     phrase = phrase.strip('.,!?;:\'"')
-                    
-                    # Final cleanup: just return the core keyword if phrase is too long or includes garbage
-                    if len(phrase_words) > 2:
-                        return keyword
-                    
-                    return phrase if phrase else keyword
+                    return phrase
         
         # Fallback: return first keyword found
         for keyword in attribute_keywords:
             if keyword in query.lower():
                 return keyword
         
-        return "skills"  # Default to skills as most common section type
+        return "attribute"
 
 
 # ---------- SQL AGENT (PostgreSQL → CSV → Vector Fallback) ----------

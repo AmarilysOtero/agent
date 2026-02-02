@@ -128,7 +128,65 @@ def filter_results_by_exact_match(
     if not is_person_query:
         logger.info(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
         print(f"📋 [filter] Generic mode - only applying similarity threshold >= 0.3")
-        filtered = [res for res in results if res.get("similarity", 0.0) >= 0.3]
+        
+        # SPECIAL CASE: Detect relationship queries even in generic mode
+        # If query asks about "relationship between X and Y", keep low-similarity results
+        relationship_keywords = ['relationship', 'connection', 'connect', 'between', 'work together']
+        query_lower = query.lower()
+        is_relationship_query_generic = any(keyword in query_lower for keyword in relationship_keywords)
+        
+        # Count potential names in query
+        import re
+        capitalized_words = re.findall(r'\b[A-Z][a-z]+\b', query)
+        common_words = {'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 
+                        'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'I', 'Is', 'Are'}
+        potential_names = [w for w in capitalized_words if w not in common_words]
+        
+        # For relationship queries with multiple names, be more lenient with similarity
+        if is_relationship_query_generic and len(potential_names) >= 2:
+            logger.info(f"🔗 [filter] Detected relationship query in generic mode: {potential_names}")
+            print(f"🔗 [filter] Relationship query with potential names: {potential_names}")
+            # Keep results that mention any of the potential names, even with low similarity
+            # Also look for organization keywords (DXC, work, employment, role, position) for relationship context
+            filtered = []
+            org_keywords = ['dxc', 'work', 'position', 'role', 'employment', 'company', 'organization', 'currently', 'hired', 'hired at', 'employed']
+            
+            for res in results:
+                source = res.get("source") or res.get("metadata", {}).get("source")
+                if source == "graph_supporting_evidence":
+                    filtered.append(res)
+                    continue
+                
+                text = res.get("text", "").lower()
+                header_text = (res.get("header_text") or res.get("metadata", {}).get("header_text") or "").lower()
+                file_name = (res.get("file") or "").lower()
+                
+                # Check if ANY potential name appears in text, header, or file
+                name_found = any(name.lower() in text or name.lower() in header_text or name.lower() in file_name for name in potential_names)
+                
+                # Check if this chunk has organization context (employment, work details)
+                has_org_context = any(keyword in text or keyword in header_text for keyword in org_keywords)
+                
+                # Keep if:
+                # 1. Name is found (high priority) - include intro sections showing the person
+                # 2. Name + org context found - shows employment/role information (BEST for relationships)
+                # 3. High similarity (standard threshold)
+                # OR just org keyword + name in file/header (employment sections for people)
+                if name_found or (has_org_context and any(n.lower() in file_name for n in potential_names)) or res.get("similarity", 0.0) >= 0.3:
+                    filtered.append(res)
+                    if name_found and has_org_context:
+                        logger.info(f"✅ [filter] Kept result (relationship query, NAME+ORG): {res.get('header_text', '')[:50]}")
+                    elif name_found:
+                        logger.info(f"✅ [filter] Kept result (relationship query, NAME): {res.get('header_text', '')[:50]}")
+                    elif has_org_context:
+                        logger.info(f"✅ [filter] Kept result (relationship query, ORG): {res.get('header_text', '')[:50]}")
+        else:
+            # Standard generic mode: just similarity threshold
+            filtered = [
+                res for res in results 
+                if res.get("similarity", 0.0) >= 0.3 or res.get("source") == "graph_supporting_evidence"
+            ]
+        
         logger.info(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         print(f"📊 [filter_results_by_exact_match] Generic mode: kept {len(filtered)} of {len(results)} results")
         return filtered
@@ -141,6 +199,27 @@ def filter_results_by_exact_match(
         logger.info(f"📋 [filter] Person mode but no person names - using similarity threshold")
         return [res for res in results if res.get("similarity", 0.0) >= 0.3]
     
+    # Detect if query is asking about relationships between multiple people
+    # Keywords: relationship, connection, work together, know each other, etc.
+    # Also check for multiple capitalized words that look like names
+    relationship_keywords = [
+        'relationship', 'connection', 'connect', 'work together', 'worked with',
+        'know each other', 'collaborate', 'related', 'between'
+    ]
+    query_lower = query.lower()
+    
+    # Count potential person names in query (capitalized words that aren't common words)
+    import re
+    capitalized_words = re.findall(r'\b[A-Z][a-z]+\b', query)
+    common_words = {'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 
+                    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'I', 'Is', 'Are'}
+    potential_names = [w for w in capitalized_words if w not in common_words]
+    
+    is_relationship_query = (
+        (len(potential_names) >= 2 or len(person_names_lower) >= 2) and 
+        any(keyword in query_lower for keyword in relationship_keywords)
+    )
+    
     # Detect if query contains attribute keywords (skills, experience, education, etc.)
     # For attribute queries, we're less strict about name appearing in chunk text
     attribute_keywords = [
@@ -148,14 +227,21 @@ def filter_results_by_exact_match(
         'role', 'position', 'project', 'achievement', 'responsibility',
         'background', 'expertise', 'ability', 'competency', 'proficiency'
     ]
-    query_lower = query.lower()
     is_attribute_query = any(keyword in query_lower for keyword in attribute_keywords)
     
-    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
-    print(f"🔍 [filter] Person mode: person_names={person_names_lower}, is_attribute_query={is_attribute_query}")
+    logger.info(f"🔍 [filter] Person mode: person_names={person_names_lower}, potential_names={potential_names}, is_attribute_query={is_attribute_query}, is_relationship_query={is_relationship_query}")
+    print(f"🔍 [filter] Person mode: person_names={person_names_lower}, potential_names={potential_names}, is_attribute_query={is_attribute_query}, is_relationship_query={is_relationship_query}")
     
     filtered = []
     for i, res in enumerate(results, 1):
+        # Always preserve graph supporting evidence (high-confidence graph facts)
+        source = res.get("source") or res.get("metadata", {}).get("source")
+        if source == "graph_supporting_evidence":
+            filtered.append(res)
+            logger.info(f"✅ [filter] Result {i} KEPT (GRAPH EVIDENCE): source={source}")
+            print(f"✅ [filter] Result {i} KEPT (GRAPH EVIDENCE)")
+            continue
+        
         # RAW DEBUG: Print all keys and a sample of the dict for Result 3
         if i == 3:
             logger.info(f"[DEBUG-KEYS-3] Result 3 top-level keys: {list(res.keys())}")
@@ -191,8 +277,13 @@ def filter_results_by_exact_match(
         print(f"[DEBUG] Result {i}: header='{header_raw}', kw_score={keyword_score:.3f}, hybrid={hybrid_score:.3f}")
         
         # Check if ANY of the person names appear in text or header
-        name_found_in_text = any(name in text for name in person_names_lower)
-        name_found_in_header = any(name in header_text for name in person_names_lower)
+        # Also check for potential names from query if it's a relationship query
+        names_to_check = person_names_lower.copy()
+        if is_relationship_query and potential_names:
+            names_to_check.extend([n.lower() for n in potential_names])
+        
+        name_found_in_text = any(name in text for name in names_to_check)
+        name_found_in_header = any(name in header_text for name in names_to_check)
         
         # Check file name for person's name
         file_name_lower = file_name.lower() if file_name else ""
@@ -239,14 +330,25 @@ def filter_results_by_exact_match(
                 continue
         
         # 🔥 PERSON IDENTITY MODE: Requires name in text/header for verification
-        # Standard similarity threshold
-        if similarity < 0.3:
+        # For relationship queries: Keep ALL chunks that mention ANY of the people, regardless of similarity
+        # Standard similarity threshold only for non-relationship queries
+        if not is_relationship_query and similarity < 0.3:
             logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
             continue
         
         name_match = name_found_in_text or name_found_in_header
         
-        if name_match or similarity >= min_similarity:
+        # For relationship queries: Keep if ANY person name matches
+        if is_relationship_query and name_match:
+            filtered.append(res)
+            logger.info(
+                f"✅ [filter] Result {i} KEPT (RELATIONSHIP QUERY): similarity={similarity:.3f}, "
+                f"name_in_text={name_found_in_text}, name_in_header={name_found_in_header}, "
+                f"file='{file_name}'"
+            )
+            print(f"✅ [filter] Result {i} KEPT (RELATIONSHIP): sim={similarity:.3f}, name_match={name_match}")
+        # For other person queries: Keep if name matches or high similarity
+        elif not is_relationship_query and (name_match or similarity >= min_similarity):
             filtered.append(res)
             logger.info(
                 f"✅ [filter] Result {i} KEPT (PERSON): similarity={similarity:.3f}, "
@@ -442,14 +544,12 @@ class AiSearchAgent:
         # PHASE 5: Query Classification for Structural Routing
         query_intent = self._classify_query_intent(query, person_names or [])
         logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
-        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}, section_query: {query_intent.get('section_query')}")
         
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, section_query={query_intent.get('section_query')}, use_section_routing={query_intent['routing'] == 'hard'}")
+        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, routing={query_intent['routing']}")
         
-        # NOTE: Section-based routing will be implemented when section-aware search endpoints are added to graphrag_search tool
-        # For now, using existing hybrid search with enhanced keyword matching
-        
+        # Call graphrag_search with section routing parameters for hard routing
         results = graphrag_search(
             query=query,
             top_k=12,  # Get more results initially for filtering
@@ -459,9 +559,95 @@ class AiSearchAgent:
             keyword_boost=keyword_boost,
             is_person_query=is_person_query,
             enable_coworker_expansion=True,  # Enable coworker expansion for person queries
-            person_names=person_names
+            person_names=person_names,
+            section_query=query_intent.get('section_query') if query_intent['routing'] == 'hard' else None,
+            use_section_routing=query_intent['routing'] == 'hard'
         )
 
+        logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        
+        # ========== SUMMARY ANALYSIS: Semantic, Keyword, Graph ==========
+        logger.info(f"")
+        logger.info(f"🔍 [RETRIEVAL SUMMARY] Analyzing {len(results)} results...")
+        print(f"🔍 [RETRIEVAL SUMMARY] Analyzing {len(results)} results...")
+        
+        # Collect statistics for each signal type
+        semantic_stats = []
+        keyword_stats = []
+        graph_stats = []
+        
+        for res in results:
+            similarity = res.get("similarity", 0.0)
+            vector_score = res.get("metadata", {}).get("vector_score", 0.0)
+            keyword_score = res.get("metadata", {}).get("keyword_score", 0.0)
+            hybrid_score = res.get("hybrid_score", 0.0)
+            source = res.get("source", "vector")
+            
+            # Track semantic signals
+            if vector_score > 0 or similarity > 0:
+                semantic_stats.append({
+                    'similarity': similarity,
+                    'vector_score': vector_score,
+                    'file': res.get("file_name", "?"),
+                    'header': res.get("metadata", {}).get("header_text", "N/A")
+                })
+            
+            # Track keyword signals
+            if keyword_score > 0:
+                keyword_stats.append({
+                    'keyword_score': keyword_score,
+                    'file': res.get("file_name", "?"),
+                    'header': res.get("metadata", {}).get("header_text", "N/A")
+                })
+            
+            # Track graph signals
+            if source == 'graph_traversal':
+                graph_stats.append({
+                    'hybrid_score': hybrid_score,
+                    'entity1': res.get("metadata", {}).get("entity1", "?"),
+                    'entity2': res.get("metadata", {}).get("entity2", "?"),
+                    'connection': res.get("metadata", {}).get("connection_type", "?"),
+                    'via': res.get("metadata", {}).get("via", "?")
+                })
+        
+        # Log semantic analysis
+        logger.info(f"")
+        logger.info(f"📊 [SEMANTIC ANALYSIS]")
+        logger.info(f"   Total with semantic signals: {len(semantic_stats)}")
+        if semantic_stats:
+            avg_similarity = sum(s['similarity'] for s in semantic_stats) / len(semantic_stats)
+            max_similarity = max(s['similarity'] for s in semantic_stats)
+            logger.info(f"   Avg similarity: {avg_similarity:.3f}, Max: {max_similarity:.3f}")
+            logger.info(f"   Top semantic matches:")
+            for s in sorted(semantic_stats, key=lambda x: x['similarity'], reverse=True)[:3]:
+                logger.info(f"     - {s['file']}: similarity={s['similarity']:.3f}, header='{s['header']}'")
+        
+        # Log keyword analysis
+        logger.info(f"")
+        logger.info(f"🔑 [KEYWORD ANALYSIS]")
+        logger.info(f"   Total with keyword matches: {len(keyword_stats)}")
+        if keyword_stats:
+            avg_keyword = sum(k['keyword_score'] for k in keyword_stats) / len(keyword_stats)
+            max_keyword = max(k['keyword_score'] for k in keyword_stats)
+            logger.info(f"   Avg keyword score: {avg_keyword:.3f}, Max: {max_keyword:.3f}")
+            logger.info(f"   Top keyword matches:")
+            for k in sorted(keyword_stats, key=lambda x: x['keyword_score'], reverse=True)[:3]:
+                logger.info(f"     - {k['file']}: keyword_score={k['keyword_score']:.3f}, header='{k['header']}'")
+        
+        # Log graph analysis
+        logger.info(f"")
+        logger.info(f"🔗 [GRAPH ANALYSIS]")
+        logger.info(f"   Total graph connections found: {len(graph_stats)}")
+        if graph_stats:
+            logger.info(f"   Graph connections:")
+            for g in graph_stats:
+                logger.info(f"     - {g['entity1']} <-[::{g['connection']}]-> {g['entity2']} via {g['via']}")
+        else:
+            logger.info(f"   No graph connections discovered (single entity or no relationships found)")
+        
+        logger.info(f"")
+        
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
         print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
         
@@ -518,6 +704,71 @@ class AiSearchAgent:
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
         print(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
+        
+        # PHASE 5: Additional filtering based on query intent (structural vs semantic)
+        if query_intent['routing'] == 'hard':
+            # Hard routing: strict filtering for section-based queries
+            logger.info(f"🔍 [IntentFilter] Applying HARD routing filter for {query_intent['type']}")
+            intent_filtered = []
+            for res in filtered_results:
+                # Safely get header_text - handle None values
+                header_text = res.get("metadata", {}).get("header_text") or ""
+                header_text = header_text.lower() if header_text else ""
+                section_query_lower = (query_intent.get('section_query') or "").lower()
+                
+                # For hard routing, keep results that match the section query
+                if section_query_lower and section_query_lower in header_text:
+                    intent_filtered.append(res)
+                    logger.debug(f"  ✓ Kept: header='{header_text}' (matches section_query='{section_query_lower}')")
+                elif not section_query_lower:
+                    # If no section query, keep all
+                    intent_filtered.append(res)
+            
+            if intent_filtered:
+                filtered_results = intent_filtered
+                logger.info(f"  ✅ Hard routing filter: {len(intent_filtered)} results kept (exact section match)")
+            else:
+                # Fallback: use all results if none match exactly
+                logger.warning(f"  ⚠️ Hard routing filter: no exact matches, using all results")
+        else:
+            # Soft routing: semantic-based, use all filtered results
+            logger.info(f"🔍 [IntentFilter] Using SOFT routing (semantic) for {query_intent['type']}")
+        
+        # ========== FILTER SUMMARY ANALYSIS ==========
+        logger.info(f"")
+        logger.info(f"📊 [FILTER SUMMARY]")
+        
+        # Analyze what passed filtering
+        passed_by_similarity = 0
+        passed_by_name = 0
+        passed_by_graph = 0
+        removed_count = len(results) - len(filtered_results)
+        
+        for res in filtered_results:
+            source = res.get("source", "vector")
+            similarity = res.get("similarity", 0.0)
+            
+            if source == 'graph_traversal':
+                passed_by_graph += 1
+            elif similarity >= 0.3:
+                passed_by_similarity += 1
+            else:
+                passed_by_name += 1
+        
+        logger.info(f"   Kept {len(filtered_results)} results:")
+        logger.info(f"     - By similarity (>= 0.3): {passed_by_similarity}")
+        logger.info(f"     - By name matching: {passed_by_name}")
+        logger.info(f"     - By graph discovery: {passed_by_graph}")
+        logger.info(f"   Removed {removed_count} results (low similarity, no match)")
+        
+        # Show what was removed
+        if removed_count > 0:
+            removed_results = [r for r in results if r not in filtered_results]
+            logger.info(f"   Sample removed (low similarity):")
+            for r in removed_results[:3]:
+                logger.info(f"     - {r.get('file_name', '?')}: similarity={r.get('similarity', 0):.3f}, header='{r.get('metadata', {}).get('header_text', 'N/A')}'")
+        
+        logger.info(f"")
         
         # Log filtered results details
         if filtered_results:
@@ -765,13 +1016,13 @@ class AiSearchAgent:
             similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
-            if file_path.lower().endswith('.csv'):
+            if file_path and file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
-            elif file_path.lower().endswith('.pdf'):
+            elif file_path and file_path.lower().endswith('.pdf'):
                 source_note = "[PDF Document]"
-            elif file_path.lower().endswith(('.doc', '.docx')):
+            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
                 source_note = "[Word Document]"
-            elif file_path.lower().endswith(('.xls', '.xlsx')):
+            elif file_path and file_path.lower().endswith(('.xls', '.xlsx')):
                 source_note = "[Excel Document]"
             else:
                 source_note = "[Document]"
@@ -907,19 +1158,24 @@ class AiSearchAgent:
             }
     
     def _extract_attribute_phrase(self, query: str, attribute_keywords: List[str]) -> str:
-        """Extract section-like phrase around attribute keyword
+        """Extract section-like phrase around attribute keyword, EXCLUDING person names
         
         Example:
             "Kevin's industry experience" → "industry experience"
             "technical skills summary" → "technical skills"
+            "Alexis Skills section only" → "skills"
             
         Args:
             query: User query
             attribute_keywords: List of attribute keywords
             
         Returns:
-            Extracted attribute phrase or first keyword found
+            Extracted attribute phrase or first keyword found (clean, no person names)
         """
+        # Common words to exclude from section queries (person names, query words)
+        stop_words = {'what', 'are', 'is', 'the', 'tell', 'me', 'about', 'show', 'get', 
+                      'find', 'list', 'give', 'only', 'section', 'from', 'of', "'s", 's'}
+        
         words = query.lower().split()
         
         # Find first keyword that appears
@@ -928,20 +1184,47 @@ class AiSearchAgent:
             # Check if any attribute keyword is in this word
             for keyword in attribute_keywords:
                 if keyword in word_clean:
-                    # Take 1-2 words before + keyword + 1 word after
-                    start = max(0, i - 1)
-                    end = min(len(words), i + 2)
-                    phrase = ' '.join(words[start:end])
-                    # Clean up
+                    # Build phrase: include adjacent modifying words, but NOT person names or stop words
+                    phrase_words = []
+                    
+                    # Check word before (only if it's a relevant modifier, not a person name)
+                    if i > 0:
+                        prev_word = words[i-1].strip('.,!?;:\'"')
+                        # Include if it's a modifier like "industry", "professional", "technical"
+                        # Exclude if it looks like a person name (capitalized in original, not in stop_words)
+                        is_modifier = prev_word in attribute_keywords or prev_word in ['industry', 'professional', 'technical', 'key', 'core', 'main', 'top']
+                        is_stop = prev_word in stop_words
+                        # Check if original word was capitalized (likely person name)
+                        orig_words = query.split()
+                        is_capitalized_name = i > 0 and orig_words[i-1][0].isupper() and prev_word not in attribute_keywords
+                        
+                        if is_modifier and not is_stop and not is_capitalized_name:
+                            phrase_words.append(prev_word)
+                    
+                    # Add the keyword word itself
+                    phrase_words.append(word_clean)
+                    
+                    # Check word after (only if relevant)
+                    if i < len(words) - 1:
+                        next_word = words[i+1].strip('.,!?;:\'"')
+                        if next_word not in stop_words and next_word in attribute_keywords:
+                            phrase_words.append(next_word)
+                    
+                    phrase = ' '.join(phrase_words)
                     phrase = phrase.strip('.,!?;:\'"')
-                    return phrase
+                    
+                    # Final cleanup: just return the core keyword if phrase is too long or includes garbage
+                    if len(phrase_words) > 2:
+                        return keyword
+                    
+                    return phrase if phrase else keyword
         
         # Fallback: return first keyword found
         for keyword in attribute_keywords:
             if keyword in query.lower():
                 return keyword
         
-        return "attribute"
+        return "skills"  # Default to skills as most common section type
 
 
 # ---------- SQL AGENT (PostgreSQL → CSV → Vector Fallback) ----------
@@ -1196,11 +1479,11 @@ class SQLAgent:
             logger.info(f"🔍 [SQLAgent] Adding chunk to findings: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}, file='{file_name}'")
             print(f"🔍 [SQLAgent] Adding chunk: similarity={similarity:.3f}, header_text='{header_text}', parent_headers={parent_headers}")
             
-            if file_path.lower().endswith('.csv'):
+            if file_path and file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
-            elif file_path.lower().endswith('.pdf'):
+            elif file_path and file_path.lower().endswith('.pdf'):
                 source_note = "[PDF Document]"
-            elif file_path.lower().endswith(('.doc', '.docx')):
+            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
                 source_note = "[Word Document]"
             else:
                 source_note = "[Document]"
@@ -1508,13 +1791,13 @@ class Neo4jGraphRAGAgent:
             similarity = res.get("similarity", 0.0)
             
             # Add source type indicator to help agent distinguish data sources
-            if file_path.lower().endswith('.csv'):
+            if file_path and file_path.lower().endswith('.csv'):
                 source_note = "[CSV Data]"
-            elif file_path.lower().endswith('.pdf'):
+            elif file_path and file_path.lower().endswith('.pdf'):
                 source_note = "[PDF Document]"
-            elif file_path.lower().endswith(('.doc', '.docx')):
+            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
                 source_note = "[Word Document]"
-            elif file_path.lower().endswith(('.xls', '.xlsx')):
+            elif file_path and file_path.lower().endswith(('.xls', '.xlsx')):
                 source_note = "[Excel Document]"
             else:
                 source_note = "[Document]"

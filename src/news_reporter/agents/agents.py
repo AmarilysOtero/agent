@@ -162,7 +162,7 @@ def filter_results_by_exact_match(
                 file_name = (res.get("file") or "").lower()
                 
                 # Check if ANY potential name appears in text, header, or file
-                name_found = any(name.lower() in text or name.lower() in header_text or name.lower() in file_name for name in potential_names)
+                name_found = any(name.lower() in text or name.lower() in header_text or name.lower() in file_name for name in potential_names if name)
                 
                 # Check if this chunk has organization context (employment, work details)
                 has_org_context = any(keyword in text or keyword in header_text for keyword in org_keywords)
@@ -172,7 +172,7 @@ def filter_results_by_exact_match(
                 # 2. Name + org context found - shows employment/role information (BEST for relationships)
                 # 3. High similarity (standard threshold)
                 # OR just org keyword + name in file/header (employment sections for people)
-                if name_found or (has_org_context and any(n.lower() in file_name for n in potential_names)) or res.get("similarity", 0.0) >= 0.3:
+                if name_found or (has_org_context and any(n.lower() in file_name for n in potential_names if n)) or res.get("similarity", 0.0) >= 0.3:
                     filtered.append(res)
                     if name_found and has_org_context:
                         logger.info(f"✅ [filter] Kept result (relationship query, NAME+ORG): {res.get('header_text', '')[:50]}")
@@ -192,7 +192,7 @@ def filter_results_by_exact_match(
         return filtered
     
     # ✅ PERSON MODE: Lenient matching with file scope awareness
-    person_names_lower = [n.lower() for n in (person_names or [])]
+    person_names_lower = [n.lower() for n in (person_names or []) if n]
     
     if not person_names_lower:
         # Person mode but no valid names - fall back to similarity only
@@ -280,7 +280,7 @@ def filter_results_by_exact_match(
         # Also check for potential names from query if it's a relationship query
         names_to_check = person_names_lower.copy()
         if is_relationship_query and potential_names:
-            names_to_check.extend([n.lower() for n in potential_names])
+            names_to_check.extend([n.lower() for n in potential_names if n])
         
         name_found_in_text = any(name in text for name in names_to_check)
         name_found_in_header = any(name in header_text for name in names_to_check)
@@ -443,7 +443,7 @@ class TriageAgent:
                             {}
                         )
                         db_type = (db_info.get("databaseType") or db_info.get("database_type") or "").lower()
-                        db_name = (db_info.get("name") or best_db_id).lower()
+                        db_name = ((db_info.get("name") or best_db_id) or "").lower()
                         
                         logger.info(f"✅ TriageAgent: Selected database '{db_name}' (ID: {best_db_id}, Type: {db_type})")
                         print(f"✅ TriageAgent: Selected database '{db_name}' (ID: {best_db_id}, Type: {db_type})")
@@ -967,7 +967,7 @@ class AiSearchAgent:
         if not exact_answer and not list_answer and csv_query_available and needs_exact:
             # Check if we filtered out CSV chunks (this means CSV returned 0 for general query)
             csv_chunks_in_results = any(
-                res.get('file_path', '').lower().endswith('.csv') 
+                (res.get('file_path') or '').lower().endswith('.csv') 
                 for res in filtered_results
             )
             if not csv_chunks_in_results and len(filtered_results) > 0:

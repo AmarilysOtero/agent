@@ -254,6 +254,8 @@ def _normalize_possessive(token: str) -> str:
     Returns:
         Token without possessive suffix
     """
+    if not token:
+        return ""
     return re.sub(r"(?:'s|')$", "", token)
 
 

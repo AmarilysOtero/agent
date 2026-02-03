@@ -255,8 +255,8 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
 
         # Review step (max 3 passes)
-        max_iters = -1 
-        for i in range(1, max_iters + 1) if max_iters > 0 else iter([]):
+        max_iters = 1 
+        for i in range(1, max_iters + 1):
             print(f"Review pass {i}/{max_iters}...")
             verdict = await reviewer.run(goal, response)
             decision = (verdict.get("decision") or "revise").lower()

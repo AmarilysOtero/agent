@@ -45,6 +45,9 @@ class WorkflowState(BaseModel):
     # Loop state (per loop node)
     loop_state: Dict[str, Dict[str, Any]] = Field(default_factory=dict)  # loop_node_id -> {iteration: int, ...}
     
+    # System variables (request-scoped, set once at run start)
+    system_vars: Dict[str, Any] = Field(default_factory=dict)  # e.g., System.LastMessage.Text
+    
     # Current iteration (for convenience)
     current_iter: Optional[int] = None
     

@@ -50,7 +50,8 @@ class GraphDefinition(BaseModel):
     edges: List[EdgeConfig]
     
     # Explicit entry point (instead of inferring from "no incoming edges")
-    entry_node_id: str = "triage"  # Default entry point
+    # If None, entry nodes are auto-detected as nodes with no incoming edges
+    entry_node_id: Optional[str] = None
     
     # Future-proof fields (not used yet, but defined for future tool support)
     toolsets: List[str] = Field(default_factory=list)
@@ -145,5 +146,71 @@ class GraphDefinition(BaseModel):
                 errors.append(f"Loop node {node.id} missing max_iters")
             elif node.type == "conditional" and not node.condition:
                 errors.append(f"Conditional node {node.id} missing condition")
+        
+        # Phase 1: Loop nodes cannot be graph entry (must have upstream seed)
+        entry_nodes = self.get_entry_nodes()
+        for node in self.nodes:
+            if node.type == "loop" and node.id in entry_nodes:
+                errors.append(
+                    f"Loop node {node.id} cannot be graph entry in Phase 1; "
+                    f"add an upstream node producing non-empty latest"
+                )
+        
+        # Phase 1: Loop nodes must have explicit loop_continue and loop_exit edges
+        for node in self.nodes:
+            if node.type == "loop":
+                outgoing = self.get_edges_from(node.id)
+                
+                # Check for loop_continue edge (exactly one required)
+                continue_edges = [edge for edge in outgoing if edge.condition == "loop_continue"]
+                if len(continue_edges) == 0:
+                    errors.append(
+                        f"Loop node {node.id} missing loop_continue edge; "
+                        f"loop body routing requires exactly one 'loop_continue' edge"
+                    )
+                elif len(continue_edges) > 1:
+                    targets = [edge.to_node for edge in continue_edges]
+                    errors.append(
+                        f"Loop node {node.id} has {len(continue_edges)} loop_continue edges to {targets}; "
+                        f"exactly one is required for deterministic routing"
+                    )
+                
+                # Check for loop_exit edge (exactly one required)
+                exit_edges = [edge for edge in outgoing if edge.condition == "loop_exit"]
+                if len(exit_edges) == 0:
+                    errors.append(
+                        f"Loop node {node.id} missing loop_exit edge; "
+                        f"loop exit routing requires exactly one 'loop_exit' edge"
+                    )
+                elif len(exit_edges) > 1:
+                    targets = [edge.to_node for edge in exit_edges]
+                    errors.append(
+                        f"Loop node {node.id} has {len(exit_edges)} loop_exit edges to {targets}; "
+                        f"exactly one is required for deterministic routing"
+                    )
+                
+                # Check for ambiguous None/untagged condition edges
+                none_edges = [edge for edge in outgoing if edge.condition is None or edge.condition == ""]
+                if none_edges:
+                    none_targets = [edge.to_node for edge in none_edges]
+                    errors.append(
+                        f"Loop node {node.id} has {len(none_edges)} untagged outgoing edge(s) to {none_targets}; "
+                        f"all loop edges must use 'loop_continue' or 'loop_exit' for deterministic routing"
+                    )
+                
+                # Check for invalid edge conditions
+                valid_loop_conditions = {"loop_continue", "loop_exit"}
+                invalid_edges = [
+                    edge for edge in outgoing 
+                    if edge.condition is not None 
+                    and edge.condition != "" 
+                    and edge.condition not in valid_loop_conditions
+                ]
+                if invalid_edges:
+                    invalid_info = [(edge.to_node, edge.condition) for edge in invalid_edges]
+                    errors.append(
+                        f"Loop node {node.id} has edges with invalid conditions: {invalid_info}; "
+                        f"only 'loop_continue' and 'loop_exit' are allowed"
+                    )
         
         return errors

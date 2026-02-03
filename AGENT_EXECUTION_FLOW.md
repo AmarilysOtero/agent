@@ -1,0 +1,127 @@
+# Agent Execution Flow (from 2026-02-02 03:54:27)
+
+Scope starts at the first log line below and follows the execution path forward from that point.
+
+## Anchor log (start point)
+
+```
+2026-02-02 03:54:27,310 INFO [HeaderVocab] Loaded 203 phrases from /app/src/news_reporter/settings/header_vocab.json
+
+2026-02-02 03:54:27,310 INFO 🔍 [AiSearchAgent] Starting search for query: 'How many years of experience in total Alexis has?'
+
+2026-02-02 03:54:27,310 INFO 🔍 [AiSearchAgent] Extracted person names: ['total Alexis'], is_person_query: True
+```
+
+---
+
+## Classes involved from this point onward
+
+1. **`AiSearchAgent`**
+   - Role: Orchestrates query analysis, retrieval, filtering, and optional CSV post-processing.
+   - Entry point: `AiSearchAgent.run()`.
+   - Location: [Agent/src/news_reporter/agents/agents.py](Agent/src/news_reporter/agents/agents.py#L488)
+
+2. **`Neo4jGraphRAGRetriever`**
+   - Role: Executes hybrid GraphRAG retrieval via Neo4j backend and returns normalized chunk results.
+   - Entry point: `Neo4jGraphRAGRetriever.hybrid_retrieve()`.
+   - Location: [Agent/src/news_reporter/tools/neo4j_graphrag.py](Agent/src/news_reporter/tools/neo4j_graphrag.py#L22)
+
+3. **`Settings`**
+   - Role: Provides configuration for Neo4j API URL used by GraphRAG retriever.
+   - Entry point: `Settings.load()` inside the retriever constructor.
+   - Location: [Agent/src/news_reporter/tools/neo4j_graphrag.py](Agent/src/news_reporter/tools/neo4j_graphrag.py#L29)
+
+**Notes:**
+
+- `HeaderVocab` is a module-level vocabulary cache (not a class), loaded via `load_header_vocab()` when name extraction runs.
+- Filtering is done by `filter_results_by_exact_match()` (function), not a class.
+- CSV query helpers are functions (no classes) and are only used if imported successfully.
+
+---
+
+## Step-by-step flow from the anchor log
+
+### 1) Vocabulary load for person-name detection
+
+Triggered when `extract_person_names_and_mode()` is called during `AiSearchAgent.run()`.
+
+- `load_header_vocab()` loads header phrases from JSON and caches them.
+- This produces the log: `[HeaderVocab] Loaded 203 phrases`.
+- Location: [Agent/src/news_reporter/tools/header_vocab.py](Agent/src/news_reporter/tools/header_vocab.py#L150)
+
+### 2) `AiSearchAgent` begins query processing
+
+`AiSearchAgent.run()` logs the query and extracted person names.
+
+- Extracts person names and `is_person_query` using `extract_person_names_and_mode()`.
+- Extracts attribute keywords using `extract_attribute_keywords()`.
+- Builds `keywords` and sets `keyword_boost` for hybrid retrieval.
+- Classifies query intent via `AiSearchAgent._classify_query_intent()`.
+- Location: [Agent/src/news_reporter/agents/agents.py](Agent/src/news_reporter/agents/agents.py#L512)
+
+### 3) GraphRAG retrieval via `Neo4jGraphRAGRetriever`
+
+`AiSearchAgent` calls `graphrag_search()`, which instantiates `Neo4jGraphRAGRetriever` and calls `hybrid_retrieve()`.
+
+- `Neo4jGraphRAGRetriever.__init__()` loads settings and normalizes the API URL.
+- `discover_graph_schema()` is called to log available graph schema (cached for later).
+- `hybrid_retrieve()` sends the request to the Neo4j backend API and normalizes the response.
+- Location: [Agent/src/news_reporter/tools/neo4j_graphrag.py](Agent/src/news_reporter/tools/neo4j_graphrag.py#L289)
+
+### 4) Result analytics and diagnostics
+
+`AiSearchAgent.run()` summarizes semantic, keyword, and graph signals and logs the detailed results.
+
+- Source: `AiSearchAgent.run()`
+- Location: [Agent/src/news_reporter/agents/agents.py](Agent/src/news_reporter/agents/agents.py#L580)
+
+### 5) Filtering step (mode-aware)
+
+`filter_results_by_exact_match()` applies person-mode or generic filtering rules.
+
+- Person mode: requires name match or file-scope match, with relationship/attribute-aware relaxations.
+- Generic mode: similarity threshold, with special relationship-query handling.
+- Location: [Agent/src/news_reporter/agents/agents.py](Agent/src/news_reporter/agents/agents.py#L89)
+
+### 6) Optional CSV post-processing
+
+If CSV tools are available and the query requires exact numbers or lists:
+
+- `query_requires_exact_numbers()` / `query_requires_list()` determine whether to attempt CSV.
+- CSV helpers extract a CSV path and compute totals or distinct values.
+- Location: [Agent/src/news_reporter/agents/agents.py](Agent/src/news_reporter/agents/agents.py#L748)
+
+---
+
+## Class call chain (condensed)
+
+### Primary Chain:
+
+```
+AiSearchAgent.run()
+  ├─ extract_person_names_and_mode()
+  │  └─ load_header_vocab()
+  ├─ extract_attribute_keywords()
+  ├─ AiSearchAgent._classify_query_intent()
+  └─ graphrag_search()
+       └─ Neo4jGraphRAGRetriever()
+          ├─ __init__() → Settings.load()
+          ├─ discover_graph_schema()
+          └─ hybrid_retrieve() → [results]
+                  ↓
+  filter_results_by_exact_match() → [filtered results]
+                  ↓
+  [Optional CSV processing]
+```
+
+---
+
+## Output boundary
+
+From this point, the flow continues inside `AiSearchAgent` to:
+
+- Build final context from filtered chunks
+- Produce the user response via LLM synthesis
+- Return the response string to the caller (workflow orchestrator)
+
+Primary control remains inside `AiSearchAgent.run()` until completion.

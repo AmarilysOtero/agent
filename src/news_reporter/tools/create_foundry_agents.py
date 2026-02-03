@@ -135,13 +135,15 @@ def agent_specs(default_model: str) -> Tuple[tuple, ...]:
     return (
         ("TriageAgent",       default_model,
          "You classify a user goal and return STRICT JSON only with keys: "
-         "intents (string list), confidence (0-1), rationale (string), targets (string list)."),
+         "intents (string list - possible values: 'search', 'ai_search', 'query', 'multi', 'sql', 'unknown'), "
+         "confidence (0-1), rationale (string), targets (string list)."),
         ("AiSearchAgent",    default_model,
-         "You run grounded ai searches and return only relevant and accurate findings."),
-        ("NewsReporterAgent", default_model,
-         "You write concise 60–90s neutral news scripts with explicit dates and sources."),
+         "You run grounded searches using RAG (Retrieval-Augmented Generation) and return only relevant and accurate findings from the knowledge base."),
+        ("AssistantAgent", default_model,
+         "You are a helpful assistant that answers questions using ONLY the provided context. "
+         "Be conversational, accurate, and concise. If context is insufficient, clearly state you don't have that information."),
         ("ReviewAgent",       default_model,
-         "You strictly review a news script for factuality and return STRICT JSON only: "
+         "You review assistant responses for accuracy, completeness, and clarity. Return STRICT JSON only: "
          '{"decision":"accept|revise","reason":string,"suggested_changes":string,"revised_script":string}'),
     )
 
@@ -155,7 +157,7 @@ def print_manual_instructions(endpoint: str, project: str, model: str):
     print("\nAfter creating, copy the agent IDs into your .env as:")
     print("TRIAGE_AGENT_ID=<id of TriageAgent>")
     print("AISEARCH_AGENT_ID=<id of AiSearchAgent>")
-    print("REPORTER_AGENT_IDS=<id of NewsReporterAgent>   # add more if you create multiple")
+    print("REPORTER_AGENT_IDS=<id of AssistantAgent>   # add more if you create multiple")
     print("REVIEWER_AGENT_ID=<id of ReviewAgent>")
 
 # -------------------- main --------------------

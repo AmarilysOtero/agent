@@ -18,27 +18,22 @@ except ImportError:
 from .auth import get_current_user
 from ..config import Settings
 
+# Import updated person detection from header_vocab (Step 1 fix)
+try:
+    from ..tools.header_vocab import extract_person_names, extract_person_names_and_mode
+except ImportError:
+    # Fallback if header_vocab not available
+    def extract_person_names(query: str) -> List[str]:
+        words = query.split()
+        names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
+        return names
+    
+    def extract_person_names_and_mode(query: str):
+        return extract_person_names(query), False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
-
-def extract_person_names(query: str) -> List[str]:
-    """Extract potential person names from query (capitalized words that might be names)
-    
-    Args:
-        query: User query text
-        
-    Returns:
-        List of potential person names (capitalized words)
-    """
-    # Split query into words
-    words = query.split()
-    # Extract capitalized words that are likely names (length > 2, starts with capital)
-    names = [w.strip('.,!?;:') for w in words if w and w[0].isupper() and len(w.strip('.,!?;:')) > 2]
-    # Remove common words that start with capital but aren't names
-    common_words = {'The', 'This', 'That', 'These', 'Those', 'What', 'When', 'Where', 'Who', 'Why', 'How', 'Tell', 'Show', 'Give', 'Find', 'Search', 'Get'}
-    names = [n for n in names if n not in common_words]
-    return names
 
 
 def filter_results_by_exact_match(results: List[dict], query: str, min_similarity: float = 0.9) -> List[dict]:
@@ -384,7 +379,15 @@ async def add_message(
     user: dict = Depends(get_current_user)
 ):
     """Add a message to a session (user message + get AI response)."""
-    print(f"[add_message] Message: {message}")
+    
+    # Log new chat request with clear separator
+    logger.info("=" * 100)
+    logger.info("💬 NEW CHAT REQUEST")
+    logger.info(f"   Session ID: {session_id}")
+    logger.info(f"   User ID: {user.get('_id')}")
+    logger.info(f"   Message Preview: {str(message.get('content', ''))[:100]}...")
+    logger.info("=" * 100)
+    
     if sessions_collection is None or messages_collection is None:
         raise HTTPException(status_code=503, detail="Database unavailable")
     
@@ -429,27 +432,37 @@ async def add_message(
         try:
             try:
                 from ..tools.neo4j_graphrag import graphrag_search
+                from ..agents.agents import AiSearchAgent
             except ImportError:
                 from src.news_reporter.tools.neo4j_graphrag import graphrag_search
+                from src.news_reporter.agents.agents import AiSearchAgent
             
             # Extract person names from query for keyword filtering
             person_names = extract_person_names(user_message_content)
             
-            # Search Neo4j GraphRAG
+            # Classify query intent for section-based routing
+            agent = AiSearchAgent()
+            query_intent = agent._classify_query_intent(user_message_content, person_names or [])
+            
+            # Search Neo4j GraphRAG with section routing parameters
             search_results = graphrag_search(
                 query=user_message_content,
                 top_k=12,
                 similarity_threshold=0.75,
                 keywords=person_names if person_names else None,
                 keyword_match_type="any",
-                keyword_boost=0.4
+                keyword_boost=0.4,
+                is_person_query=bool(person_names),
+                person_names=person_names,
+                section_query=query_intent.get('section_query') if query_intent['routing'] == 'hard' else None,
+                use_section_routing=query_intent['routing'] == 'hard'
             )
             
             # Filter results to require exact name match or very high similarity
             filtered_results = filter_results_by_exact_match(
                 search_results,
                 user_message_content,
-                min_similarity=0.7
+                min_similarity=0.3
             )
             
             # Limit to top 8 after filtering
@@ -592,7 +605,7 @@ async def add_message(
         _persist_and_raise_chat_error(
             session_id=session_id,
             user_id=user_id,
-            error_msg=error_msg,
+            error_msg=str(e),
             detail_prefix="Chat processing failed: ",
             status_code=500,
         )
@@ -631,6 +644,12 @@ async def add_message(
     
     # Ensure COMPLETE serialization safety
     safe_response = recursive_serialize(raw_response)
+    
+    # Log chat request completion
+    logger.info("=" * 100)
+    logger.info(f"✅ CHAT REQUEST COMPLETED - Session: {session_id}, Workflow: {workflow_name}")
+    logger.info(f"   Response length: {len(assistant_response)} chars, Sources: {len(sources)}")
+    logger.info("=" * 100)
     
     return safe_response
 

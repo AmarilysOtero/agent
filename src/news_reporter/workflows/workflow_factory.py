@@ -5,7 +5,7 @@ import json
 from typing import Any, Dict, List
 
 from ..config import Settings
-from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, NewsReporterAgent, ReviewAgent, SQLAgent
+from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, AssistantAgent, ReviewAgent, SQLAgent
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
 
@@ -185,17 +185,17 @@ def _substitute_agent_ids_in_dict(graph_data: dict, config: Settings) -> dict:
 
 async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     """
-    Foundry-defined agents + local orchestration (no external AF dependency).
+    General RAG assistance workflow (no external AF dependency).
 
     Flow:
-      TRIAGE -> AISEARCH -> REPORTER -> REVIEWER (≤3 passes)
+      TRIAGE -> SEARCH (retrieve context) -> ASSISTANT (generate response) -> REVIEWER (≤3 passes)
     """
     # ---- 1) TRIAGE ----
     triage = TriageAgent(cfg.agent_id_triage)
     tri = await triage.run(goal)
     print("Triage:", tri.model_dump())
 
-    # Decide whether to fan out across multiple reporter agents
+    # Decide whether to fan out across multiple assistant agents
     do_multi = ("multi" in tri.intents) or cfg.multi_route_always
     targets: List[str] = cfg.reporter_ids if do_multi else [cfg.reporter_ids[0]]
 
@@ -229,61 +229,55 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     reviewer = ReviewAgent(cfg.agent_id_reviewer)
 
     # ---- 2) Actual execution logic ----
-    async def run_one(reporter_id: str) -> str:
-        reporter = NewsReporterAgent(reporter_id)
+    async def run_one(assistant_id: str) -> str:
+        assistant = AssistantAgent(assistant_id)
 
-        # AI Search step (works with either agent)
-        # Also handle "unknown" intents if schema detection found a database (might be misclassified search query)
-        should_search = "ai_search" in tri.intents or (
-            "unknown" in tri.intents and tri.preferred_agent and tri.database_id
-        )
-        if should_search:
-            # Pass database_id to SQLAgent if it's a SQLAgent (database_id may be None for auto-detect)
-            if isinstance(search_agent, SQLAgent):
-                latest = await search_agent.run(goal, database_id=search_database_id)
-            else:
-                latest = await search_agent.run(goal)
+        # Search step - retrieve context from RAG sources
+        # GENERIC: Always attempt to retrieve context for any user query
+        # Let the assistant decide what to do with the retrieved information
+        if isinstance(search_agent, SQLAgent):
+            context = await search_agent.run(goal, database_id=search_database_id)
         else:
-            latest = ""
+            context = await search_agent.run(goal)
 
-        # Reporter step
-        logger.info(f"🔍 Workflow: Reporter step - news_script in intents: {'news_script' in tri.intents}, latest length: {len(latest) if latest else 0}")
-        print(f"🔍 Workflow: Reporter step - news_script in intents: {'news_script' in tri.intents}, latest length: {len(latest) if latest else 0}")
-        script = (
-            await reporter.run(goal, latest or "No ai-search content")
-            if ("news_script" in tri.intents)
-            else latest
-        )
-        logger.info(f"🔍 Workflow: Final script length: {len(script) if script else 0}")
-        print(f"🔍 Workflow: Final script length: {len(script) if script else 0}")
-        if not script:
-            logger.warning(f"🔍 Workflow: No script generated - returning 'No action taken.'")
-            print(f"⚠️ Workflow: No script generated - returning 'No action taken.'")
-            return "No action taken."
+        # Assistant step - generate response using retrieved context
+        # GENERIC: Pass all available context to assistant, let it decide what's relevant
+        logger.info(f"🔍 Workflow: Assistant step - context length: {len(context) if context else 0}")
+        print(f"🔍 Workflow: Assistant step - context length: {len(context) if context else 0}")
+        
+        response = await assistant.run(goal, context or "")
+        
+        logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
+        print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
+        if not response:
+            logger.warning(f"🔍 Workflow: No response generated - returning default message")
+            print(f"⚠️ Workflow: No response generated - returning default message")
+            return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
 
         # Review step (max 3 passes)
-        max_iters = 3
+        max_iters = 1 
         for i in range(1, max_iters + 1):
             print(f"Review pass {i}/{max_iters}...")
-            verdict = await reviewer.run(goal, script)
+            verdict = await reviewer.run(goal, response)
             decision = (verdict.get("decision") or "revise").lower()
             reason = verdict.get("reason", "")
             suggested = verdict.get("suggested_changes", "")
-            revised = verdict.get("revised_script", script)
+            revised = verdict.get("revised_script", response)
 
             print(f"Decision: {decision} | Reason: {reason}")
 
             if decision == "accept":
-                return revised or script
+                return revised or response
 
-            # Ask reporter to improve using reviewer notes
+            # Ask assistant to improve using reviewer feedback
             improve_context = (
-                f"Apply these review notes strictly:\n{suggested or reason}\n\n"
-                f"Original draft:\n{script}"
+                f"Previous response needs improvement:\n{suggested or reason}\n\n"
+                f"Original response:\n{response}\n\n"
+                f"Context available:\n{context}"
             )
-            script = await reporter.run(goal, improve_context)
+            response = await assistant.run(goal, improve_context)
 
-        return f"[After {max_iters} review passes]\n{script}"
+        return f"[After {max_iters} review passes]\n{response}"
 
     if len(targets) > 1:
         results = await asyncio.gather(*[run_one(rid) for rid in targets])

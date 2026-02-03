@@ -58,6 +58,18 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logging.warning("[lifespan] Workflow persistence initialization skipped: %s", e)
 
+        # Initialize tools storage (MongoDB tools + agent_tools)
+        try:
+            logging.info("[lifespan] Initializing tools storage...")
+            from .workflows.tools_storage import get_tools_storage
+            storage = get_tools_storage()
+            if storage._ensure():
+                logging.info("[lifespan] Tools storage initialized")
+            else:
+                logging.warning("[lifespan] Tools storage unavailable (MongoDB not configured)")
+        except Exception as e:
+            logging.warning("[lifespan] Tools storage initialization skipped: %s", e)
+
         if _UPLOAD_AVAILABLE:
             logging.info("[lifespan] Ensuring Azure Search pipeline...")
             try:
@@ -333,6 +345,7 @@ async def get_agents():
         return []
 
 
+@app.get("/api/foundry/agents")
 @app.get("/api/agents/all")
 async def list_agents():
     """List all agents from Foundry (not just config)"""
@@ -344,6 +357,44 @@ async def list_agents():
         raise
     except Exception as e:
         logging.exception("Failed to list agents")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Agent tools routes MUST be defined before /api/agents/{agent_id} so that
+# /api/agents/{id}/tools is matched instead of {agent_id} = "{id}/tools".
+
+class AssignToolsRequest(BaseModel):
+    """Request model for assigning tools to an agent"""
+    tool_ids: List[str]
+
+
+@app.get("/api/agents/{agent_id}/tools")
+async def get_agent_tools(agent_id: str):
+    """
+    Sync Foundry -> DB for this agent, then return { tools, assigned_ids }.
+    tools = all tools from registry; assigned_ids = ids assigned to this agent.
+    """
+    try:
+        from .services.tools_service import list_tools_for_agent
+        return list_tools_for_agent(agent_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to get agent tools")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/agents/{agent_id}/tools")
+async def put_agent_tools(agent_id: str, request: AssignToolsRequest):
+    """Update agent in Foundry with selected tools and persist agent-tool relations in DB."""
+    try:
+        from .services.tools_service import assign_tools_to_agent
+        assign_tools_to_agent(agent_id, request.tool_ids or [])
+        return {"success": True, "message": "Tools assigned"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to assign tools to agent")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -393,6 +444,138 @@ async def delete_agent(agent_id: str):
         raise
     except Exception as e:
         logging.exception("Failed to delete agent")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------- Tools API (registry + agent-tool relations, no hardcoding) ----------
+
+class CreateToolRequest(BaseModel):
+    """Request model for creating a tool via Manage Tools (generic function)"""
+    name: str
+    description: str
+    type: str = "function"
+    spec: Optional[dict] = None
+
+
+class UpdateToolRequest(BaseModel):
+    """Request model for updating a tool (all optional)"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    type: Optional[str] = None
+    spec: Optional[dict] = None
+
+
+@app.get("/api/tools")
+async def list_tools():
+    """List all tools from DB (registry). No hardcoding. Merges duplicates before returning."""
+    try:
+        from .workflows.tools_storage import get_tools_storage
+        storage = get_tools_storage()
+        if not storage._ensure():
+            return []
+        storage.merge_duplicate_tools()
+        return storage.list_tools()
+    except Exception as e:
+        logging.exception("Failed to list tools")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/tools")
+async def create_tool(request: CreateToolRequest):
+    """Create a tool from Manage Tools (generic). Persist to DB."""
+    try:
+        from .workflows.tools_storage import get_tools_storage
+        storage = get_tools_storage()
+        if not storage._ensure():
+            raise HTTPException(status_code=503, detail=storage.connection_failure_detail())
+        spec = request.spec if request.spec is not None else {}
+        if not isinstance(spec, dict):
+            spec = {}
+        spec = dict(spec)
+        tool = storage.create_tool(
+            name=request.name,
+            description=request.description,
+            tool_type=request.type or "function",
+            spec=spec,
+            source="app",
+        )
+        return JSONResponse(tool, status_code=201)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to create tool")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/tools/{tool_id}")
+async def get_tool(tool_id: str):
+    """Get a single tool by id."""
+    try:
+        from .workflows.tools_storage import get_tools_storage
+        storage = get_tools_storage()
+        if not storage._ensure():
+            raise HTTPException(status_code=503, detail=storage.connection_failure_detail())
+        tool = storage.get_tool(tool_id)
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found")
+        return tool
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to get tool")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/tools/{tool_id}")
+async def update_tool(tool_id: str, request: UpdateToolRequest):
+    """Update a tool. Agent-tool relations are unchanged; use delete to remove the tool."""
+    try:
+        from .workflows.tools_storage import get_tools_storage
+        storage = get_tools_storage()
+        if not storage._ensure():
+            raise HTTPException(status_code=503, detail=storage.connection_failure_detail())
+        spec_val = None
+        if request.spec is not None and isinstance(request.spec, dict):
+            spec_val = dict(request.spec)
+        if request.name is None and request.description is None and request.type is None and spec_val is None:
+            tool = storage.get_tool(tool_id)
+            if not tool:
+                raise HTTPException(status_code=404, detail="Tool not found")
+            return tool
+        tool = storage.update_tool(
+            tool_id,
+            name=request.name,
+            description=request.description,
+            tool_type=request.type,
+            spec=spec_val,
+        )
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found")
+        return tool
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to update tool")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/tools/{tool_id}")
+async def delete_tool_endpoint(tool_id: str):
+    """Delete a tool, remove all agent-tool relations, and detach it from Foundry agents."""
+    try:
+        from .workflows.tools_storage import get_tools_storage
+        from .services.tools_service import delete_tool_and_detach
+        storage = get_tools_storage()
+        if not storage._ensure():
+            raise HTTPException(status_code=503, detail=storage.connection_failure_detail())
+        deleted = delete_tool_and_detach(tool_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Tool not found")
+        return {"success": True, "message": "Tool deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to delete tool")
         raise HTTPException(status_code=500, detail=str(e))
 
 

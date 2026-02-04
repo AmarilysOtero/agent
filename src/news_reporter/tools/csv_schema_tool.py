@@ -20,7 +20,18 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Import code tool registry
+try:
+    from .code_tools_registry import register_code_tool
+except ImportError:
+    import sys
+    import pathlib
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    sys.path.append(str(repo_root.parent))
+    from src.news_reporter.tools.code_tools_registry import register_code_tool
 
+
+@register_code_tool
 def get_file_schema(file_path: str) -> str:
     """
     Foundry tool function for getting CSV/Excel file schema.

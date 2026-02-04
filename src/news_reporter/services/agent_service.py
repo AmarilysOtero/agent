@@ -6,6 +6,7 @@ Uses robust method discovery from create_foundry_agents.py
 from __future__ import annotations
 import logging
 import inspect
+import json
 from typing import Dict, List, Optional, Any
 from fastapi import HTTPException
 
@@ -337,7 +338,42 @@ def list_all_foundry_agents() -> List[Dict[str, Any]]:
             return []
 
         # Ensure we have a list (ItemPaged/iterator -> full list)
-        agents = list(raw) if hasattr(raw, "__iter__") and not isinstance(raw, (str, bytes)) else [raw]
+        # Wrap iteration in try-except to catch errors during pagination
+        try:
+            agents = list(raw) if hasattr(raw, "__iter__") and not isinstance(raw, (str, bytes)) else [raw]
+        except (HttpResponseError, json.JSONDecodeError) as e:
+            # Handle errors that occur during pagination iteration
+            # This can happen when the SDK tries to fetch the next page and encounters an error response
+            if isinstance(e, HttpResponseError):
+                status_code = getattr(e, "status_code", 500)
+                error_msg = str(e)
+                # Check for tenant mismatch specifically
+                if "tenant" in error_msg.lower() and "does not match" in error_msg.lower():
+                    logger.error(f"Tenant mismatch error listing agents: {status_code} - {error_msg}")
+                    raise HTTPException(
+                        status_code=status_code,
+                        detail=(
+                            f"Tenant mismatch error: {error_msg}. "
+                            "The Azure token tenant does not match the resource tenant. "
+                            "Please verify your AZURE_TENANT_ID environment variable matches the tenant of your Foundry project."
+                        )
+                    )
+                logger.error(f"HTTP error during pagination: {status_code} - {error_msg}")
+                raise HTTPException(
+                    status_code=status_code,
+                    detail=f"Failed to list agents from Foundry: {error_msg}"
+                )
+            else:
+                # JSONDecodeError - likely trying to parse an error response as JSON
+                logger.error(f"JSON parsing error during pagination: {str(e)}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        f"Error parsing response from Foundry: {str(e)}. "
+                        "This may indicate an authentication or configuration issue. "
+                        "Please check your Azure credentials and Foundry endpoint configuration."
+                    )
+                )
 
         # Convert to dict format
         agent_list = []
@@ -365,6 +401,17 @@ def list_all_foundry_agents() -> List[Dict[str, Any]]:
     except HttpResponseError as e:
         status_code = getattr(e, "status_code", 500)
         error_msg = str(e)
+        # Check for tenant mismatch specifically
+        if "tenant" in error_msg.lower() and "does not match" in error_msg.lower():
+            logger.error(f"Tenant mismatch error listing agents: {status_code} - {error_msg}")
+            raise HTTPException(
+                status_code=status_code,
+                detail=(
+                    f"Tenant mismatch error: {error_msg}. "
+                    "The Azure token tenant does not match the resource tenant. "
+                    "Please verify your AZURE_TENANT_ID environment variable matches the tenant of your Foundry project."
+                )
+            )
         logger.error(f"HTTP error listing agents: {status_code} - {error_msg}")
         raise HTTPException(
             status_code=status_code,

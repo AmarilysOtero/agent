@@ -42,36 +42,78 @@ _client: Optional[AIProjectClient] = None
 _validated: bool = False
 
 def _choose_credential():
-    """Choose Azure credential - prefer DefaultAzureCredential in Docker, AzureCliCredential otherwise."""
-    # In Docker, AzureCliCredential doesn't work reliably, so prefer DefaultAzureCredential
+    """
+    Choose Azure credential - prioritize service principal (tenant-specific) over az login.
+    
+    Priority:
+    1. DefaultAzureCredential (if service principal env vars are set) - ensures correct tenant
+    2. AzureCliCredential (az login) - fallback for local development
+    """
+    # Check if service principal credentials are configured
+    has_service_principal = all([
+        os.getenv("AZURE_CLIENT_ID"),
+        os.getenv("AZURE_CLIENT_SECRET"),
+        os.getenv("AZURE_TENANT_ID")
+    ])
+    
     is_docker = os.getenv("DOCKER_ENV", "").lower() in {"1", "true", "yes"}
     
-    if is_docker:
-        # In Docker, use DefaultAzureCredential which supports:
+    # Always prefer DefaultAzureCredential if service principal is configured
+    # This ensures we use the correct tenant, even when running locally
+    if has_service_principal or is_docker:
+        # Use DefaultAzureCredential which supports:
         # - Environment variables (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
         # - Managed Identity (if running on Azure)
         # - Other credential types that work in containers
         try:
             return DefaultAzureCredential()
-        except Exception:
+        except Exception as e:
             # Fallback to AzureCliCredential if DefaultAzureCredential fails
-            # (though this will likely fail in Docker too)
-            try:
-                return AzureCliCredential()
-            except Exception:
+            if is_docker:
+                # In Docker, AzureCliCredential likely won't work, so provide clear error
                 raise RuntimeError(
                     "Failed to authenticate with Azure. In Docker, set environment variables:\n"
                     "  AZURE_CLIENT_ID=<your-client-id>\n"
                     "  ***REMOVED***
                     "  AZURE_TENANT_ID=<your-tenant-id>\n"
-                    "Or configure managed identity if running on Azure."
+                    "Or configure managed identity if running on Azure.\n"
+                    f"Error: {str(e)}"
+                )
+            # Outside Docker, try AzureCliCredential as fallback
+            try:
+                logging.warning(
+                    "DefaultAzureCredential failed, falling back to AzureCliCredential. "
+                    "Error: %s", str(e)
+                )
+                return AzureCliCredential()
+            except Exception:
+                raise RuntimeError(
+                    "Failed to authenticate with Azure. Both DefaultAzureCredential and "
+                    "AzureCliCredential failed. Please check your Azure credentials.\n"
+                    f"DefaultAzureCredential error: {str(e)}"
                 )
     else:
-        # Outside Docker, try AzureCliCredential first (for local development)
+        # No service principal configured - use AzureCliCredential for local development
         try:
             return AzureCliCredential()
-        except Exception:
-            return DefaultAzureCredential()
+        except Exception as e:
+            # Fallback to DefaultAzureCredential (might work with managed identity or other methods)
+            try:
+                logging.warning(
+                    "AzureCliCredential failed, falling back to DefaultAzureCredential. "
+                    "Error: %s", str(e)
+                )
+                return DefaultAzureCredential()
+            except Exception:
+                raise RuntimeError(
+                    "Failed to authenticate with Azure. Please either:\n"
+                    "  1. Run 'az login' to authenticate with Azure CLI, or\n"
+                    "  2. Set service principal credentials:\n"
+                    "     AZURE_CLIENT_ID=<your-client-id>\n"
+                    "     ***REMOVED***
+                    "     AZURE_TENANT_ID=<your-tenant-id>\n"
+                    f"AzureCliCredential error: {str(e)}"
+                )
 
 def _require_env(name: str) -> str:
     v = os.getenv(name)

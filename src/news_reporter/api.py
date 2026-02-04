@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -69,6 +69,26 @@ async def lifespan(app: FastAPI):
                 logging.warning("[lifespan] Tools storage unavailable (MongoDB not configured)")
         except Exception as e:
             logging.warning("[lifespan] Tools storage initialization skipped: %s", e)
+
+        # Synchronize code-defined tools to MongoDB
+        try:
+            logging.info("[lifespan] Synchronizing code-defined tools...")
+            # Import tools package to trigger registration of all code tools
+            from .tools import get_registered_code_tools  # noqa: F401
+            from .tools.code_tools_sync import sync_code_tools_on_startup
+            sync_result = sync_code_tools_on_startup()
+            if sync_result["errors"]:
+                logging.warning(
+                    f"[lifespan] Code tools sync completed with {len(sync_result['errors'])} errors: "
+                    f"{sync_result['errors']}"
+                )
+            else:
+                logging.info(
+                    f"[lifespan] Code tools sync complete: {len(sync_result['created'])} created, "
+                    f"{len(sync_result['updated'])} updated, {len(sync_result['skipped'])} skipped"
+                )
+        except Exception as e:
+            logging.warning("[lifespan] Code tools synchronization skipped: %s", e)
 
         if _UPLOAD_AVAILABLE:
             logging.info("[lifespan] Ensuring Azure Search pipeline...")
@@ -556,6 +576,84 @@ async def update_tool(tool_id: str, request: UpdateToolRequest):
         raise
     except Exception as e:
         logging.exception("Failed to update tool")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/tools/{tool_id}/test")
+async def test_tool(tool_id: str, request: Dict[str, Any]):
+    """
+    Test/execute a tool with provided parameters.
+    Only works for code-defined tools (source="code").
+    """
+    try:
+        from .workflows.tools_storage import get_tools_storage
+        from .tools.code_tools_registry import get_code_tool
+        
+        storage = get_tools_storage()
+        if not storage._ensure():
+            raise HTTPException(status_code=503, detail=storage.connection_failure_detail())
+        
+        tool = storage.get_tool(tool_id)
+        if not tool:
+            raise HTTPException(status_code=404, detail="Tool not found")
+        
+        # Only allow testing code tools for security
+        if tool.get("source") != "code":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tool testing is only available for code-defined tools. This tool has source: {tool.get('source')}"
+            )
+        
+        # Get the registered code tool function
+        tool_name = tool.get("name")
+        code_tool_metadata = get_code_tool(tool_name)
+        
+        if not code_tool_metadata:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Code tool '{tool_name}' not found in registry. Make sure the server was restarted after adding the tool."
+            )
+        
+        # Get the function
+        func = code_tool_metadata.get("function")
+        if not func or not callable(func):
+            raise HTTPException(
+                status_code=500,
+                detail=f"Tool function '{tool_name}' is not callable"
+            )
+        
+        # Extract parameters from request
+        params = request.get("parameters", {})
+        if not isinstance(params, dict):
+            raise HTTPException(status_code=400, detail="Parameters must be a JSON object")
+        
+        # Execute the function
+        try:
+            result = func(**params)
+            return {
+                "success": True,
+                "result": result,
+                "tool_name": tool_name,
+            }
+        except TypeError as e:
+            # Parameter mismatch
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid parameters: {str(e)}. Check the tool's parameter schema."
+            )
+        except Exception as e:
+            # Execution error
+            logging.exception(f"Error executing tool '{tool_name}': {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "tool_name": tool_name,
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to test tool")
         raise HTTPException(status_code=500, detail=str(e))
 
 

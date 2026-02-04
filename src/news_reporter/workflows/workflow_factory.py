@@ -189,11 +189,21 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
 
     Flow:
       TRIAGE -> SEARCH (retrieve context) -> ASSISTANT (generate response) -> REVIEWER (≤3 passes)
+    
+    Note: When RLM_ENABLED=true, execution routes through RLM-specific branch after Search.
     """
     # ---- 1) TRIAGE ----
     triage = TriageAgent(cfg.agent_id_triage)
     tri = await triage.run(goal)
     print("Triage:", tri.model_dump())
+
+    # RLM Branch Selection
+    if cfg.rlm_enabled:
+        logger.info("RLM branch selected")
+        print("\n🔄 RLM MODE ACTIVATED (currently routes through default sequential for Phase 1)")
+        # Phase 1: Both paths still call the existing flow (no behavioral change)
+    else:
+        logger.debug("Default sequential branch selected (RLM not enabled)")
 
     # Decide whether to fan out across multiple assistant agents
     do_multi = ("multi" in tri.intents) or cfg.multi_route_always

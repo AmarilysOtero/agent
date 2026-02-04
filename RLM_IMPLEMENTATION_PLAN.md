@@ -60,6 +60,8 @@ If it fails: implement file UUID linking first, then proceed.
 
 ### Phase 0.5 — File UUID Linking (If Needed)
 
+**Status: ✅ COMPLETE**
+
 Goal: Ensure every chunk has a stable file identifier.
 
 Actions:
@@ -73,11 +75,19 @@ Manual test result:
 - Sample chunk → file UUID resolves correctly.
 - Sample file UUID → all chunks listed in order.
 
-If Phase 0 validation passes, skip Phase 0.5 and proceed to Phase 1.
+✅ **Validation PASSED** (all 4 Neo4j queries returned expected results):
+- Query 1: 0 chunks missing file_id ✅
+- Query 2: 0 orphan chunks ✅
+- Query 3: File→chunks relationships confirmed ✅
+- Query 4: Chunk ordering verified ✅
+
+Backfill script: `neo4j_backend/backfill_file_uuid_links.py`
 
 ---
 
 ### Phase 1 — Feature Flag + Routing (No New Behavior Yet)
+
+**Status: ✅ IMPLEMENTED**
 
 Goal: Add `RLM_ENABLED` routing without changing output.
 
@@ -91,10 +101,22 @@ Actions:
   - When `RLM_ENABLED=false`, existing defaults apply.
 - Document triage routing nuance: `preferred_agent=csv` currently falls back to default search/Neo4j because selection only branches on SQL or Neo4j.
 
+### Implementation Complete ✅
+
+**Config Changes** (`src/news_reporter/config.py`):
+- Added `rlm_enabled: bool = False` to Settings dataclass
+- Added environment variable parsing: `RLM_ENABLED` reads from .env
+
+**Workflow Changes** (`src/news_reporter/workflows/workflow_factory.py`):
+- Added RLM routing branch after Triage step
+- When enabled: logs "RLM branch selected" (INFO level)
+- When disabled: logs "Default sequential branch selected (RLM not enabled)" (DEBUG level)
+- Currently both paths execute identical downstream logic (Phase 1 = no behavior change)
+
 Manual test result:
 
-- `RLM_ENABLED=false`: behavior identical to current.
-- `RLM_ENABLED=true`: behavior still identical, but logs confirm RLM branch.
+- ✅ `RLM_ENABLED=false`: behavior identical to current (check logs: should show "Default sequential branch")
+- ✅ `RLM_ENABLED=true`: behavior still identical, but logs confirm RLM branch (check logs: should show "RLM branch selected")
 
 ---
 

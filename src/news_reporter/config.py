@@ -59,6 +59,9 @@ class Settings:
     # === Workflow Configuration ===
     workflow_json_path: str | None = None  # Optional path to JSON workflow file (used when no active workflow is set)
     
+    # === RLM Configuration ===
+    rlm_enabled: bool = False  # Enable optional RLM answering flow (default: false)
+    
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
@@ -112,6 +115,9 @@ class Settings:
         # Workflow JSON path (optional)
         workflow_json = os.getenv("WORKFLOW_JSON_PATH")
 
+        # RLM Configuration
+        rlm_enabled = os.getenv("RLM_ENABLED", "false").lower() in {"1", "true", "yes"}
+
         # minimal validation (you likely already have these set)
         missing = []
         if not (ai_endpoint and ai_sub and ai_rg and ai_account and (ai_project or "/api/projects/" in (ai_endpoint or ""))):
@@ -164,6 +170,7 @@ class Settings:
             neo4j_api_url=neo4j_url,
             auth_api_url=auth_url,
             workflow_json_path=workflow_json,
+            rlm_enabled=rlm_enabled,
         )
     
     @classmethod

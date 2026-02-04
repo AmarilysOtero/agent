@@ -90,6 +90,7 @@ async def log_chunks_to_markdown(
         logger.info(
             f"📝 Logged {len(chunks)} chunks to {target_file.name} (RLM: {rlm_enabled})"
         )
+        print(f"✅ Chunk logging: {len(chunks)} chunks logged to {target_file.name}")
         
     except Exception as e:
         logger.error(

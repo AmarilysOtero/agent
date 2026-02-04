@@ -254,7 +254,8 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         raw_results = None
         if isinstance(search_agent, SQLAgent):
             context = await search_agent.run(goal, database_id=search_database_id, high_recall_mode=high_recall_mode)
-        elif isinstance(search_agent, AiSearchAgent) and high_recall_mode:
+        elif isinstance(search_agent, AiSearchAgent):
+            # For AiSearchAgent, always return results for logging
             context, raw_results = await search_agent.run(
                 goal,
                 high_recall_mode=high_recall_mode,
@@ -263,16 +264,16 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         else:
             context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
 
-        # Log retrieved chunks (non-RLM)
-        if not high_recall_mode and raw_results:
+        # Log retrieved chunks
+        if raw_results:
             try:
                 await log_chunks_to_markdown(
                     chunks=raw_results,
-                    rlm_enabled=False,
+                    rlm_enabled=high_recall_mode,
                     query=goal
                 )
             except Exception as e:
-                logger.warning(f"⚠️  Failed to log non-RLM chunks: {e}")
+                logger.warning(f"⚠️  Failed to log chunks: {e}")
 
         # ===== PHASE 3: Full File Expansion =====
         # If RLM is enabled, expand entry chunks to full files for broader context

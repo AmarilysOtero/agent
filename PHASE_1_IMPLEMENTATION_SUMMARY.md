@@ -19,18 +19,21 @@ Phase 1 adds the `RLM_ENABLED` feature flag and routing logic to the sequential 
 ### 1. Settings Configuration (`src/news_reporter/config.py`)
 
 #### Added Field
+
 ```python
 # === RLM Configuration ===
 rlm_enabled: bool = False  # Enable optional RLM answering flow (default: false)
 ```
 
 #### Environment Variable Support
+
 - Variable: `RLM_ENABLED`
 - Default: `"false"`
 - Parsed as boolean: recognizes `"1"`, `"true"`, `"yes"` (case-insensitive)
 - Set in `.env` file to control RLM behavior per deployment
 
 #### Example `.env`
+
 ```bash
 # Enable RLM for development/testing
 RLM_ENABLED=true
@@ -42,6 +45,7 @@ RLM_ENABLED=false
 ### 2. Workflow Factory (`src/news_reporter/workflows/workflow_factory.py`)
 
 #### RLM Branch Detection
+
 Added routing check immediately after Triage step:
 
 ```python
@@ -54,6 +58,7 @@ else:
 ```
 
 #### Behavior
+
 - When `RLM_ENABLED=true`:
   - Logs: `"RLM branch selected"` (INFO level)
   - Prints: `"🔄 RLM MODE ACTIVATED (currently routes through default sequential for Phase 1)"`
@@ -68,15 +73,19 @@ else:
 ## Configuration Requirements
 
 ### When RLM is Enabled
+
 The following configuration must be present for RLM-aware deployments:
 
 **Required Environment Variables**:
+
 - `NEO4J_API_URL` — e.g., `"http://localhost:8000"`
 
 **Recommended Environment Variables**:
+
 - `USE_NEO4J_SEARCH=true` — Ensures Neo4j is available for high-recall retrieval (Phase 2+)
 
 **Example `.env` for RLM**:
+
 ```bash
 RLM_ENABLED=true
 NEO4J_API_URL=http://localhost:8000
@@ -84,6 +93,7 @@ USE_NEO4J_SEARCH=true
 ```
 
 ### When RLM is Disabled (Default)
+
 - No new configuration required
 - Existing settings apply
 - Neo4j is optional
@@ -137,17 +147,18 @@ print("✅ RLM_ENABLED=false parsed correctly")
 
 ## Files Modified
 
-| File | Changes |
-|------|---------|
-| `src/news_reporter/config.py` | Added `rlm_enabled: bool` field + environment parsing |
-| `src/news_reporter/workflows/workflow_factory.py` | Added RLM routing branch with logging |
-| `RLM_IMPLEMENTATION_PLAN.md` | Updated Phase 0.5 status to COMPLETE, Phase 1 to IMPLEMENTED |
+| File                                              | Changes                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------ |
+| `src/news_reporter/config.py`                     | Added `rlm_enabled: bool` field + environment parsing        |
+| `src/news_reporter/workflows/workflow_factory.py` | Added RLM routing branch with logging                        |
+| `RLM_IMPLEMENTATION_PLAN.md`                      | Updated Phase 0.5 status to COMPLETE, Phase 1 to IMPLEMENTED |
 
 ---
 
 ## Logging Output Examples
 
 ### RLM Disabled (Default)
+
 ```
 [src.news_reporter.workflows.workflow_factory] DEBUG: Default sequential branch selected (RLM not enabled)
 [src.news_reporter.workflows.workflow_factory] INFO: 🔍 Workflow: Checking TriageAgent results:
@@ -155,6 +166,7 @@ print("✅ RLM_ENABLED=false parsed correctly")
 ```
 
 ### RLM Enabled
+
 ```
 [src.news_reporter.workflows.workflow_factory] INFO: RLM branch selected
 [src.news_reporter.workflows.workflow_factory] INFO: 🔄 RLM MODE ACTIVATED (currently routes through default sequential for Phase 1)
@@ -171,11 +183,13 @@ print("✅ RLM_ENABLED=false parsed correctly")
 When RLM is enabled, Stage 1 (Search step) will return additional lower-scoring chunks to support file expansion in Phase 3.
 
 Actions:
+
 - Add `RLM_LOW_RECALL_MODE` configuration flag
 - Modify retrieval parameters (looser scoring) when `RLM_ENABLED=true`
 - Maintain backward compatibility
 
 Expected outcome:
+
 - RLM-enabled mode: returns more chunks (~2-3x baseline)
 - RLM-disabled mode: unchanged baseline behavior
 
@@ -200,6 +214,7 @@ git push -f origin RLM   # Force-push to remote
 ```
 
 To restore from `.env`:
+
 ```bash
 # Remove or set to false
 RLM_ENABLED=false
@@ -221,6 +236,7 @@ RLM_ENABLED=false
 ## Status
 
 **Phase 1 is ready for:**
+
 - Code review
 - Deployment to staging
 - Transition to Phase 2

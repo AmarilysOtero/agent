@@ -299,6 +299,18 @@ class TextToSQLTool:
             }
 
 
+# Import code tool registry
+try:
+    from ..tools.code_tools_registry import register_code_tool
+except ImportError:
+    import sys
+    import pathlib
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    sys.path.append(str(repo_root.parent))
+    from src.news_reporter.tools.code_tools_registry import register_code_tool
+
+
+@register_code_tool
 def query_database(natural_language_query: str, database_id: str) -> str:
     """
     Foundry tool function for text-to-SQL and execution.

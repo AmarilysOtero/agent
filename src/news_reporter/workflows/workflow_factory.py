@@ -11,6 +11,7 @@ from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
 from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance, log_expanded_chunks
 from ..retrieval.chunk_logger import log_chunks_to_markdown
+from ..retrieval.recursive_summarizer import recursive_summarize_files, log_file_summaries_to_markdown
 
 # Optional analytics import
 try:
@@ -278,6 +279,7 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         # ===== PHASE 3: Full File Expansion =====
         # If RLM is enabled, expand entry chunks to full files for broader context
         expanded_context = context
+        expanded_files = {}  # Initialize for Phase 4
         if high_recall_mode and raw_results:
             try:
                 logger.info("🔄 Phase 3: Attempting full file expansion for RLM...")
@@ -349,6 +351,61 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             except Exception as phase3_error:
                 logger.warning(f"⚠️  Phase 3: File expansion skipped - {phase3_error}", exc_info=True)
                 expanded_context = context
+
+        # ===== PHASE 4: Recursive Summarization =====
+        # If RLM is enabled and Phase 3 expansion succeeded, apply recursive summarization
+        file_summaries = []
+        if high_recall_mode and expanded_files:
+            try:
+                logger.info("🔄 Phase 4: Attempting recursive summarization for expanded files...")
+
+                # Try to use OpenAI for LLM-based summarization
+                try:
+                    from openai import AsyncOpenAI
+                    llm_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                    model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4")
+
+                    file_summaries = await recursive_summarize_files(
+                        expanded_files=expanded_files,
+                        query=goal,
+                        llm_client=llm_client,
+                        model_name=model_name
+                    )
+
+                    # Log Phase 4 file summaries to markdown
+                    try:
+                        await log_file_summaries_to_markdown(
+                            file_summaries=file_summaries,
+                            query=goal,
+                            rlm_enabled=True,
+                            output_dir="/app/logs/chunk_analysis"
+                        )
+                    except Exception as e:
+                        logger.warning(f"⚠️  Failed to log Phase 4 summaries: {e}")
+
+                    # If we have summaries, assemble them into the context
+                    if file_summaries:
+                        summary_parts = []
+                        for summary in file_summaries:
+                            summary_parts.append(f"### File: {summary.file_name} (ID: {summary.file_id})")
+                            summary_parts.append(f"**Expansion:** {summary.summarized_chunk_count}/{summary.chunk_count} chunks ({summary.expansion_ratio:.2f}x)")
+                            summary_parts.append(summary.summary_text)
+                            summary_parts.append(f"**Citations:** {', '.join(summary.source_chunk_ids)}")
+
+                        if summary_parts:
+                            summary_context = "\n".join(summary_parts)
+                            # Use summaries as primary context instead of raw expanded context
+                            expanded_context = summary_context
+                            logger.info(f"✅ Phase 4: Successfully assembled {len(file_summaries)} file summaries into context")
+
+                except ImportError:
+                    logger.warning("⚠️  Phase 4: OpenAI not available; skipping recursive summarization")
+                except Exception as llm_error:
+                    logger.warning(f"⚠️  Phase 4: LLM-based summarization failed - {llm_error}", exc_info=True)
+
+            except Exception as phase4_error:
+                logger.warning(f"⚠️  Phase 4: Recursive summarization skipped - {phase4_error}", exc_info=True)
+                # Fall back to expanded context from Phase 3
 
         # Assistant step - generate response using retrieved context
         # GENERIC: Pass all available context to assistant, let it decide what's relevant

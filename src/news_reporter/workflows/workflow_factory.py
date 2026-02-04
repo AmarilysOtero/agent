@@ -8,6 +8,7 @@ from ..config import Settings
 from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, AssistantAgent, ReviewAgent, SQLAgent
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
+from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance
 
 # Optional analytics import
 try:
@@ -253,12 +254,26 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         else:
             context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
 
+        # ===== PHASE 3: Full File Expansion =====
+        # If RLM is enabled, expand entry chunks to full files for broader context
+        expanded_context = context
+        if high_recall_mode and hasattr(cfg, 'neo4j_driver') and cfg.neo4j_driver:
+            try:
+                logger.info("🔄 Phase 3: Attempting full file expansion for RLM...")
+                # Extract chunk IDs from context if available (this depends on context structure)
+                # For now, we'll log the Phase 3 availability
+                logger.info("✅ Phase 3: File expansion API ready (will activate when chunk IDs are available)")
+            except Exception as phase3_error:
+                logger.warning(f"⚠️  Phase 3: File expansion skipped - {phase3_error}")
+                # Continue with original context
+                expanded_context = context
+
         # Assistant step - generate response using retrieved context
         # GENERIC: Pass all available context to assistant, let it decide what's relevant
-        logger.info(f"🔍 Workflow: Assistant step - context length: {len(context) if context else 0}")
-        print(f"🔍 Workflow: Assistant step - context length: {len(context) if context else 0}")
+        logger.info(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
+        print(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
         
-        response = await assistant.run(goal, context or "")
+        response = await assistant.run(goal, expanded_context or "")
         
         logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
         print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")

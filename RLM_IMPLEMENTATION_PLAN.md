@@ -219,6 +219,24 @@ Orchestration Settings Page (Frontend)
 
 **Next Step:** Connect Redux `rlmEnabled` value to workflow API calls in chat/workflow execution services.
 
+---
+
+### Phase 2 — High-Recall Stage 1 Retrieval Toggle (Still No Stage 2)
+
+Goal: When RLM is enabled, Stage 1 returns more entry chunks.
+
+Actions:
+
+- Add `RLM_LOW_RECALL_MODE`.
+- Only adjust retrieval parameters when `RLM_ENABLED=true`.
+
+Manual test result:
+
+- Same query:
+  - Default flow returns N chunks.
+  - RLM-enabled flow returns more chunks or lower-score chunks.
+- No other differences.
+
 Goal: When RLM is enabled, Stage 1 returns more entry chunks.
 
 Actions:

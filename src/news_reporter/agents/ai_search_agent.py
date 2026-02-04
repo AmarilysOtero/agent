@@ -18,7 +18,7 @@ class AiSearchAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, query: str) -> str:
+    async def run(self, query: str, high_recall_mode: bool = False) -> str:
         logger.info(f"🤖 [AGENT INVOKED] AiSearchAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] AiSearchAgent (ID: {self._id})")
         print("AiSearchAgent: using Foundry agent:", self._id)  # keep print
@@ -73,14 +73,25 @@ class AiSearchAgent:
         logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
         print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
         
-        logger.info(f"🔍 [AiSearchAgent] Calling graphrag_search with: top_k=12, similarity_threshold=0.75, keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
-        print(f"🔍 [AiSearchAgent] Calling graphrag_search with: keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}")
+        top_k = 20 if high_recall_mode else 12
+        similarity_threshold = 0.6 if high_recall_mode else 0.75
+        logger.info(
+            "🔍 [AiSearchAgent] Calling graphrag_search with: "
+            f"top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}, "
+            f"keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, "
+            f"high_recall_mode={high_recall_mode}"
+        )
+        print(
+            "🔍 [AiSearchAgent] Calling graphrag_search with: "
+            f"keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, "
+            f"person_names={person_names}, high_recall_mode={high_recall_mode}"
+        )
         
         # Call graphrag_search with base parameters
         results = graphrag_search(
             query=query,
-            top_k=12,  # Get more results initially for filtering
-            similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
+            top_k=top_k,  # Get more results initially for filtering
+            similarity_threshold=similarity_threshold,
             keywords=keywords,
             keyword_match_type="any",
             keyword_boost=keyword_boost,

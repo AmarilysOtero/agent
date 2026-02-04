@@ -386,6 +386,7 @@ async def add_message(
     logger.info(f"   Session ID: {session_id}")
     logger.info(f"   User ID: {user.get('_id')}")
     logger.info(f"   Message Preview: {str(message.get('content', ''))[:100]}...")
+    logger.info(f"   RLM Enabled: {message.get('rlm_enabled', False)}")
     logger.info("=" * 100)
     
     if sessions_collection is None or messages_collection is None:
@@ -425,6 +426,11 @@ async def add_message(
     from ..workflows.workflow_persistence import get_workflow_persistence
     
     cfg = Settings.load()
+    
+    # Get RLM enabled flag from request, default to config setting
+    rlm_enabled = message.get("rlm_enabled", cfg.rlm_enabled)
+    if rlm_enabled:
+        cfg.rlm_enabled = rlm_enabled
     
     # Get sources from Neo4j if using Neo4j search
     sources = []

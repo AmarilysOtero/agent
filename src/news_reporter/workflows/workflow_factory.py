@@ -245,10 +245,13 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         # Search step - retrieve context from RAG sources
         # GENERIC: Always attempt to retrieve context for any user query
         # Let the assistant decide what to do with the retrieved information
+        high_recall_mode = bool(cfg.rlm_enabled)
+        if high_recall_mode:
+            logger.info("🔍 Workflow: High-recall retrieval enabled (RLM mode)")
         if isinstance(search_agent, SQLAgent):
-            context = await search_agent.run(goal, database_id=search_database_id)
+            context = await search_agent.run(goal, database_id=search_database_id, high_recall_mode=high_recall_mode)
         else:
-            context = await search_agent.run(goal)
+            context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
 
         # Assistant step - generate response using retrieved context
         # GENERIC: Pass all available context to assistant, let it decide what's relevant

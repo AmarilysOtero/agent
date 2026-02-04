@@ -9,7 +9,8 @@ from ..config import Settings
 from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, AssistantAgent, ReviewAgent, SQLAgent
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
-from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance
+from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance, log_expanded_chunks
+from ..retrieval.chunk_logger import log_chunks_to_markdown
 
 # Optional analytics import
 try:
@@ -262,6 +263,17 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         else:
             context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
 
+        # Log retrieved chunks (non-RLM)
+        if not high_recall_mode and raw_results:
+            try:
+                await log_chunks_to_markdown(
+                    chunks=raw_results,
+                    rlm_enabled=False,
+                    query=goal
+                )
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to log non-RLM chunks: {e}")
+
         # ===== PHASE 3: Full File Expansion =====
         # If RLM is enabled, expand entry chunks to full files for broader context
         expanded_context = context
@@ -299,6 +311,16 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                                 entry_chunk_ids=entry_chunk_ids,
                                 neo4j_driver=neo4j_driver
                             )
+
+                            # Log Phase 3 expanded chunks to markdown
+                            try:
+                                await log_expanded_chunks(
+                                    entry_chunks=raw_results or [],
+                                    expanded_files=expanded_files,
+                                    query=goal
+                                )
+                            except Exception as e:
+                                logger.warning(f"⚠️  Failed to log Phase 3 expanded chunks: {e}")
 
                             filtered_files = filter_chunks_by_relevance(
                                 expanded_files,

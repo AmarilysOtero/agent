@@ -3,6 +3,7 @@
 import logging
 from typing import List, Dict, Optional
 from neo4j import Driver
+from .chunk_logger import log_chunks_to_markdown, log_phase3_expansion
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,22 @@ async def expand_to_full_files(
     except Exception as e:
         logger.error(f"❌ Phase 3: Error during file expansion: {str(e)}", exc_info=True)
         raise
+
+
+async def log_expanded_chunks(
+    entry_chunks: List[Dict],
+    expanded_files: Dict[str, Dict],
+    query: Optional[str] = None
+) -> None:
+    """
+    Log expanded chunks to markdown file for Phase 3 analysis.
+    
+    Args:
+        entry_chunks: Original entry chunks from retrieval
+        expanded_files: Result from expand_to_full_files()
+        query: Original query string
+    """
+    await log_phase3_expansion(entry_chunks, expanded_files, query)
 
 
 async def expand_with_chunks_only(

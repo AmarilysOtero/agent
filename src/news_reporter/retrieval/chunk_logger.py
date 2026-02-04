@@ -45,12 +45,11 @@ async def log_chunks_to_markdown(
         # Build markdown content
         content = []
         
-        if not file_exists:
-            # Add header only on first write
-            content.append(f"# Chunk Analysis - {mode_label}\n")
-            content.append("This file contains chunk information logged from Phase 3 retrieval operations.\n")
-            content.append("File is reused and updated with each query execution.\n\n")
-            content.append("---\n\n")
+        # Add header on every write (overwrite mode)
+        content.append(f"# Chunk Analysis - {mode_label}\n")
+        content.append("This file contains chunk information from the latest query execution.\n")
+        content.append("(File overwrites with each new query)\n\n")
+        content.append("---\n\n")
         
         # Add timestamp and query info
         content.append(f"## Execution: {datetime.now().isoformat()}\n")
@@ -84,8 +83,8 @@ async def log_chunks_to_markdown(
         
         content.append("\n---\n\n")
         
-        # Write to file
-        with open(target_file, "a", encoding="utf-8") as f:
+        # Write to file (OVERWRITE mode - 'w' instead of 'a')
+        with open(target_file, "w", encoding="utf-8") as f:
             f.write("".join(content))
         
         logger.info(

@@ -2,6 +2,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import json
+import os
 from typing import Any, Dict, List
 
 from ..config import Settings
@@ -249,23 +250,81 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         high_recall_mode = bool(cfg.rlm_enabled)
         if high_recall_mode:
             logger.info("🔍 Workflow: High-recall retrieval enabled (RLM mode)")
+        raw_results = None
         if isinstance(search_agent, SQLAgent):
             context = await search_agent.run(goal, database_id=search_database_id, high_recall_mode=high_recall_mode)
+        elif isinstance(search_agent, AiSearchAgent) and high_recall_mode:
+            context, raw_results = await search_agent.run(
+                goal,
+                high_recall_mode=high_recall_mode,
+                return_results=True
+            )
         else:
             context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
 
         # ===== PHASE 3: Full File Expansion =====
         # If RLM is enabled, expand entry chunks to full files for broader context
         expanded_context = context
-        if high_recall_mode and hasattr(cfg, 'neo4j_driver') and cfg.neo4j_driver:
+        if high_recall_mode and raw_results:
             try:
                 logger.info("🔄 Phase 3: Attempting full file expansion for RLM...")
-                # Extract chunk IDs from context if available (this depends on context structure)
-                # For now, we'll log the Phase 3 availability
-                logger.info("✅ Phase 3: File expansion API ready (will activate when chunk IDs are available)")
+
+                entry_chunk_ids = [
+                    res.get("chunk_id") or res.get("id")
+                    for res in raw_results
+                    if res.get("chunk_id") or res.get("id")
+                ]
+
+                if not entry_chunk_ids:
+                    logger.warning("⚠️  Phase 3: No entry chunk IDs found; skipping expansion")
+                else:
+                    neo4j_uri = os.getenv("NEO4J_URI")
+                    neo4j_user = os.getenv("NEO4J_USERNAME")
+                    neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+                    if not (neo4j_uri and neo4j_user and neo4j_password):
+                        logger.warning(
+                            "⚠️  Phase 3: Missing NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD; skipping expansion"
+                        )
+                    else:
+                        from neo4j import AsyncGraphDatabase
+
+                        neo4j_driver = AsyncGraphDatabase.driver(
+                            neo4j_uri,
+                            auth=(neo4j_user, neo4j_password)
+                        )
+
+                        try:
+                            expanded_files = await expand_to_full_files(
+                                entry_chunk_ids=entry_chunk_ids,
+                                neo4j_driver=neo4j_driver
+                            )
+
+                            filtered_files = filter_chunks_by_relevance(
+                                expanded_files,
+                                entry_chunk_ids,
+                                context_window=3
+                            )
+
+                            expanded_parts = []
+                            for file_id, chunks in filtered_files.items():
+                                file_name = expanded_files.get(file_id, {}).get("file_name", "unknown")
+                                expanded_parts.append(f"### File: {file_name} (ID: {file_id})")
+                                for chunk in chunks:
+                                    chunk_text = (chunk or {}).get("text", "").replace("\n", " ").strip()
+                                    if chunk_text:
+                                        expanded_parts.append(chunk_text)
+
+                            if expanded_parts:
+                                expanded_context = "\n".join(expanded_parts)
+                                logger.info("✅ Phase 3: Expanded context assembled successfully")
+                            else:
+                                logger.warning("⚠️  Phase 3: Expansion returned no usable text; using original context")
+                                expanded_context = context
+                        finally:
+                            await neo4j_driver.close()
             except Exception as phase3_error:
-                logger.warning(f"⚠️  Phase 3: File expansion skipped - {phase3_error}")
-                # Continue with original context
+                logger.warning(f"⚠️  Phase 3: File expansion skipped - {phase3_error}", exc_info=True)
                 expanded_context = context
 
         # Assistant step - generate response using retrieved context

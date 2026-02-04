@@ -52,9 +52,9 @@ async def expand_to_full_files(
             logger.info("📍 Phase 3.1: Identifying source files from entry chunks...")
             
             find_files_query = """
-            MATCH (c:Chunk)-[:BELONGS_TO]->(f:File)
-            WHERE c.chunk_id IN $entry_chunk_ids
-            RETURN DISTINCT f.file_id as file_id, f.file_name as file_name
+            MATCH (f:File)-[:HAS_CHUNK]->(c:Chunk)
+            WHERE c.id IN $entry_chunk_ids
+            RETURN DISTINCT f.id as file_id, f.name as file_name
             """
             
             files_result = await session.run(
@@ -82,17 +82,17 @@ async def expand_to_full_files(
                 
                 # Fetch all chunks for this file
                 fetch_chunks_query = """
-                MATCH (c:Chunk)-[:BELONGS_TO]->(f:File)
-                WHERE f.file_id = $file_id
+                MATCH (f:File)-[:HAS_CHUNK]->(c:Chunk)
+                WHERE f.id = $file_id
                 RETURN {
-                    chunk_id: c.chunk_id,
-                    chunk_index: c.chunk_index,
+                    chunk_id: c.id,
+                    chunk_index: c.index,
                     text: c.text,
                     embedding_id: c.embedding_id,
                     chunk_type: c.chunk_type,
                     metadata: properties(c)
                 } as chunk_data
-                ORDER BY c.chunk_index ASC
+                ORDER BY c.index ASC
                 """
                 
                 chunks_result = await session.run(

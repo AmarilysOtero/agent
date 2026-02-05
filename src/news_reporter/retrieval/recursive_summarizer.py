@@ -260,8 +260,7 @@ async def _generate_inspection_logic(
 
     prompt = f"""You are implementing the MIT Recursive Inspection Model (RLM) for document analysis.
 
-Given a user query and document content, generate a Python filter function that evaluates 
-chunk relevance. The function must be executable Python code.
+TASK: Generate a Python function that filters document chunks by relevance to a user query.
 
 Document: {file_name}
 User Query: {query}
@@ -269,66 +268,67 @@ User Query: {query}
 Sample content from the document:
 {sample_text}
 
-Generate a Python function called `evaluate_chunk_relevance(chunk_text: str) -> bool` that:
-1. Takes a chunk text as input
-2. Returns True if the chunk contains information relevant to the user query
-3. Implements 2-3 specific criteria based on the query and document context
+REQUIREMENTS:
+1. Generate ONLY a Python function with signature: def evaluate_chunk_relevance(chunk_text: str) -> bool:
+2. The function must return True if the chunk is relevant to the user query
+3. Use simple string operations (no external libraries except built-in re, json)
+4. Handle case-insensitivity and edge cases
+5. Implement 2-3 specific criteria based on the query and sample content
+6. Return ONLY the function code with no explanations
 
-The function should:
-- Use simple string operations and regex patterns
-- Be deterministic and efficient
-- Focus on key terms, entities, and relationships from the query
-- Handle edge cases (empty strings, case insensitivity)
-
-Requirements:
-- Function signature: def evaluate_chunk_relevance(chunk_text: str) -> bool:
-- Must be valid, executable Python code
-- Can import: re, json, collections (built-in only)
-- Return only the function code, no explanations or comments
-
-Example format (for a different query about company annual revenue):
-
+EXAMPLE (for a different query):
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    import re
     text_lower = chunk_text.lower()
-    
-    # Criterion 1: Contains revenue-related keywords
-    revenue_keywords = ['revenue', 'sales', 'income', 'earnings', 'profit']
-    has_revenue = any(keyword in text_lower for keyword in revenue_keywords)
-    
-    # Criterion 2: Contains time periods (years) indicating financial reports
-    has_year = bool(re.search(r'\\b(19|20)\\d{2}\\b', text_lower))
-    
-    # Criterion 3: Contains company name or financial metrics
-    has_metrics = re.search(r'\\b(million|billion|k|percentage|%|rate)\\b', text_lower) is not None
-    
-    return (has_revenue and has_year) or (has_revenue and has_metrics)
+    keywords = ['revenue', 'sales', 'earnings']
+    return any(kw in text_lower for kw in keywords)
 
-Generate executable Python code now:"""
+NOW generate the function for the query: "{query}"
+Return ONLY the Python function code:"""
 
     try:
         params = _build_completion_params(
             model_deployment,
             model=model_deployment,
             messages=[
-                {"role": "system", "content": "You are a Python expert implementing the MIT RLM model. Generate executable Python code for chunk evaluation."},
+                {"role": "system", "content": "You are a Python expert. Generate clean, executable Python code with no explanations."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_completion_tokens=500
+            max_completion_tokens=300
         )
         response = await llm_client.chat.completions.create(**params)
         inspection_code = response.choices[0].message.content.strip()
+        
+        # Handle markdown-wrapped code (```python ... ```)
+        if inspection_code.startswith("```"):
+            lines = inspection_code.split("\n")
+            inspection_code = "\n".join(lines[1:-1]) if len(lines) > 2 else inspection_code
+        
+        # Check if response is empty or doesn't contain the function signature
+        if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
+            logger.warning(f"⚠️  LLM returned empty or incomplete code. Raw response: '{inspection_code[:100] if inspection_code else 'EMPTY'}'")
+            logger.info("📝 Falling back to query-term based filter function")
+            # Fallback: return simple query-based filter function
+            fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    \"\"\"Fallback relevance filter based on query terms.\"\"\"
+    text_lower = chunk_text.lower()
+    query_terms = {repr(query.lower().split())}
+    return sum(1 for term in query_terms if term in text_lower) >= 2"""
+            logger.debug(f"Generated fallback inspection code:\n{fallback_code}")
+            return fallback_code
+        
         logger.debug(f"Generated inspection code:\n{inspection_code}")
         return inspection_code
     except Exception as e:
         logger.warning(f"⚠️  Failed to generate inspection code: {e}")
         # Fallback: return simple query-based filter function
-        return f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
+        fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
     \"\"\"Fallback relevance filter based on query terms.\"\"\"
     text_lower = chunk_text.lower()
     query_terms = {repr(query.lower().split())}
     return sum(1 for term in query_terms if term in text_lower) >= 2"""
+        logger.debug(f"Generated fallback inspection code:\n{fallback_code}")
+        return fallback_code
 
 
 async def _apply_inspection_logic(

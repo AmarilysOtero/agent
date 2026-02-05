@@ -56,7 +56,7 @@ async def recursive_summarize_files(
     # Initialize Azure OpenAI client if not provided
     if llm_client is None:
         try:
-            from azure.openai import AsyncAzureOpenAI
+            from openai import AsyncAzureOpenAI
             
             azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
             api_key = os.getenv("AZURE_OPENAI_API_KEY")

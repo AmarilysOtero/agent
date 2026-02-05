@@ -361,7 +361,7 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
 
                 # Try to use Azure OpenAI for LLM-based summarization
                 try:
-                    from azure.openai import AsyncAzureOpenAI
+                    from openai import AsyncAzureOpenAI
                     
                     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
                     api_key = os.getenv("AZURE_OPENAI_API_KEY")

@@ -330,7 +330,7 @@ class MongoWorkflowBackend:
     
     def delete_workflow(self, workflow_id: str) -> bool:
         """
-        Soft delete a workflow (set is_active=False).
+        Hard delete a workflow (permanently remove from database).
         
         Args:
             workflow_id: Workflow ID to delete
@@ -342,13 +342,13 @@ class MongoWorkflowBackend:
             return False
         
         try:
-            result = self.workflows_collection.update_one(
-                {"workflow_id": workflow_id},
-                {"$set": {"is_active": False, "updated_at": datetime.now()}}
+            result = self.workflows_collection.delete_one(
+                {"workflow_id": workflow_id}
             )
-            if result.modified_count > 0:
-                logger.info(f"Soft deleted workflow: {workflow_id}")
+            if result.deleted_count > 0:
+                logger.info(f"Deleted workflow: {workflow_id}")
                 return True
+            logger.warning(f"Workflow {workflow_id} not found for deletion")
             return False
         except Exception as e:
             logger.error(f"Failed to delete workflow {workflow_id}: {e}", exc_info=True)

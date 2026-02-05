@@ -132,48 +132,53 @@ async def recursive_summarize_files(
                 f"({entry_chunk_count} entry → {total_chunks} total chunks, deployment: {model_deployment})"
             )
 
-            # Prepare chunk text for LLM analysis
-            chunk_texts = []
-            chunk_map = {}  # Map text segments back to chunk IDs
-
+            # MIT RLM: Generate and apply inspection code per chunk
+            file_inspection_codes = {}  # Store generated code for each chunk
+            relevant_chunks = []
+            
             for idx, chunk in enumerate(chunks):
                 if isinstance(chunk, dict):
                     chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
-                    text = chunk.get("text", "").strip()
-                    if text:
-                        chunk_texts.append(text)
-                        chunk_map[text] = chunk_id
-
-            if not chunk_texts:
-                logger.warning(f"⚠️  Phase 4: File {file_name} has no extractable text")
-                continue
-
-            # Step 1: Generate Python code for chunk relevance evaluation (MIT RLM)
-            logger.info(f"  → Step 1: Generating inspection code (Python filter function) for query: '{query[:50]}...'")
-            generated_code = await _generate_inspection_logic(
-                query=query,
-                file_name=file_name,
-                sample_chunks=chunk_texts[:3],  # Use first 3 chunks as sample
-                llm_client=llm_client,
-                model_deployment=model_deployment
-            )
+                    chunk_text = chunk.get("text", "").strip()
+                    
+                    if not chunk_text:
+                        continue
+                    
+                    logger.debug(f"  → Generating inspection code for chunk {idx} ({chunk_id[:30]}...)")
+                    
+                    # Step 1: Generate Python code specific to this chunk (MIT RLM per-chunk approach)
+                    generated_code = await _generate_inspection_logic(
+                        query=query,
+                        file_name=file_name,
+                        chunk_id=chunk_id,
+                        chunk_text=chunk_text,
+                        llm_client=llm_client,
+                        model_deployment=model_deployment
+                    )
+                    
+                    file_inspection_codes[chunk_id] = generated_code
+                    
+                    # Step 2: Apply the generated code to evaluate this specific chunk
+                    logger.debug(f"  → Evaluating chunk {idx} with generated code")
+                    is_relevant = await _evaluate_chunk_with_code(
+                        chunk_text=chunk_text,
+                        inspection_code=generated_code,
+                        chunk_id=chunk_id
+                    )
+                    
+                    if is_relevant:
+                        relevant_chunks.append(chunk_text)
+                        logger.debug(f"    ✓ Chunk {idx} is relevant")
+                    else:
+                        logger.debug(f"    ✗ Chunk {idx} is not relevant")
             
-            # Store inspection code for logging and audit trail
-            inspection_code[file_id] = generated_code
-
-            # Step 2: Apply inspection logic to identify relevant chunks
-            logger.info(f"  → Step 2: Identifying relevant chunks using inspection code")
-            relevant_chunks = await _apply_inspection_logic(
-                chunks=chunk_texts,
-                inspection_logic=generated_code,
-                llm_client=llm_client,
-                model_deployment=model_deployment
-            )
+            # Store all chunk-level inspection codes for this file
+            inspection_code[file_id] = file_inspection_codes
 
             if not relevant_chunks:
                 logger.warning(f"⚠️  Phase 4: No relevant chunks identified in {file_name}")
-                # Fallback: use all chunks if none pass relevance
-                relevant_chunks = chunk_texts[:min(5, len(chunk_texts))]
+                # Fallback: use first few chunks if none pass relevance
+                relevant_chunks = [chunk.get("text", "").strip() for chunk in chunks[:min(3, len(chunks))] if chunk.get("text", "").strip()]
 
             # Step 3: Summarize relevant chunks
             logger.info(
@@ -188,8 +193,8 @@ async def recursive_summarize_files(
                 model_deployment=model_deployment
             )
 
-            # Map back to chunk IDs for citations
-            source_chunk_ids = [chunk_map.get(chunk, "unknown") for chunk in relevant_chunks]
+            # Get chunk IDs from file_inspection_codes for citations
+            source_chunk_ids = list(file_inspection_codes.keys())[:len(relevant_chunks)]
 
             file_summary = FileSummary(
                 file_id=file_id,
@@ -236,20 +241,22 @@ async def recursive_summarize_files(
 async def _generate_inspection_logic(
     query: str,
     file_name: str,
-    sample_chunks: List[str],
+    chunk_id: str,
+    chunk_text: str,
     llm_client: Any,
     model_deployment: str
 ) -> str:
     """
-    Generate LLM-based inspection logic (executable Python code) for relevance filtering.
+    Generate LLM-based inspection logic (executable Python code) for a specific chunk.
 
-    MIT RLM approach: Generate small, executable Python code that can evaluate chunks.
-    The code is a filter function that identifies chunks relevant to the user query.
+    MIT RLM approach: Generate small, executable Python code for each chunk
+    to determine if it's relevant to the user query.
 
     Args:
         query: User query
         file_name: Name of file being analyzed
-        sample_chunks: First few chunks for context
+        chunk_id: ID of the chunk being evaluated
+        chunk_text: The actual chunk content
         llm_client: Azure OpenAI client
         model_deployment: Azure deployment name
 
@@ -260,37 +267,31 @@ async def _generate_inspection_logic(
     code_generation_deployment = "gpt-4o-mini"
     if model_deployment.startswith(('gpt-', 'gpt4')):
         code_generation_deployment = model_deployment
-    
-    logger.info(f"  Using {code_generation_deployment} for code generation")
-    
-    sample_text = "\n---\n".join(sample_chunks[:2])
 
     prompt = f"""You are implementing the MIT Recursive Inspection Model (RLM) for document analysis.
 
-TASK: Generate a Python function that filters document chunks by relevance to a user query.
+TASK: Generate a Python function to evaluate if this specific chunk is relevant to the user's query.
 
 Document: {file_name}
+Chunk ID: {chunk_id}
 User Query: {query}
 
-Sample content from the document:
-{sample_text}
+CHUNK CONTENT:
+{chunk_text[:500]}
 
-REQUIREMENTS:
-1. Generate ONLY a Python function with signature: def evaluate_chunk_relevance(chunk_text: str) -> bool:
-2. The function must return True if the chunk is relevant to the user query
-3. Use simple string operations (no external libraries except built-in re, json)
-4. Handle case-insensitivity and edge cases
-5. Implement 2-3 specific criteria based on the query and sample content
-6. Return ONLY the function code with no explanations
+Generate a Python function called `evaluate_chunk_relevance(chunk_text: str) -> bool` that:
+1. Returns True if the chunk is relevant to the user query
+2. Returns False if the chunk is NOT relevant
+3. Uses simple string operations (case-insensitive matching)
+4. Implements 2-3 specific criteria based on this chunk's content
 
-EXAMPLE (for a different query):
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    text_lower = chunk_text.lower()
-    keywords = ['revenue', 'sales', 'earnings']
-    return any(kw in text_lower for kw in keywords)
+Requirements:
+- Function signature: def evaluate_chunk_relevance(chunk_text: str) -> bool:
+- Valid, executable Python code only
+- Return ONLY the function code with no explanations
+- No imports needed
 
-NOW generate the function for the query: "{query}"
-Return ONLY the Python function code:"""
+NOW generate the function:"""
 
     try:
         params = _build_completion_params(
@@ -304,61 +305,79 @@ Return ONLY the Python function code:"""
             max_completion_tokens=300
         )
         
-        logger.info(f"🔍 DEBUG: Sending LLM request to {code_generation_deployment}")
-        logger.debug(f"  System message: {params['messages'][0]['content'][:100]}...")
-        logger.debug(f"  User prompt length: {len(params['messages'][1]['content'])} chars")
-        
         response = await llm_client.chat.completions.create(**params)
-        
-        logger.debug(f"🔍 DEBUG: LLM Response object type: {type(response)}")
-        logger.debug(f"  Response.choices count: {len(response.choices) if response.choices else 'None'}")
-        
-        if response.choices:
-            choice = response.choices[0]
-            logger.debug(f"  Choice type: {type(choice)}")
-            logger.debug(f"  Message type: {type(choice.message)}")
-            logger.debug(f"  Message content type: {type(choice.message.content)}")
-            logger.debug(f"  Message content (raw): {repr(choice.message.content[:200] if choice.message.content else 'EMPTY')}")
-        
         inspection_code = response.choices[0].message.content.strip()
-        
-        logger.debug(f"🔍 DEBUG: After strip() - length: {len(inspection_code)}, content: {repr(inspection_code[:100])}")
         
         # Handle markdown-wrapped code (```python ... ```)
         if inspection_code.startswith("```"):
-            logger.info("📋 Detected markdown-wrapped code, extracting...")
+            logger.debug("    Extracting code from markdown wrapper")
             lines = inspection_code.split("\n")
             inspection_code = "\n".join(lines[1:-1]) if len(lines) > 2 else inspection_code
-            logger.debug(f"  After extracting from markdown: {repr(inspection_code[:100])}")
         
         # Check if response is empty or doesn't contain the function signature
         if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
-            logger.warning(f"⚠️  LLM returned empty or incomplete code.")
-            logger.warning(f"   Raw response: '{inspection_code[:200] if inspection_code else 'EMPTY'}'")
-            logger.warning(f"   Response length: {len(inspection_code) if inspection_code else 0} chars")
-            logger.info("📝 Falling back to query-term based filter function")
+            logger.warning(f"⚠️  LLM returned empty or incomplete code for chunk {chunk_id}")
             # Fallback: return simple query-based filter function
             fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
     \"\"\"Fallback relevance filter based on query terms.\"\"\"
     text_lower = chunk_text.lower()
     query_terms = {repr(query.lower().split())}
     return sum(1 for term in query_terms if term in text_lower) >= 2"""
-            logger.debug(f"Generated fallback inspection code:\n{fallback_code}")
             return fallback_code
         
-        logger.info(f"✅ LLM generated valid inspection code ({len(inspection_code)} chars)")
-        logger.debug(f"Generated inspection code:\n{inspection_code}")
+        logger.debug(f"    Generated {len(inspection_code)} char code for chunk {chunk_id}")
         return inspection_code
     except Exception as e:
-        logger.warning(f"⚠️  Failed to generate inspection code: {e}")
+        logger.warning(f"⚠️  Failed to generate code for chunk {chunk_id}: {e}")
         # Fallback: return simple query-based filter function
         fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
     \"\"\"Fallback relevance filter based on query terms.\"\"\"
     text_lower = chunk_text.lower()
     query_terms = {repr(query.lower().split())}
     return sum(1 for term in query_terms if term in text_lower) >= 2"""
-        logger.debug(f"Generated fallback inspection code:\n{fallback_code}")
         return fallback_code
+
+
+async def _evaluate_chunk_with_code(
+    chunk_text: str,
+    inspection_code: str,
+    chunk_id: str
+) -> bool:
+    """
+    Execute generated inspection code against a specific chunk.
+
+    MIT RLM: Execute the Python function to evaluate if chunk is relevant.
+
+    Args:
+        chunk_text: The chunk to evaluate
+        inspection_code: Python code containing evaluate_chunk_relevance function
+        chunk_id: ID of chunk for logging
+
+    Returns:
+        True if chunk is relevant, False otherwise
+    """
+    try:
+        # Execute the generated Python code
+        namespace = {}
+        exec(inspection_code, namespace)
+        
+        # Get the evaluate_chunk_relevance function
+        evaluate_func = namespace.get("evaluate_chunk_relevance")
+        
+        if evaluate_func is None:
+            logger.warning(f"⚠️  Code for {chunk_id} doesn't contain evaluate_chunk_relevance; returning False")
+            return False
+        
+        # Execute the function against the chunk
+        result = evaluate_func(chunk_text)
+        return bool(result)
+        
+    except SyntaxError as e:
+        logger.warning(f"⚠️  Syntax error in code for {chunk_id}: {e}")
+        return False
+    except Exception as e:
+        logger.warning(f"⚠️  Error executing code for {chunk_id}: {e}")
+        return False
 
 
 async def _apply_inspection_logic(
@@ -620,7 +639,7 @@ async def log_file_summaries_to_markdown(
 
 
 async def log_inspection_code_to_markdown(
-    inspection_rules: Dict[str, str],
+    inspection_rules: Dict[str, Dict[str, str]],
     query: str,
     rlm_enabled: bool = True,
     output_dir: str = "/app/logs/chunk_analysis"
@@ -629,11 +648,11 @@ async def log_inspection_code_to_markdown(
     Log LLM-generated Python inspection code to markdown file.
 
     This stores the executable Python code generated by the LLM per the MIT RLM model.
-    Each file gets a Python function (evaluate_chunk_relevance) that determines if 
-    a chunk is relevant to the user query.
+    Each chunk gets its own Python function (evaluate_chunk_relevance) that determines 
+    if that specific chunk is relevant to the user query.
 
     Args:
-        inspection_rules: Dict mapping file_id to generated inspection code (Python functions)
+        inspection_rules: Dict mapping file_id to dict of chunk_id -> code (MIT RLM per-chunk approach)
         query: User query that drove the analysis
         rlm_enabled: Whether RLM is enabled
         output_dir: Output directory for logs
@@ -649,38 +668,52 @@ async def log_inspection_code_to_markdown(
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Calculate total number of inspection programs (all chunks)
+        total_programs = sum(len(chunk_codes) for chunk_codes in inspection_rules.values())
+
         # Build markdown content
         timestamp = datetime.now().isoformat()
         lines = [
             f"# Phase 4: LLM-Generated Inspection Logic (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
-            f"\n**Total Inspection Programs:** {len(inspection_rules)}",
-            f"\n**Implementation:** MIT Recursive Inspection Model (RLM)",
+            f"\n**Total Inspection Programs:** {total_programs}",
+            f"\n**Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation",
             "\n---\n",
             "## Overview\n",
             "This file stores the **executable Python code** generated by the LLM per MIT RLM.",
-            "Each code block contains a Python function `evaluate_chunk_relevance(chunk_text: str) -> bool`",
-            "that determines if a chunk contains information relevant to the user's query.\n",
+            "Each chunk gets its own Python function `evaluate_chunk_relevance(chunk_text: str) -> bool`",
+            "that determines if that specific chunk contains information relevant to the user's query.\n",
             "### Purpose\n",
-            "- Evaluate which chunks contain relevant information",
-            "- Extract specific signals or matches from the content",
-            "- Decide which subsets require deeper inspection/summarization\n",
+            "- Generate chunk-specific relevance evaluation code",
+            "- Each chunk receives tailored inspection logic",
+            "- More precise relevance filtering per MIT RLM approach\n",
             "### Usage\n",
-            "These functions are executed by the recursive summarizer to filter chunks before LLM-based summarization.\n",
+            "These functions are executed by the recursive summarizer to evaluate each chunk individually.\n",
             "---\n",
         ]
 
-        # Add each file's inspection code
-        for idx, (file_id, inspection_code) in enumerate(inspection_rules.items(), 1):
+        # Add each file's inspection codes (per chunk)
+        file_counter = 1
+        for file_id, chunk_codes in inspection_rules.items():
             lines.extend([
-                f"## {idx}. Inspection Code (File ID: {file_id})",
-                f"\n**Purpose:** Filter chunks relevant to query: \"{query}\"\n",
-                "```python",
-                inspection_code,
-                "```\n",
-                "---\n",
+                f"## {file_counter}. File (ID: {file_id})",
+                "\n",
             ])
+            
+            chunk_counter = 1
+            for chunk_id, code in chunk_codes.items():
+                lines.extend([
+                    f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
+                    f"\n**Query:** {query}\n",
+                    "```python",
+                    code,
+                    "```\n",
+                ])
+                chunk_counter += 1
+            
+            lines.append("---\n")
+            file_counter += 1
 
         content = "\n".join(lines)
 
@@ -689,7 +722,8 @@ async def log_inspection_code_to_markdown(
             f.write(content)
 
         logger.info(f"✅ Phase 4 inspection code logged to {output_path}")
-        logger.info(f"   Stored {len(inspection_rules)} inspection programs following MIT RLM model")
+        logger.info(f"   Stored {total_programs} per-chunk inspection programs following MIT RLM model")
+
 
     except Exception as e:
         logger.error(f"❌ Failed to log inspection code: {e}", exc_info=True)

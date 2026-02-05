@@ -139,60 +139,78 @@ async def recursive_summarize_files(
                 f"({entry_chunk_count} entry → {total_chunks} total chunks, deployment: {model_deployment})"
             )
 
-            # MIT RLM: Generate and apply inspection code per chunk
-            file_inspection_codes = {}  # Store generated code for each chunk
-            file_inspection_payloads = {}  # Store code + text metadata per chunk
-            relevant_chunks = []
-            
-            for idx, chunk in enumerate(chunks):
-                if isinstance(chunk, dict):
-                    chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
-                    chunk_text = chunk.get("text", "").strip()
-                    
-                    if not chunk_text:
-                        continue
-                    
-                    logger.debug(f"  → Generating inspection code for chunk {idx} ({chunk_id[:30]}...)")
-                    
-                    # Step 1: Generate Python code specific to this chunk (MIT RLM per-chunk approach)
-                    generated_code = await _generate_inspection_logic(
-                        query=query,
-                        file_name=file_name,
-                        chunk_id=chunk_id,
-                        chunk_text=chunk_text,
-                        llm_client=llm_client,
-                        model_deployment=model_deployment
-                    )
-                    
-                    file_inspection_codes[chunk_id] = generated_code
-                    file_inspection_payloads[chunk_id] = {
-                        "code": generated_code,
-                        "chunk_text": chunk_text,
-                        "first_read_text": chunk_text[:500]
-                    }
-                    
-                    # Step 2: Apply the generated code to evaluate this specific chunk
-                    logger.debug(f"  → Evaluating chunk {idx} with generated code")
-                    is_relevant = await _evaluate_chunk_with_code(
-                        chunk_text=chunk_text,
-                        inspection_code=generated_code,
-                        chunk_id=chunk_id
-                    )
-                    
-                    if is_relevant:
-                        relevant_chunks.append(chunk_text)
-                        logger.debug(f"    ✓ Chunk {idx} is relevant")
-                    else:
-                        logger.debug(f"    ✗ Chunk {idx} is not relevant")
-            
-            # Store all chunk-level inspection codes for this file
-            inspection_code[file_id] = file_inspection_codes
-            inspection_code_with_text[file_id] = file_inspection_payloads
+            if USE_MIT_RLM_RECURSION:
+                result = await _process_file_with_rlm_recursion(
+                    file_id=file_id,
+                    file_name=file_name,
+                    chunks=chunks,
+                    query=query,
+                    llm_client=llm_client,
+                    model_deployment=model_deployment
+                )
+                relevant_chunks = result["relevant_chunks"]
+                final_selected_chunk_ids = result["selected_chunk_ids"]
+                inspection_code[file_id] = result["iteration_programs"]
+            else:
+                # MIT RLM: Generate and apply inspection code per chunk (legacy path)
+                file_inspection_codes = {}  # Store generated code for each chunk
+                file_inspection_payloads = {}  # Store code + text metadata per chunk
+                relevant_chunks = []
 
-            if not relevant_chunks:
-                logger.warning(f"⚠️  Phase 4: No relevant chunks identified in {file_name}")
-                # Fallback: use first few chunks if none pass relevance
-                relevant_chunks = [chunk.get("text", "").strip() for chunk in chunks[:min(3, len(chunks))] if chunk.get("text", "").strip()]
+                for idx, chunk in enumerate(chunks):
+                    if isinstance(chunk, dict):
+                        chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
+                        chunk_text = chunk.get("text", "").strip()
+
+                        if not chunk_text:
+                            continue
+
+                        logger.debug(f"  → Generating inspection code for chunk {idx} ({chunk_id[:30]}...)")
+
+                        # Step 1: Generate Python code specific to this chunk (MIT RLM per-chunk approach)
+                        generated_code = await _generate_inspection_logic(
+                            query=query,
+                            file_name=file_name,
+                            chunk_id=chunk_id,
+                            chunk_text=chunk_text,
+                            llm_client=llm_client,
+                            model_deployment=model_deployment
+                        )
+
+                        file_inspection_codes[chunk_id] = generated_code
+                        file_inspection_payloads[chunk_id] = {
+                            "code": generated_code,
+                            "chunk_text": chunk_text,
+                            "first_read_text": chunk_text[:500]
+                        }
+
+                        # Step 2: Apply the generated code to evaluate this specific chunk
+                        logger.debug(f"  → Evaluating chunk {idx} with generated code")
+                        is_relevant = await _evaluate_chunk_with_code(
+                            chunk_text=chunk_text,
+                            inspection_code=generated_code,
+                            chunk_id=chunk_id
+                        )
+
+                        if is_relevant:
+                            relevant_chunks.append(chunk_text)
+                            logger.debug(f"    ✓ Chunk {idx} is relevant")
+                        else:
+                            logger.debug(f"    ✗ Chunk {idx} is not relevant")
+
+                # Store all chunk-level inspection codes for this file
+                inspection_code[file_id] = file_inspection_codes
+                inspection_code_with_text[file_id] = file_inspection_payloads
+
+                if not relevant_chunks:
+                    logger.warning(f"⚠️  Phase 4: No relevant chunks identified in {file_name}")
+                    # Fallback: use first few chunks if none pass relevance
+                    relevant_chunks = [
+                        chunk.get("text", "").strip()
+                        for chunk in chunks[:min(3, len(chunks))]
+                        if chunk.get("text", "").strip()
+                    ]
+                final_selected_chunk_ids = list(file_inspection_codes.keys())[:len(relevant_chunks)]
 
             # Step 3: Summarize relevant chunks
             logger.info(
@@ -207,8 +225,7 @@ async def recursive_summarize_files(
                 model_deployment=model_deployment
             )
 
-            # Get chunk IDs from file_inspection_codes for citations
-            source_chunk_ids = list(file_inspection_codes.keys())[:len(relevant_chunks)]
+            source_chunk_ids = final_selected_chunk_ids
 
             file_summary = FileSummary(
                 file_id=file_id,
@@ -648,6 +665,127 @@ def _get_fallback_result(chunks: List[Dict], iteration: int) -> Dict:
         "extracted_data": {"fallback": True, "iteration": iteration},
         "confidence": 0.3,
         "stop": iteration >= 3
+    }
+
+
+async def _process_file_with_rlm_recursion(
+    file_id: str,
+    file_name: str,
+    chunks: List[Dict],
+    query: str,
+    llm_client: Any,
+    model_deployment: str
+) -> Dict[str, Any]:
+    """Process a single file using MIT RLM recursion (per-iteration programs)."""
+    active_chunks = chunks
+    accumulated_data: Dict[str, Any] = {}
+    iteration_programs: Dict[str, str] = {}
+    final_selected_chunk_ids: List[str] = []
+    final_confidence = 0.0
+    narrowing_streak = 0
+
+    logger.info(
+        f"📍 Phase 4.1: Starting MIT RLM recursion for '{file_name}' "
+        f"({len(chunks)} chunks, max {MAX_RLM_ITERATIONS} iterations)"
+    )
+
+    for iteration in range(MAX_RLM_ITERATIONS):
+        if not active_chunks:
+            logger.warning(f"  ⚠️  Iteration {iteration}: No active chunks remaining")
+            break
+
+        logger.info(f"  → Iteration {iteration + 1}: Evaluating {len(active_chunks)} chunks")
+
+        inspection_program = await _generate_recursive_inspection_program(
+            query=query,
+            file_name=file_name,
+            active_chunks=active_chunks,
+            iteration=iteration,
+            previous_data=accumulated_data,
+            llm_client=llm_client,
+            model_deployment=model_deployment
+        )
+
+        iteration_programs[f"iteration_{iteration}"] = inspection_program
+
+        try:
+            result = await _execute_inspection_program(
+                chunks=active_chunks,
+                program=inspection_program,
+                iteration=iteration
+            )
+
+            selected_ids = result.get("selected_chunk_ids", [])
+            extracted = result.get("extracted_data", {})
+            confidence = result.get("confidence", 0.0)
+            should_stop = result.get("stop", False)
+
+            logger.info(
+                f"    ✓ Iteration {iteration + 1}: "
+                f"Selected {len(selected_ids)}/{len(active_chunks)} chunks, "
+                f"confidence={confidence:.2f}, stop={should_stop}"
+            )
+
+            accumulated_data.update(extracted)
+            final_selected_chunk_ids = selected_ids
+            final_confidence = confidence
+
+            if should_stop or confidence > 0.9:
+                logger.info(
+                    f"    🛑 Stopping: {'stop flag' if should_stop else 'high confidence'}"
+                )
+                break
+
+            prev_active_ids = set(chunk.get("chunk_id") for chunk in active_chunks)
+            active_chunks = [
+                chunk for chunk in active_chunks
+                if chunk.get("chunk_id") in selected_ids
+            ]
+            new_active_ids = set(chunk.get("chunk_id") for chunk in active_chunks)
+
+            if new_active_ids == prev_active_ids:
+                narrowing_streak += 1
+                if narrowing_streak >= 2:
+                    logger.warning(
+                        f"    ⚠️  No narrowing for {narrowing_streak} consecutive iterations, stopping"
+                    )
+                    break
+                logger.debug(
+                    f"    ⏸️  Iteration {iteration + 1}: No narrowing ({narrowing_streak}/2)"
+                )
+            else:
+                narrowing_streak = 0
+
+        except Exception as e:
+            logger.warning(f"  ⚠️  Iteration {iteration} failed: {e}")
+            break
+
+    relevant_chunks = [
+        chunk.get("text", "").strip()
+        for chunk in chunks
+        if chunk.get("chunk_id") in final_selected_chunk_ids
+        and chunk.get("text", "").strip()
+    ]
+
+    if not relevant_chunks:
+        logger.warning(f"⚠️  Phase 4: No chunks selected after {iteration + 1} iterations, using fallback")
+        relevant_chunks = [
+            chunk.get("text", "").strip()
+            for chunk in chunks[:min(3, len(chunks))]
+            if chunk.get("text", "").strip()
+        ]
+        final_selected_chunk_ids = [
+            chunk.get("chunk_id")
+            for chunk in chunks[:min(3, len(chunks))]
+        ]
+
+    return {
+        "relevant_chunks": relevant_chunks,
+        "selected_chunk_ids": final_selected_chunk_ids,
+        "iteration_programs": iteration_programs,
+        "final_confidence": final_confidence,
+        "accumulated_data": accumulated_data,
+        "iterations": iteration + 1
     }
 
 

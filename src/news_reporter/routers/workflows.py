@@ -640,16 +640,33 @@ async def save_workflow_definition(
         definition_data = request
         name = request.get("name")
     
-    # Parse and normalize the graph definition to remove UI artifacts
-    raw_definition = GraphDefinition.model_validate(definition_data)
+    # Parse the graph definition WITHOUT validation to allow incomplete workflows
+    # Using model_construct bypasses Pydantic validation
+    try:
+        raw_definition = GraphDefinition.model_construct(**definition_data)
+    except Exception as e:
+        # If construction fails entirely, try using model_validate to get better error messages
+        # but wrap it to allow saving anyway
+        try:
+            raw_definition = GraphDefinition.model_validate(definition_data)
+        except Exception:
+            # Even if validation fails, we still want to save the raw data
+            raise HTTPException(status_code=400, detail=f"Invalid workflow structure: {str(e)}")
     
     # CRITICAL: Defensively normalize graph to strip UI helpers and convert to loop_continue/loop_exit
-    normalized_definition = normalize_workflow_graph(raw_definition)
+    # This may fail for incomplete graphs, so wrap in try-except
+    try:
+        normalized_definition = normalize_workflow_graph(raw_definition)
+        graph_to_save = normalized_definition.model_dump()
+    except Exception as normalize_error:
+        # If normalization fails (e.g., incomplete loop clusters), save the raw definition
+        print(f"Warning: Graph normalization failed, saving raw definition: {normalize_error}")
+        graph_to_save = definition_data
     
-    # Validate the normalized graph
-    errors = normalized_definition.validate()
-    if errors:
-        raise HTTPException(status_code=400, detail=f"Validation errors: {', '.join(errors)}")
+    # REMOVED: Validation step - workflows can now be saved incomplete
+    # errors = normalized_definition.validate()
+    # if errors:
+    #     raise HTTPException(status_code=400, detail=f"Validation errors: {', '.join(errors)}")
     
     # Generate workflow_id if not provided
     workflow_id = definition_data.get("workflow_id") or str(uuid.uuid4())
@@ -660,11 +677,11 @@ async def save_workflow_definition(
         workflow_id=workflow_id,
         name=name or definition_data.get("name") or "Untitled Workflow",
         description=definition_data.get("description"),
-        graph_definition=normalized_definition.model_dump()
+        graph_definition=graph_to_save
     )
     persistence.save_workflow(workflow)
     
-    print(f"Saved workflow {workflow_id} ({name})")
+    print(f"Saved workflow {workflow_id} ({name}) without validation")
     
     return {
         "success": True,

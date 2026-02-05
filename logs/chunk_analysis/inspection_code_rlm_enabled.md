@@ -1,8 +1,8 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-05T12:46:59.490328
+**Execution Time:** 2026-02-05T13:25:58.151020
 
-**Query:** Give the list of    Kevin skills
+**Query:** Give the list of Kevin skills
 
 **Total Inspection Programs:** 1
 
@@ -30,10 +30,13 @@ These functions are executed by the recursive summarizer to filter chunks before
 
 ## 1. Inspection Code (File ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf)
 
-**Purpose:** Filter chunks relevant to query: "Give the list of    Kevin skills"
+**Purpose:** Filter chunks relevant to query: "Give the list of Kevin skills"
 
 ```python
-
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    text_lower = chunk_text.lower()
+    keywords = ['skills', 'expertise', 'proficient', 'experience', 'knowledge', 'competence']
+    return any(kw in text_lower for kw in keywords) and 'kevin' in text_lower
 ```
 
 ---

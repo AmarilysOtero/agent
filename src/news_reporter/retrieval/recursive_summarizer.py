@@ -182,7 +182,9 @@ async def recursive_summarize_files(
                         file_inspection_payloads[chunk_id] = {
                             "code": generated_code,
                             "chunk_text": chunk_text,
-                            "first_read_text": chunk_text[:500]
+                            "first_read_text": chunk_text[:500],
+                            # Chunk-scoped recursive text to avoid file-level repetition in logs.
+                            "recursive_text": chunk_text[:500]
                         }
 
                         # Step 2: Apply the generated code to evaluate this specific chunk
@@ -1189,7 +1191,7 @@ async def log_inspection_code_with_text_to_markdown(
             "### Purpose\n",
             "- Generate chunk-specific relevance evaluation code",
             "- Preserve the exact chunk text and first read passed to the model",
-            "- Record the recursive summary text used for Phase 4\n",
+            "- Record the chunk-scoped recursive text used for Phase 4 (defaults to first read)\n",
             "### Usage\n",
             "These functions are executed by the recursive summarizer to evaluate each chunk individually.\n",
             "---\n",
@@ -1209,6 +1211,12 @@ async def log_inspection_code_with_text_to_markdown(
                 chunk_text = payload.get("chunk_text", "")
                 first_read_text = payload.get("first_read_text", "")
 
+                chunk_recursive_text = (
+                    payload.get("recursive_text")
+                    or payload.get("first_read_text", "")
+                    or recursive_text
+                )
+
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
                     f"\n**Query:** {query}\n",
@@ -1225,7 +1233,7 @@ async def log_inspection_code_with_text_to_markdown(
                     "```\n",
                     "#### Recursive Text",
                     "```text",
-                    recursive_text,
+                    chunk_recursive_text,
                     "```\n",
                 ])
                 chunk_counter += 1

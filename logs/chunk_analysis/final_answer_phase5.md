@@ -1,65 +1,23 @@
-# Phase 5: Final Answer with Citations (Item-Grounded)
+# Phase 5: Final Answer with Citations
 
-**Execution Time:** 2026-02-05T18:53:02.001103
+**Execution Time:** 2026-02-05T20:26:04.890979
 
 **Query:** Give the list of Kevin  skills
 
 **Files Used:** 1
-**Total Chunks Cited:** 3
-**Expansion Ratio:** Reduced to only directly relevant sources
+**Total Chunks Cited:** 17
+**Average Expansion Ratio:** 5.00x
 
 ---
 
 ## Answer
 
-### Technical Skills (5 years experience)
-Java, Front End Development, HTML/CSS, JavaScript [source: Chunk 3 - Top Skills]
-
-### Technical Skills (3-4 years experience)
-AngularJS (4 years), Agile, Data Structures, ReactJS (3 years) [source: Chunk 3 - Top Skills]
-
-### Backend & Additional Technical Skills
-Backend Development (3 years), PostgreSQL (3 years), Node.js/Express.js (2 years), UX/UI (1 year), Artificial Intelligence (1 year), Python Flask (6 months), C# (2 months), ASP.NET (2 months) [source: Chunk 6 - Certifications section]
-
-### Professional Certifications
-Azure AI Fundamentals, AWS Solution Architect Associate, Azure AI Engineer Associate [source: Chunk 6 - Certifications section]
-
-### Languages
-English - Proficient, Spanish - Proficient [source: Chunk 19 - Languages]
+Kevin Ramírez's skills include technical proficiencies in Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with PostgreSQL, Node.js/Express.js, and Python Flask. He is also knowledgeable in Agile methodologies, data structures, UX/UI design, and artificial intelligence. Additionally, he holds professional certifications in Azure and AWS, indicating his expertise in cloud development and AI technologies [source: merged_context, chunks: 1].
 
 ---
 
 ## Citations
 
 ### 20250912 Kevin Ramirez DXC Resume.pdf
-
-**Chunk 3 - Top Skills (Section Header)**
-- Direct skills listing: Java, Front End Development, HTML/CSS, JavaScript, AngularJS, Agile, Data Structures, ReactJS
-- Years of experience specified for each
-- Primary source for main technical skills inventory
-
-**Chunk 6 - Certifications Section**
-- Backend Development (3 years)
-- PostgreSQL (3 years)
-- Node.js/Express.js (2 years)
-- UX/UI (1 year)
-- Artificial Intelligence (1 year)
-- Python Flask (6 months)
-- C# (2 months)
-- AI-RAG (3 months)
-- ASP.NET (2 months)
-- Professional certifications: Azure AI Fundamentals, AWS Solution Architect Associate, Azure AI Engineer Associate
-
-**Chunk 19 - Languages**
-- English - Proficient
-- Spanish - Proficient
-
----
-
-## Exclusions (Not cited)
-- Chunks 0-2: Introductory/header material
-- Chunk 4: Key Roles (describes job titles, not skills)
-- Chunk 5: Industry Experience (describes industries worked in, not personal skills)
-- Chunk 7: Professional Work Experience (section header only)
-- Chunks 8-18: Work experience descriptions (demonstrate skills through application, but don't list skills directly)
+- Chunks: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
 

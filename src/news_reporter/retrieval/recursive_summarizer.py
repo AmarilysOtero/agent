@@ -1,11 +1,17 @@
 """Phase 4: Recursive Summarization - Summarize expanded file chunks using LLM.
 
-This module implements the MIT RLM recursive inspection model:
-- Apply LLM-generated inspection logic to expanded chunks
+MIT RLM (Recursive Inspection Model) Implementation:
+- Generate executable Python code for chunk relevance evaluation
+- Apply the code to filter chunks relevant to the user query
 - Selectively summarize matched content per file
 - Return file-level summaries with metadata for citations
 
-Uses Azure OpenAI API for LLM-based summarization.
+The core innovation: Instead of using rules, the LLM generates actual Python code
+(evaluate_chunk_relevance function) that the system executes to determine which
+chunks are relevant to the user's query. This follows the MIT RLM paper approach
+for generating small, executable inspection programs.
+
+Uses Azure OpenAI API for LLM-based code generation and summarization.
 """
 
 import logging
@@ -100,7 +106,7 @@ async def recursive_summarize_files(
 
             logger.info(
                 f"📍 Phase 4.1: Analyzing file '{file_name}' "
-                f"({entry_chunk_count} entry → {total_chunks} total chunks)"
+                f"({entry_chunk_count} entry → {total_chunks} total chunks, deployment: {model_deployment})"
             )
 
             # Prepare chunk text for LLM analysis
@@ -119,9 +125,9 @@ async def recursive_summarize_files(
                 logger.warning(f"⚠️  Phase 4: File {file_name} has no extractable text")
                 continue
 
-            # Step 1: Generate inspection logic using LLM
-            logger.info(f"  → Step 1: Generating inspection logic for query: '{query[:50]}...'")
-            inspection_logic = await _generate_inspection_logic(
+            # Step 1: Generate Python code for chunk relevance evaluation (MIT RLM)
+            logger.info(f"  → Step 1: Generating inspection code (Python filter function) for query: '{query[:50]}...'")
+            generated_code = await _generate_inspection_logic(
                 query=query,
                 file_name=file_name,
                 sample_chunks=chunk_texts[:3],  # Use first 3 chunks as sample
@@ -129,14 +135,14 @@ async def recursive_summarize_files(
                 model_deployment=model_deployment
             )
             
-            # Store inspection logic for logging
-            inspection_code[file_id] = inspection_logic
+            # Store inspection code for logging and audit trail
+            inspection_code[file_id] = generated_code
 
             # Step 2: Apply inspection logic to identify relevant chunks
-            logger.info(f"  → Step 2: Identifying relevant chunks using inspection logic")
+            logger.info(f"  → Step 2: Identifying relevant chunks using inspection code")
             relevant_chunks = await _apply_inspection_logic(
                 chunks=chunk_texts,
-                inspection_logic=inspection_logic,
+                inspection_logic=generated_code,
                 llm_client=llm_client,
                 model_deployment=model_deployment
             )
@@ -212,10 +218,10 @@ async def _generate_inspection_logic(
     model_deployment: str
 ) -> str:
     """
-    Generate LLM-based inspection logic (rules/patterns) for relevance filtering.
+    Generate LLM-based inspection logic (executable Python code) for relevance filtering.
 
-    MIT RLM approach: Let LLM generate small executable logic based on query.
-    For now, we'll use this as a ruleset description that informs chunk selection.
+    MIT RLM approach: Generate small, executable Python code that can evaluate chunks.
+    The code is a filter function that identifies chunks relevant to the user query.
 
     Args:
         query: User query
@@ -225,11 +231,14 @@ async def _generate_inspection_logic(
         model_deployment: Azure deployment name
 
     Returns:
-        Inspection logic description/rules as string
+        Python code as string that can evaluate chunk relevance
     """
     sample_text = "\n---\n".join(sample_chunks[:2])
 
-    prompt = f"""You are analyzing a document to find relevant information for a user query.
+    prompt = f"""You are implementing the MIT Recursive Inspection Model (RLM) for document analysis.
+
+Given a user query and document content, generate a Python filter function that evaluates 
+chunk relevance. The function must be executable Python code.
 
 Document: {file_name}
 User Query: {query}
@@ -237,31 +246,64 @@ User Query: {query}
 Sample content from the document:
 {sample_text}
 
-Generate a concise set of rules or patterns (3-5 specific criteria) that would identify 
-chunks containing information relevant to the user's query. Focus on:
-1. Key terms or concepts the user is asking about
-2. Patterns in how relevant information is typically presented
-3. Relationships or connections mentioned in the query
+Generate a Python function called `evaluate_chunk_relevance(chunk_text: str) -> bool` that:
+1. Takes a chunk text as input
+2. Returns True if the chunk contains information relevant to the user query
+3. Implements 2-3 specific criteria based on the query and document context
 
-Return only the rules, formatted as a numbered list. Be specific and actionable."""
+The function should:
+- Use simple string operations and regex patterns
+- Be deterministic and efficient
+- Focus on key terms, entities, and relationships from the query
+- Handle edge cases (empty strings, case insensitivity)
+
+Requirements:
+- Function signature: def evaluate_chunk_relevance(chunk_text: str) -> bool:
+- Must be valid, executable Python code
+- Can import: re, json, collections (built-in only)
+- Return only the function code, no explanations or comments
+
+Example format (for a different query about company annual revenue):
+
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    import re
+    text_lower = chunk_text.lower()
+    
+    # Criterion 1: Contains revenue-related keywords
+    revenue_keywords = ['revenue', 'sales', 'income', 'earnings', 'profit']
+    has_revenue = any(keyword in text_lower for keyword in revenue_keywords)
+    
+    # Criterion 2: Contains time periods (years) indicating financial reports
+    has_year = bool(re.search(r'\\b(19|20)\\d{2}\\b', text_lower))
+    
+    # Criterion 3: Contains company name or financial metrics
+    has_metrics = re.search(r'\\b(million|billion|k|percentage|%|rate)\\b', text_lower) is not None
+    
+    return (has_revenue and has_year) or (has_revenue and has_metrics)
+
+Generate executable Python code now:"""
 
     try:
         response = await llm_client.chat.completions.create(
             model=model_deployment,
             messages=[
-                {"role": "system", "content": "You are a document analysis expert."},
+                {"role": "system", "content": "You are a Python expert implementing the MIT RLM model. Generate executable Python code for chunk evaluation."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=300
+            max_tokens=500
         )
-        inspection_logic = response.choices[0].message.content.strip()
-        logger.debug(f"Generated inspection logic:\n{inspection_logic}")
-        return inspection_logic
+        inspection_code = response.choices[0].message.content.strip()
+        logger.debug(f"Generated inspection code:\n{inspection_code}")
+        return inspection_code
     except Exception as e:
-        logger.warning(f"⚠️  Failed to generate inspection logic: {e}")
-        # Fallback: return query-based heuristics
-        return f"Return chunks containing these terms: {query}"
+        logger.warning(f"⚠️  Failed to generate inspection code: {e}")
+        # Fallback: return simple query-based filter function
+        return f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    \"\"\"Fallback relevance filter based on query terms.\"\"\"
+    text_lower = chunk_text.lower()
+    query_terms = {repr(query.lower().split())}
+    return sum(1 for term in query_terms if term in text_lower) >= 2"""
 
 
 async def _apply_inspection_logic(
@@ -272,13 +314,16 @@ async def _apply_inspection_logic(
     max_chunks: int = 10
 ) -> List[str]:
     """
-    Apply inspection logic to select relevant chunks.
+    Apply inspection logic (executable Python code) to select relevant chunks.
+
+    MIT RLM approach: Execute the generated Python code to filter chunks.
+    The inspection_logic should be a Python function: evaluate_chunk_relevance(chunk_text: str) -> bool
 
     Args:
         chunks: List of chunk texts
-        inspection_logic: Rules/patterns for relevance
-        llm_client: Azure OpenAI client
-        model_deployment: Azure deployment name
+        inspection_logic: Python code containing evaluate_chunk_relevance() function
+        llm_client: Azure OpenAI client (kept for compatibility)
+        model_deployment: Azure deployment name (kept for compatibility)
         max_chunks: Max chunks to select
 
     Returns:
@@ -287,20 +332,81 @@ async def _apply_inspection_logic(
     if not chunks:
         return []
 
+    try:
+        # Execute the generated Python code to create the filter function
+        namespace = {}
+        exec(inspection_logic, namespace)
+        
+        # Get the evaluate_chunk_relevance function
+        evaluate_func = namespace.get("evaluate_chunk_relevance")
+        
+        if evaluate_func is None:
+            logger.warning("⚠️  Generated code does not contain evaluate_chunk_relevance function; using LLM fallback")
+            return await _apply_inspection_logic_llm_fallback(
+                chunks, inspection_logic, llm_client, model_deployment, max_chunks
+            )
+        
+        # Apply the filter function to each chunk
+        relevant_chunks = []
+        for chunk in chunks[:max_chunks * 2]:  # Evaluate up to 2x max_chunks
+            try:
+                if evaluate_func(chunk):
+                    relevant_chunks.append(chunk)
+                    if len(relevant_chunks) >= max_chunks:
+                        break
+            except Exception as e:
+                logger.debug(f"Error evaluating chunk with filter function: {e}")
+                continue
+        
+        # If no chunks matched, return top few as fallback
+        if not relevant_chunks:
+            logger.warning(f"⚠️  No chunks matched filter criteria; using first few chunks as fallback")
+            relevant_chunks = chunks[:min(3, len(chunks))]
+        
+        logger.debug(f"Selected {len(relevant_chunks)} relevant chunks from {len(chunks)} using Python filter")
+        return relevant_chunks
+    
+    except SyntaxError as e:
+        logger.warning(f"⚠️  Syntax error in generated inspection code: {e}; using LLM fallback")
+        return await _apply_inspection_logic_llm_fallback(
+            chunks, inspection_logic, llm_client, model_deployment, max_chunks
+        )
+    except Exception as e:
+        logger.warning(f"⚠️  Error executing inspection code: {e}; using LLM fallback")
+        return await _apply_inspection_logic_llm_fallback(
+            chunks, inspection_logic, llm_client, model_deployment, max_chunks
+        )
+
+
+async def _apply_inspection_logic_llm_fallback(
+    chunks: List[str],
+    inspection_logic: str,
+    llm_client: Any,
+    model_deployment: str,
+    max_chunks: int = 10
+) -> List[str]:
+    """
+    LLM-based fallback for inspection logic when code execution fails.
+    
+    Uses the LLM to apply the inspection logic to chunks.
+    """
+    if not chunks:
+        return []
+
     # Prepare chunk list with indices for tracking
     chunks_with_idx = [(i, chunk) for i, chunk in enumerate(chunks[:max_chunks * 2])]
 
     prompt = f"""Analyze the following chunks and identify which ones contain information 
-relevant according to these rules:
+relevant according to these inspection criteria:
 
-RELEVANCE RULES:
+INSPECTION CRITERIA/CODE:
 {inspection_logic}
 
 CHUNKS TO ANALYZE:
 {chr(10).join(f'[Chunk {i}]: {chunk[:200]}...' if len(chunk) > 200 else f'[Chunk {i}]: {chunk}' for i, chunk in chunks_with_idx)}
 
 Return a JSON list of chunk indices that are relevant. Format: {{"relevant_indices": [0, 2, 5]}}
-Include only chunks that clearly match the rules. If fewer than 3 chunks match, include the most relevant ones anyway."""
+Include only chunks that clearly match the criteria. If fewer than 3 chunks match, include the most relevant ones anyway."""
 
     try:
         response = await llm_client.chat.completions.create(
@@ -322,12 +428,12 @@ Include only chunks that clearly match the rules. If fewer than 3 chunks match, 
         # Filter chunks based on selected indices
         relevant_chunks = [chunks[i] for i in relevant_indices if i < len(chunks)]
 
-        logger.debug(f"Selected {len(relevant_chunks)} relevant chunks from {len(chunks)}")
+        logger.debug(f"Selected {len(relevant_chunks)} relevant chunks from {len(chunks)} using LLM fallback")
         return relevant_chunks
 
     except Exception as e:
-        logger.warning(f"⚠️  Failed to apply inspection logic: {e}")
-        # Fallback: return first few chunks
+        logger.warning(f"⚠️  LLM fallback also failed: {e}; returning first few chunks")
+        # Final fallback: return first few chunks
         return chunks[:min(3, len(chunks))]
 
 
@@ -455,15 +561,15 @@ async def log_inspection_code_to_markdown(
     output_dir: str = "/app/logs/chunk_analysis"
 ) -> None:
     """
-    Log LLM-generated inspection logic/code to markdown file.
+    Log LLM-generated Python inspection code to markdown file.
 
-    This stores the Python-like code generated by the LLM to evaluate chunks,
-    extract specific signals or matches, and decide which subsets require
-    deeper inspection. Useful for debugging and understanding recursive logic.
+    This stores the executable Python code generated by the LLM per the MIT RLM model.
+    Each file gets a Python function (evaluate_chunk_relevance) that determines if 
+    a chunk is relevant to the user query.
 
     Args:
-        inspection_rules: Dict mapping file_id to generated inspection logic
-        query: User query
+        inspection_rules: Dict mapping file_id to generated inspection code (Python functions)
+        query: User query that drove the analysis
         rlm_enabled: Whether RLM is enabled
         output_dir: Output directory for logs
     """
@@ -485,23 +591,28 @@ async def log_inspection_code_to_markdown(
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
             f"\n**Total Inspection Programs:** {len(inspection_rules)}",
+            f"\n**Implementation:** MIT Recursive Inspection Model (RLM)",
             "\n---\n",
             "## Overview\n",
-            "This file stores the Python-like inspection logic generated by the LLM.",
-            "These programs are used to:\n",
+            "This file stores the **executable Python code** generated by the LLM per MIT RLM.",
+            "Each code block contains a Python function `evaluate_chunk_relevance(chunk_text: str) -> bool`",
+            "that determines if a chunk contains information relevant to the user's query.\n",
+            "### Purpose\n",
             "- Evaluate which chunks contain relevant information",
             "- Extract specific signals or matches from the content",
-            "- Decide which subsets require deeper inspection\n",
+            "- Decide which subsets require deeper inspection/summarization\n",
+            "### Usage\n",
+            "These functions are executed by the recursive summarizer to filter chunks before LLM-based summarization.\n",
             "---\n",
         ]
 
-        # Add each file's inspection logic
-        for idx, (file_id, inspection_logic) in enumerate(inspection_rules.items(), 1):
+        # Add each file's inspection code
+        for idx, (file_id, inspection_code) in enumerate(inspection_rules.items(), 1):
             lines.extend([
-                f"## {idx}. Inspection Logic (File ID: {file_id})",
-                "\n```python",
-                "# LLM-Generated Inspection Rules",
-                inspection_logic,
+                f"## {idx}. Inspection Code (File ID: {file_id})",
+                f"\n**Purpose:** Filter chunks relevant to query: \"{query}\"\n",
+                "```python",
+                inspection_code,
                 "```\n",
                 "---\n",
             ])
@@ -513,7 +624,7 @@ async def log_inspection_code_to_markdown(
             f.write(content)
 
         logger.info(f"✅ Phase 4 inspection code logged to {output_path}")
-        print(f"✅ Inspection logic saved: {len(inspection_rules)} files")
+        logger.info(f"   Stored {len(inspection_rules)} inspection programs following MIT RLM model")
 
     except Exception as e:
         logger.error(f"❌ Failed to log inspection code: {e}", exc_info=True)

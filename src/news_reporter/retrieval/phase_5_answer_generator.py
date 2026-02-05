@@ -341,10 +341,11 @@ def _extract_citations(
                         quote=None  # Could extract from original chunks, but not available here
                     ))
     
-    # If no citations found but best_effort, create citations from source chunks
+    # If no citations found but best_effort, create citations from ALL relevant source chunks
+    # (source_chunk_ids are already filtered to relevant chunks from Phase 4)
     if not citations and citation_policy == "best_effort":
         for summary in file_summaries:
-            for chunk_id in summary.source_chunk_ids[:3]:  # Limit to first 3 chunks per file
+            for chunk_id in summary.source_chunk_ids:  # Use ALL relevant chunks, not just first 3
                 citations.append(Citation(
                     chunk_id=chunk_id,
                     file_id=summary.file_id,
@@ -357,7 +358,7 @@ def _extract_citations(
         logger.warning(f"⚠️  Strict citation policy: no citations found in answer text")
         # Still return empty list; caller should handle this
     
-    logger.debug(f"Extracted {len(citations)} citations (policy: {citation_policy})")
+    logger.debug(f"Extracted {len(citations)} citations from {len(file_summaries)} files (policy: {citation_policy})")
     return citations
 
 

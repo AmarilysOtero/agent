@@ -1,6 +1,6 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-05T16:47:29.548409
+**Execution Time:** 2026-02-05T18:52:59.338304
 
 **Query:** Give the list of Kevin  skills
 
@@ -37,12 +37,12 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'expertise', 'abilities', 'proficient', 'knowledge']
+    query_keywords = ["skills", "expertise", "proficiencies", "abilities"]
     chunk_text_lower = chunk_text.lower()
     
     if any(keyword in chunk_text_lower for keyword in query_keywords):
         return True
-    if 'introduction' in chunk_text_lower:
+    if "introduction" in chunk_text_lower:
         return False
     return False
 ```
@@ -61,7 +61,7 @@ Introduction
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
@@ -71,8 +71,8 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    query_keywords = ['skills', 'software engineer', 'full-stack', 'development', 'solutions']
-    return any(keyword in chunk_text for keyword in query_keywords)
+    keywords = ['skills', 'software engineer', 'full-stack', 'development', 'solutions', 'technological challenges']
+    return any(keyword in chunk_text for keyword in keywords)
 ```
 
 #### Chunk Text
@@ -89,7 +89,7 @@ I'm a disciplined and enthusiastic software engineer with a passionate vision of
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
@@ -98,13 +98,10 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'kevin', 'expertise', 'abilities']
+    query_keywords = ["skills", "kevin", "expertise", "abilities"]
     chunk_text_lower = chunk_text.lower()
     
-    for keyword in query_keywords:
-        if keyword in chunk_text_lower:
-            return True
-    return False
+    return any(keyword in chunk_text_lower for keyword in query_keywords)
 ```
 
 #### Chunk Text
@@ -121,7 +118,7 @@ Skills
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
@@ -130,16 +127,11 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'skill', 'expertise', 'proficient', 'knowledge']
-    chunk_lower = chunk_text.lower()
+    query_keywords = ['skills', 'java', 'front end development', 'html', 'css', 'javascript', 'angularjs', 'agile', 'data structures', 'reactjs']
+    chunk_text_lower = chunk_text.lower()
     
-    if any(keyword in chunk_lower for keyword in query_keywords):
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
         return True
-    if 'top skills' in chunk_lower:
-        return True
-    if any(skill in chunk_lower for skill in ['java', 'html', 'javascript', 'angularjs', 'agile', 'reactjs']):
-        return True
-    
     return False
 ```
 
@@ -171,7 +163,7 @@ Top Skills (Technical/Nontechnical skills)
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4
@@ -180,14 +172,9 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ["skills", "frontend", "software", "project"]
-    chunk_text_lower = chunk_text.lower()
-    
-    for keyword in query_keywords:
-        if keyword in chunk_text_lower:
-            return True
-            
-    return False
+    chunk_text = chunk_text.lower()
+    query_keywords = ['skills', 'frontend developer', 'software engineer', 'project manager']
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 #### Chunk Text
@@ -208,7 +195,7 @@ Key Roles Performed
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5
@@ -243,7 +230,7 @@ Industry Experience (if applicable)
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6
@@ -252,7 +239,7 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'certifications', 'training', 'backend', 'postgresql', 'node.js', 'ux/ui', 'artificial intelligence', 'python flask']
+    query_keywords = ['skills', 'certifications', 'backend development', 'postgresql', 'node.js', 'ux/ui', 'artificial intelligence', 'python flask']
     chunk_text_lower = chunk_text.lower()
     
     for keyword in query_keywords:
@@ -310,7 +297,7 @@ Azure AI Engineer Associate - Microsoft Training
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7
@@ -319,14 +306,14 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    keywords = ['skills', 'expertise', 'proficient', 'competence', 'abilities']
+    keywords = ["skills", "experience", "expertise", "proficient", "competence"]
     chunk_text_lower = chunk_text.lower()
     
     if any(keyword in chunk_text_lower for keyword in keywords):
         return True
-    if 'professional work experience' in chunk_text_lower:
+    if "professional work experience" in chunk_text_lower:
         return True
-    if 'kevin' in chunk_text_lower and 'resume' in chunk_text_lower:
+    if "kevin" in chunk_text_lower:
         return True
     
     return False
@@ -344,7 +331,7 @@ Professional Work Experience
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8
@@ -353,15 +340,10 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text = chunk_text.lower()
-    keywords = ['skills', 'expertise', 'proficient', 'knowledge', 'competence', 'ability', 'experience']
-    relevant_phrases = ['quantum computing', 'quantum resilience', 'client-facing presentations', 'actionable plans']
+    query_keywords = ['skills', 'quantum', 'analyst', 'consultant', 'research', 'frameworks', 'presentation', 'proposal', 'sales', 'business']
+    chunk_text_lower = chunk_text.lower()
     
-    if any(keyword in chunk_text for keyword in keywords):
-        return True
-    if any(phrase in chunk_text for phrase in relevant_phrases):
-        return True
-    return False
+    return any(keyword in chunk_text_lower for keyword in query_keywords)
 ```
 
 #### Chunk Text
@@ -388,7 +370,7 @@ Mar 2025 - Present
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:9
@@ -398,8 +380,14 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'expertise', 'proficient', 'experience', 'knowledge']
-    return any(keyword in chunk_text for keyword in keywords) and 'kevin' in chunk_text
+    keywords = ['skills', 'expertise', 'proficient', 'experience', 'knowledge', 'ability']
+    relevant_phrases = ['ai backend engineer', 'azure ai foundry', 'gpt-4o orchestrator', 'multi-agent system']
+    
+    if any(keyword in chunk_text for keyword in keywords):
+        return True
+    if any(phrase in chunk_text for phrase in relevant_phrases):
+        return True
+    return False
 ```
 
 #### Chunk Text
@@ -422,7 +410,7 @@ Apr 2025 - May 2025
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10
@@ -432,7 +420,8 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'software engineer', 'java', 'testing', 'solutions', 'user experience', 'guideline']
+    keywords = ['skills', 'software engineer', 'java', 'testing', 'user experience', 'power app']
+    
     return any(keyword in chunk_text for keyword in keywords)
 ```
 
@@ -459,7 +448,7 @@ Jun 2024 - Dec 2024
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11
@@ -470,10 +459,7 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
     keywords = ['skills', 'business analyst', 'tester', 'analyze', 'collaborate', 'requirements', 'process flows']
-    
-    if any(keyword in chunk_text for keyword in keywords):
-        return True
-    return False
+    return any(keyword in chunk_text for keyword in keywords)
 ```
 
 #### Chunk Text
@@ -496,7 +482,7 @@ Oct 2023 - Jan 2024
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12
@@ -505,12 +491,9 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    keywords = ['skills', 'developed', 'features', 'architecture', 'authentication', 'authorization']
-    chunk_text_lower = chunk_text.lower()
-    
-    if any(keyword in chunk_text_lower for keyword in keywords):
-        return True
-    return False
+    chunk_text = chunk_text.lower()
+    keywords = ['skills', 'develop', 'implemented', 'features', 'user authorization', 'authentication']
+    return any(keyword in chunk_text for keyword in keywords) and 'kevin' in chunk_text
 ```
 
 #### Chunk Text
@@ -535,7 +518,7 @@ Oct 2021 - Dec 2021
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13
@@ -545,8 +528,9 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'software', 'engineer', 'api', 'sql', 'asp.net', 'develop', 'design']
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ["skills", "software", "engineer", "api", "sql", "asp.net", "development"]
+    
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 #### Chunk Text
@@ -569,7 +553,7 @@ Jun 2021 - Aug 2021
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14
@@ -579,8 +563,8 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    skills_keywords = ['skills', 'full stack', 'webmaster', 'user authentication', 'statistics', 'advance filtering']
-    return any(keyword in chunk_text for keyword in skills_keywords)
+    keywords = ['skills', 'full stack developer', 'user experience', 'meant stack', 'designing', 'building']
+    return any(keyword in chunk_text for keyword in keywords)
 ```
 
 #### Chunk Text
@@ -607,7 +591,7 @@ Aug 2017 - Mar 2021
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:15
@@ -616,12 +600,10 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ["skills", "software", "engineer", "python", "reactjs"]
+    query_keywords = ['skills', 'software', 'engineering', 'development', 'reactjs', 'python']
     chunk_text_lower = chunk_text.lower()
     
-    if any(keyword in chunk_text_lower for keyword in query_keywords):
-        return True
-    return False
+    return any(keyword in chunk_text_lower for keyword in query_keywords)
 ```
 
 #### Chunk Text
@@ -642,7 +624,7 @@ May 2020 - Aug 2020
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16
@@ -652,7 +634,7 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    skills_keywords = ["skills", "develop", "ui", "reactjs", "data", "ai", "analytics"]
+    skills_keywords = ['skills', 'develop', 'ui', 'reactjs', 'data', 'ai']
     return any(keyword in chunk_text for keyword in skills_keywords)
 ```
 
@@ -674,7 +656,7 @@ Jan 2020 - May 2020
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17
@@ -684,8 +666,12 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'algorithm', 'ai', 'artificial intelligence', 'agent-based']
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ['skills', 'artificial intelligence', 'algorithm', 'agent-based', 'search algorithms']
+    
+    for keyword in query_keywords:
+        if keyword in chunk_text:
+            return True
+    return False
 ```
 
 #### Chunk Text
@@ -706,7 +692,7 @@ Oct 2018 - Dec 2018
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
@@ -716,8 +702,11 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'developed', 'designed', 'engineer', 'automation', 'test']
-    return any(keyword in chunk_text for keyword in keywords) and 'kevin' in chunk_text
+    skills_keywords = ["skills", "developed", "designed", "engineer", "automation", "test"]
+    
+    if any(keyword in chunk_text for keyword in skills_keywords):
+        return True
+    return False
 ```
 
 #### Chunk Text
@@ -740,7 +729,7 @@ Jun 2018 - Aug 2018
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
@@ -751,6 +740,7 @@ Kevin Ramírez possesses a diverse skill set that includes technical and non-tec
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     query_keywords = ['skills', 'proficient', 'languages']
     chunk_text_lower = chunk_text.lower()
+    
     return any(keyword in chunk_text_lower for keyword in query_keywords)
 ```
 
@@ -772,7 +762,7 @@ Spanish - Proficient
 
 #### Recursive Text
 ```text
-Kevin Ramírez possesses a diverse skill set that includes technical and non-technical abilities. His top technical skills are Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and backend development with Node.js/Express.js and Python Flask. He also has experience with PostgreSQL, UX/UI design, and artificial intelligence. Additionally, he is familiar with Agile methodologies, data structures, and has certifications in Azure and AWS.
+Kevin Ramírez possesses a diverse skill set including Java, Front End Development, HTML/CSS, JavaScript, AngularJS, ReactJS, and Agile methodologies, each with 3 to 5 years of experience. He has expertise in Backend Development, PostgreSQL, Node.js/Express.js, UX/UI design, Artificial Intelligence, Python Flask, C#, and ASP.NET, among others. Additionally, he holds certifications in Azure AI Fundamentals, AWS Solution Architect Associate, and Azure AI Engineer Associate. His roles have spanned frontend development, software engineering, and project management, showcasing his versatility in the tech industry.
 ```
 
 ---

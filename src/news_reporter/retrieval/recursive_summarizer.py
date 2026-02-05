@@ -156,6 +156,7 @@ async def recursive_summarize_files(
                 file_inspection_codes = {}  # Store generated code for each chunk
                 file_inspection_payloads = {}  # Store code + text metadata per chunk
                 relevant_chunks = []
+                relevant_chunk_ids = []
 
                 for idx, chunk in enumerate(chunks):
                     if isinstance(chunk, dict):
@@ -194,6 +195,7 @@ async def recursive_summarize_files(
 
                         if is_relevant:
                             relevant_chunks.append(chunk_text)
+                            relevant_chunk_ids.append(chunk_id)
                             logger.debug(f"    ✓ Chunk {idx} is relevant")
                         else:
                             logger.debug(f"    ✗ Chunk {idx} is not relevant")
@@ -205,12 +207,16 @@ async def recursive_summarize_files(
                 if not relevant_chunks:
                     logger.warning(f"⚠️  Phase 4: No relevant chunks identified in {file_name}")
                     # Fallback: use first few chunks if none pass relevance
-                    relevant_chunks = [
-                        chunk.get("text", "").strip()
-                        for chunk in chunks[:min(3, len(chunks))]
-                        if chunk.get("text", "").strip()
-                    ]
-                final_selected_chunk_ids = list(file_inspection_codes.keys())[:len(relevant_chunks)]
+                    for fallback_idx, chunk in enumerate(chunks[:min(3, len(chunks))]):
+                        if not isinstance(chunk, dict):
+                            continue
+                        chunk_text = chunk.get("text", "").strip()
+                        if not chunk_text:
+                            continue
+                        relevant_chunks.append(chunk_text)
+                        relevant_chunk_ids.append(chunk.get("chunk_id", f"unknown-{fallback_idx}"))
+
+                final_selected_chunk_ids = list(relevant_chunk_ids)
 
             # Step 3: Summarize relevant chunks
             logger.info(

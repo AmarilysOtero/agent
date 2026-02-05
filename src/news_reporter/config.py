@@ -62,6 +62,11 @@ class Settings:
     # === RLM Configuration ===
     rlm_enabled: bool = False  # Enable optional RLM answering flow (default: false)
     
+    # === Phase 5: Cross-File Merge + Final Answer + Citations ===
+    rlm_citation_policy: str = "best_effort"  # "strict" or "best_effort"
+    rlm_max_files: int = 10  # Maximum files to include in final answer
+    rlm_max_chunks: int = 50  # Maximum chunks to reference in citations
+    
     @classmethod
     def from_env(cls) -> "Settings":
         triage = os.getenv("AGENT_ID_TRIAGE") or ""
@@ -117,6 +122,11 @@ class Settings:
 
         # RLM Configuration
         rlm_enabled = os.getenv("RLM_ENABLED", "false").lower() in {"1", "true", "yes"}
+        
+        # Phase 5: Cross-File Merge + Final Answer + Citations
+        rlm_citation_policy = os.getenv("RLM_CITATION_POLICY", "best_effort")
+        rlm_max_files = int(os.getenv("RLM_MAX_FILES", "10"))
+        rlm_max_chunks = int(os.getenv("RLM_MAX_CHUNKS", "50"))
 
         # minimal validation (you likely already have these set)
         missing = []
@@ -171,6 +181,9 @@ class Settings:
             auth_api_url=auth_url,
             workflow_json_path=workflow_json,
             rlm_enabled=rlm_enabled,
+            rlm_citation_policy=rlm_citation_policy,
+            rlm_max_files=rlm_max_files,
+            rlm_max_chunks=rlm_max_chunks,
         )
     
     @classmethod

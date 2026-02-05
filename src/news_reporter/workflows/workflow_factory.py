@@ -12,6 +12,7 @@ from .graph_loader import load_graph_definition
 from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance, log_expanded_chunks
 from ..retrieval.chunk_logger import log_chunks_to_markdown
 from ..retrieval.recursive_summarizer import recursive_summarize_files, log_file_summaries_to_markdown
+from ..retrieval.phase_5_answer_generator import generate_final_answer, log_final_answer_to_markdown
 
 # Optional analytics import
 try:
@@ -419,44 +420,131 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                 logger.warning(f"⚠️  Phase 4: Recursive summarization skipped - {phase4_error}", exc_info=True)
                 # Fall back to expanded context from Phase 3
 
-        # Assistant step - generate response using retrieved context
-        # GENERIC: Pass all available context to assistant, let it decide what's relevant
-        logger.info(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
-        print(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
-        
-        response = await assistant.run(goal, expanded_context or "")
-        
-        logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
-        print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
-        if not response:
-            logger.warning(f"🔍 Workflow: No response generated - returning default message")
-            print(f"⚠️ Workflow: No response generated - returning default message")
-            return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
+        # ===== PHASE 5: Cross-File Merge + Final Answer + Citations =====
+        # If RLM is enabled and Phase 4 generated summaries, apply Phase 5 answer generation
+        final_answer = None
+        if high_recall_mode and file_summaries:
+            try:
+                logger.info("🔄 Phase 5: Generating final answer with citations...")
 
-        # Review step (max 3 passes)
-        max_iters = 1 
-        for i in range(1, max_iters + 1):
-            print(f"Review pass {i}/{max_iters}...")
-            verdict = await reviewer.run(goal, response)
-            decision = (verdict.get("decision") or "revise").lower()
-            reason = verdict.get("reason", "")
-            suggested = verdict.get("suggested_changes", "")
-            revised = verdict.get("revised_script", response)
+                # Get Phase 5 configuration
+                citation_policy = cfg.rlm_citation_policy or "best_effort"
+                max_files = cfg.rlm_max_files or 10
+                max_chunks = cfg.rlm_max_chunks or 50
 
-            print(f"Decision: {decision} | Reason: {reason}")
+                try:
+                    from openai import AsyncAzureOpenAI
+                    
+                    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+                    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+                    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+                    model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
+                    
+                    if not (azure_endpoint and api_key):
+                        logger.warning("⚠️  Phase 5: Azure OpenAI credentials not configured; using fallback")
+                    else:
+                        llm_client = AsyncAzureOpenAI(
+                            api_key=api_key,
+                            api_version=api_version,
+                            azure_endpoint=azure_endpoint
+                        )
 
-            if decision == "accept":
-                return revised or response
+                        final_answer = await generate_final_answer(
+                            file_summaries=file_summaries,
+                            query=goal,
+                            llm_client=llm_client,
+                            model_deployment=model_deployment,
+                            citation_policy=citation_policy,
+                            max_files=max_files,
+                            max_chunks=max_chunks
+                        )
 
-            # Ask assistant to improve using reviewer feedback
-            improve_context = (
-                f"Previous response needs improvement:\n{suggested or reason}\n\n"
-                f"Original response:\n{response}\n\n"
-                f"Context available:\n{context}"
-            )
-            response = await assistant.run(goal, improve_context)
+                        # Log Phase 5 final answer to markdown
+                        try:
+                            await log_final_answer_to_markdown(
+                                answer=final_answer,
+                                query=goal,
+                                output_dir="/app/logs/chunk_analysis"
+                            )
+                        except Exception as e:
+                            logger.warning(f"⚠️  Failed to log Phase 5 answer: {e}")
 
-        return f"[After {max_iters} review passes]\n{response}"
+                except ImportError:
+                    logger.warning("⚠️  Phase 5: Azure OpenAI SDK not available; using fallback")
+                except Exception as llm_error:
+                    logger.warning(f"⚠️  Phase 5: Final answer generation failed - {llm_error}", exc_info=True)
+
+            except Exception as phase5_error:
+                logger.warning(f"⚠️  Phase 5: Answer generation skipped - {phase5_error}", exc_info=True)
+                # Fall back to expanded context from Phase 4
+
+        # If Phase 5 generated a final answer, use it; otherwise use expanded context from Phase 4
+        if final_answer:
+            # Build response from Phase 5 answer with citations
+            answer_with_citations = f"{final_answer.answer_text}\n\n"
+            if final_answer.citations:
+                answer_with_citations += "**Sources:**\n"
+                citations_by_file = {}
+                for citation in final_answer.citations:
+                    if citation.file_name not in citations_by_file:
+                        citations_by_file[citation.file_name] = []
+                    citations_by_file[citation.file_name].append(citation.chunk_id)
+                
+                for file_name, chunk_ids in citations_by_file.items():
+                    answer_with_citations += f"- {file_name}: chunks {', '.join(chunk_ids)}\n"
+            
+            logger.info(f"✅ Phase 5: Final answer ready with {len(final_answer.citations)} citations from {final_answer.file_count} files")
+            # Use Phase 5 answer directly instead of going through Assistant
+            response = answer_with_citations
+            logger.info(f"✅ Using Phase 5 answer directly (skipping Assistant + Review steps)")
+        else:
+            # Fall back to using Assistant with expanded context
+            logger.info("ℹ️  Phase 5 did not generate answer; using Assistant with expanded context")
+
+        # Assistant step - generate response using retrieved context (if Phase 5 didn't generate answer)
+        if not final_answer:
+            # GENERIC: Pass all available context to assistant, let it decide what's relevant
+            logger.info(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
+            print(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
+            
+            response = await assistant.run(goal, expanded_context or "")
+            
+            logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
+            print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
+            if not response:
+                logger.warning(f"🔍 Workflow: No response generated - returning default message")
+                print(f"⚠️ Workflow: No response generated - returning default message")
+                return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
+
+            # Review step (max 3 passes) - only for Assistant-generated responses
+            max_iters = 1 
+            for i in range(1, max_iters + 1):
+                print(f"Review pass {i}/{max_iters}...")
+                verdict = await reviewer.run(goal, response)
+                decision = (verdict.get("decision") or "revise").lower()
+                reason = verdict.get("reason", "")
+                suggested = verdict.get("suggested_changes", "")
+                revised = verdict.get("revised_script", response)
+
+                print(f"Decision: {decision} | Reason: {reason}")
+
+                if decision == "accept":
+                    return revised or response
+
+                # Ask assistant to improve using reviewer feedback
+                improve_context = (
+                    f"Previous response needs improvement:\n{suggested or reason}\n\n"
+                    f"Original response:\n{response}\n\n"
+                    f"Context available:\n{context}"
+                )
+                response = await assistant.run(goal, improve_context)
+
+            return f"[After {max_iters} review passes]\n{response}"
+        else:
+            # Phase 5 generated answer - return directly without review
+            logger.info(f"🔍 Workflow: Phase 5 answer (skipping review step)")
+            print(f"🔍 Workflow: Phase 5 answer (skipping review step)")
+            return response
 
     if len(targets) > 1:
         results = await asyncio.gather(*[run_one(rid) for rid in targets])

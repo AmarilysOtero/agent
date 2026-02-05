@@ -313,20 +313,80 @@ Manual test result:
 
 ### Phase 5 — Cross-File Merge + Final Answer + Citations
 
-Goal: Complete the RLM flow.
+**Status: ✅ IMPLEMENTED**
+
+Goal: Complete the RLM flow by merging file summaries and generating final answer with citations.
 
 Actions:
 
-- Merge file summaries into a global understanding.
-- Generate final answer.
-- Enforce citation policy (`strict` | `best_effort`).
-- Respect safety caps (`RLM_MAX_FILES`, `RLM_MAX_CHUNKS`).
+- Merge file-level summaries into global understanding using LLM
+- Generate final answer addressing the user query
+- Extract and enforce citations (strict or best_effort policy)
+- Respect safety caps (RLM_MAX_FILES, RLM_MAX_CHUNKS)
+- Log final answer with citations to markdown
 
-Manual test result:
+### Implementation Complete ✅
 
-- Final answer produced in RLM mode.
-- Citations reference real chunk ids and files.
-- Caps are respected.
+**Configuration** (`src/news_reporter/config.py`):
+
+- Added `rlm_citation_policy: str = "best_effort"` (strict or best_effort)
+- Added `rlm_max_files: int = 10` (maximum files to include)
+- Added `rlm_max_chunks: int = 50` (maximum chunks to reference)
+- Environment variable parsing for Phase 5 config flags
+
+**Phase 5 Module** (`src/news_reporter/retrieval/phase_5_answer_generator.py`):
+
+- `CitationPolicy` enum: STRICT, BEST_EFFORT
+- `Citation` dataclass: chunk_id, file_id, file_name, quote
+- `Answer` dataclass: answer_text, citations, file_count, chunk_count, expansion_ratio
+- `generate_final_answer()`: Main entry point, orchestrates merging and answer generation
+- `_merge_file_summaries()`: Synthesizes multiple file summaries into cohesive context
+- `_generate_answer_text()`: LLM-based final answer generation
+- `_extract_citations()`: Parses and enforces citation policy
+- `_enforce_safety_caps()`: Respects max_files and max_chunks limits
+- `log_final_answer_to_markdown()`: Logs final answer and citations
+
+**Workflow Integration** (`src/news_reporter/workflows/workflow_factory.py`):
+
+- Added import: `from ..retrieval.phase_5_answer_generator import generate_final_answer, log_final_answer_to_markdown`
+- Phase 5 executes after Phase 4 when `rlm_enabled=true` and file summaries exist
+- If Phase 5 generates answer: return directly with citations (skip Assistant + Review)
+- If Phase 5 fails: fall back to Assistant + Review with expanded context
+- Logs confirmation: "Phase 5 answer ready with X citations from Y files"
+
+**Flow Logic:**
+
+```
+Phase 4 (File Summaries) → Present?
+  ↓ YES
+Phase 5 (Answer Generation)
+  ↓
+_enforce_safety_caps() → Apply max_files/max_chunks
+  ↓
+_merge_file_summaries() → Synthesize across files
+  ↓
+_generate_answer_text() → LLM creates answer
+  ↓
+_extract_citations() → Enforce citation policy
+  ↓
+Answer object → Return directly (skip Assistant/Review)
+```
+
+**Citation Policies:**
+
+- **strict**: Every claim must have a citation; if citation extraction fails, return empty citations
+- **best_effort**: Include citations where possible; if none extracted, cite first 3 chunks per file
+
+**Manual Test Results:**
+
+- ✅ Phase 5 enabled: generates final answer with citations
+- ✅ Citations properly reference chunk IDs and file names
+- ✅ Safety caps respected (max 10 files, max 50 chunks)
+- ✅ Fallback to Assistant when Phase 5 fails
+- ✅ Answer logged to markdown with citation metadata
+- ✅ Response includes formatted source list when citations present
+
+**Next Phase:** Phase 6 - Agent-Side Integration + Docs
 
 ---
 

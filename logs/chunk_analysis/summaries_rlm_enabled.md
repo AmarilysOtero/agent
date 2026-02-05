@@ -1,8 +1,8 @@
 # Phase 4: Recursive Summarization (RLM Enabled)
 
-**Execution Time:** 2026-02-05T01:39:18.710758
+**Execution Time:** 2026-02-05T01:56:27.869947
 
-**Query:** Tell me the skills you    can find for Kelvin
+**Query:** Tell me   the   skills you    can find for Kevin
 
 **Total Summaries:** 2
 
@@ -12,7 +12,7 @@
 
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf
 **Chunks:** 3/16 summarized
-**Expansion Ratio:** 5.33x
+**Expansion Ratio:** 8.00x
 
 ### Summary
 
@@ -32,7 +32,7 @@ alexis.torres@dxc.com
 
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf
 **Chunks:** 3/20 summarized
-**Expansion Ratio:** 20.00x
+**Expansion Ratio:** 10.00x
 
 ### Summary
 

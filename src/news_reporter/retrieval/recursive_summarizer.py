@@ -22,6 +22,12 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+# MIT RLM Configuration (Phase 2 feature flag)
+USE_MIT_RLM_RECURSION = os.getenv("USE_MIT_RLM_RECURSION", "false").lower() == "true"
+MAX_RLM_ITERATIONS = int(os.getenv("MAX_RLM_ITERATIONS", "5"))
+
+logger.info(f"🔧 MIT RLM Recursion: {'ENABLED' if USE_MIT_RLM_RECURSION else 'DISABLED'}")
+
 
 def _build_completion_params(model_deployment: str, **kwargs) -> dict:
     """

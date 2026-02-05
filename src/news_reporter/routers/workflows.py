@@ -671,17 +671,29 @@ async def save_workflow_definition(
     # Generate workflow_id if not provided
     workflow_id = definition_data.get("workflow_id") or str(uuid.uuid4())
     
+    # Extract is_active parameter (default to False if not provided)
+    is_active = definition_data.get("is_active", False)
+    
     # Save using persistence
     persistence = get_workflow_persistence()
     workflow = WorkflowRecord(
         workflow_id=workflow_id,
         name=name or definition_data.get("name") or "Untitled Workflow",
         description=definition_data.get("description"),
-        graph_definition=graph_to_save
+        graph_definition=graph_to_save,
+        is_active=is_active  # Set is_active from request
     )
     persistence.save_workflow(workflow)
     
-    print(f"Saved workflow {workflow_id} ({name}) without validation")
+    # If this workflow should be active, deactivate all others
+    if is_active:
+        success = persistence.set_active_workflow(workflow_id)
+        if success:
+            print(f"Saved workflow {workflow_id} ({name}) and set as active (deactivated other workflows)")
+        else:
+            print(f"Warning: Saved workflow {workflow_id} but failed to set as active")
+    else:
+        print(f"Saved workflow {workflow_id} ({name}) as inactive")
     
     return {
         "success": True,
@@ -738,13 +750,12 @@ async def get_persisted_workflow(workflow_id: str) -> Dict[str, Any]:
 @router.get("/persist")
 async def list_persisted_workflows(
     tags: Optional[List[str]] = Query(None),
-    is_active: Optional[bool] = Query(None, description="Filter by active status. Defaults to True (only active workflows)")
+    is_active: Optional[bool] = Query(None, description="Filter by active status. If not specified, returns all workflows.")
 ) -> List[Dict[str, Any]]:
-    """List persisted workflows. By default, only returns active workflows."""
+    """List persisted workflows. Returns all workflows by default (active and inactive)."""
     persistence = get_workflow_persistence()
-    # Default to only active workflows if not specified
-    if is_active is None:
-        is_active = True
+    # Return all workflows by default (both active and inactive)
+    # If is_active is explicitly set to True or False, filter accordingly
     workflows = persistence.list_workflows(tags=tags, is_active=is_active)
     return [w.to_dict() for w in workflows]
 

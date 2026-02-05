@@ -256,6 +256,13 @@ async def _generate_inspection_logic(
     Returns:
         Python code as string that can evaluate chunk relevance
     """
+    # Use gpt-4o-mini for code generation (o3-mini returns empty responses)
+    code_generation_deployment = "gpt-4o-mini"
+    if model_deployment.startswith(('gpt-', 'gpt4')):
+        code_generation_deployment = model_deployment
+    
+    logger.info(f"  Using {code_generation_deployment} for code generation")
+    
     sample_text = "\n---\n".join(sample_chunks[:2])
 
     prompt = f"""You are implementing the MIT Recursive Inspection Model (RLM) for document analysis.
@@ -287,8 +294,8 @@ Return ONLY the Python function code:"""
 
     try:
         params = _build_completion_params(
-            model_deployment,
-            model=model_deployment,
+            code_generation_deployment,
+            model=code_generation_deployment,
             messages=[
                 {"role": "system", "content": "You are a Python expert. Generate clean, executable Python code with no explanations."},
                 {"role": "user", "content": prompt}
@@ -296,17 +303,39 @@ Return ONLY the Python function code:"""
             temperature=0.3,
             max_completion_tokens=300
         )
+        
+        logger.info(f"🔍 DEBUG: Sending LLM request to {code_generation_deployment}")
+        logger.debug(f"  System message: {params['messages'][0]['content'][:100]}...")
+        logger.debug(f"  User prompt length: {len(params['messages'][1]['content'])} chars")
+        
         response = await llm_client.chat.completions.create(**params)
+        
+        logger.debug(f"🔍 DEBUG: LLM Response object type: {type(response)}")
+        logger.debug(f"  Response.choices count: {len(response.choices) if response.choices else 'None'}")
+        
+        if response.choices:
+            choice = response.choices[0]
+            logger.debug(f"  Choice type: {type(choice)}")
+            logger.debug(f"  Message type: {type(choice.message)}")
+            logger.debug(f"  Message content type: {type(choice.message.content)}")
+            logger.debug(f"  Message content (raw): {repr(choice.message.content[:200] if choice.message.content else 'EMPTY')}")
+        
         inspection_code = response.choices[0].message.content.strip()
+        
+        logger.debug(f"🔍 DEBUG: After strip() - length: {len(inspection_code)}, content: {repr(inspection_code[:100])}")
         
         # Handle markdown-wrapped code (```python ... ```)
         if inspection_code.startswith("```"):
+            logger.info("📋 Detected markdown-wrapped code, extracting...")
             lines = inspection_code.split("\n")
             inspection_code = "\n".join(lines[1:-1]) if len(lines) > 2 else inspection_code
+            logger.debug(f"  After extracting from markdown: {repr(inspection_code[:100])}")
         
         # Check if response is empty or doesn't contain the function signature
         if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
-            logger.warning(f"⚠️  LLM returned empty or incomplete code. Raw response: '{inspection_code[:100] if inspection_code else 'EMPTY'}'")
+            logger.warning(f"⚠️  LLM returned empty or incomplete code.")
+            logger.warning(f"   Raw response: '{inspection_code[:200] if inspection_code else 'EMPTY'}'")
+            logger.warning(f"   Response length: {len(inspection_code) if inspection_code else 0} chars")
             logger.info("📝 Falling back to query-term based filter function")
             # Fallback: return simple query-based filter function
             fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -317,6 +346,7 @@ Return ONLY the Python function code:"""
             logger.debug(f"Generated fallback inspection code:\n{fallback_code}")
             return fallback_code
         
+        logger.info(f"✅ LLM generated valid inspection code ({len(inspection_code)} chars)")
         logger.debug(f"Generated inspection code:\n{inspection_code}")
         return inspection_code
     except Exception as e:
@@ -418,6 +448,9 @@ async def _apply_inspection_logic_llm_fallback(
     if not chunks:
         return []
 
+    # Use gpt-4o-mini if o3-mini is configured
+    analysis_deployment = "gpt-4o-mini" if model_deployment.startswith('o3') else model_deployment
+
     # Prepare chunk list with indices for tracking
     chunks_with_idx = [(i, chunk) for i, chunk in enumerate(chunks[:max_chunks * 2])]
 
@@ -435,8 +468,8 @@ Include only chunks that clearly match the criteria. If fewer than 3 chunks matc
 
     try:
         params = _build_completion_params(
-            model_deployment,
-            model=model_deployment,
+            analysis_deployment,
+            model=analysis_deployment,
             messages=[
                 {"role": "system", "content": "You are a document analysis expert. Respond with valid JSON only."},
                 {"role": "user", "content": prompt}
@@ -484,6 +517,9 @@ async def _summarize_chunks(
     Returns:
         Summary text
     """
+    # Use gpt-4o-mini if o3-mini is configured
+    summary_deployment = "gpt-4o-mini" if model_deployment.startswith('o3') else model_deployment
+    
     chunks_text = "\n---\n".join(chunks)
 
     prompt = f"""Summarize the following chunks from "{file_name}" to answer: {query}
@@ -501,8 +537,8 @@ Return only the summary text, without preamble."""
 
     try:
         params = _build_completion_params(
-            model_deployment,
-            model=model_deployment,
+            summary_deployment,
+            model=summary_deployment,
             messages=[
                 {"role": "system", "content": "You are a summarization expert. Provide clear, concise summaries."},
                 {"role": "user", "content": prompt}

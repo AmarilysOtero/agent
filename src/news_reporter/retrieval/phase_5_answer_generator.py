@@ -216,8 +216,11 @@ Create a merged, cohesive summary that:
 Return only the merged summary, no preamble. Focus on answering the query comprehensively."""
 
     try:
+        # Use gpt-4o-mini if o3-mini is configured (o3 returns empty responses)
+        effective_deployment = "gpt-4o-mini" if model_deployment.startswith('o3') else model_deployment
+        
         response = await llm_client.chat.completions.create(
-            model=model_deployment,
+            model=effective_deployment,
             messages=[
                 {"role": "system", "content": "You are an expert at synthesizing information from multiple sources."},
                 {"role": "user", "content": prompt}
@@ -275,8 +278,11 @@ Requirements:
 Return only the answer, no preamble. Answer should be 2-5 sentences."""
 
     try:
+        # Use gpt-4o-mini if o3-mini is configured (o3 returns empty responses)
+        effective_deployment = "gpt-4o-mini" if model_deployment.startswith('o3') else model_deployment
+        
         response = await llm_client.chat.completions.create(
-            model=model_deployment,
+            model=effective_deployment,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant answering questions based on provided documents. Include citations in your answer."},
                 {"role": "user", "content": prompt}

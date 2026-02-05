@@ -360,6 +360,138 @@ NOW generate the function:"""
         return fallback_code
 
 
+async def _generate_recursive_inspection_program(
+    query: str,
+    file_name: str,
+    active_chunks: List[Dict],
+    iteration: int,
+    previous_data: Dict,
+    llm_client: Any,
+    model_deployment: str
+) -> str:
+    """
+    Generate MIT RLM-compliant inspection program for one iteration.
+
+    Returns Python code that evaluates all chunks and returns structured output:
+    {
+        "selected_chunk_ids": [...],
+        "extracted_data": {...},
+        "confidence": 0.0-1.0,
+        "stop": True/False
+    }
+    """
+    chunk_summaries = "\n".join([
+        f"  - Chunk {i} (ID: {c.get('chunk_id', '')[:20]}...): {c.get('text', '')[:100]}..."
+        for i, c in enumerate(active_chunks[:10])
+    ])
+
+    prompt = f"""You are implementing the MIT Recursive Language Model (RLM) for document analysis.
+
+ITERATION {iteration + 1}/5
+Document: {file_name}
+User Query: {query}
+
+ACTIVE CHUNKS ({len(active_chunks)} total):
+{chunk_summaries}
+
+PREVIOUS ITERATIONS DATA:
+{previous_data if previous_data else "None (first iteration)"}
+
+Generate a Python function with this EXACT signature:
+
+def inspect_iteration(chunks):
+    \"\""
+    Evaluate chunks for this iteration and return structured output.
+
+    Args:
+        chunks: List of dicts with keys: chunk_id, text
+
+    Returns:
+        {{
+            "selected_chunk_ids": [...],  # IDs of relevant chunks to keep
+            "extracted_data": {{}},        # Any data extracted this iteration
+            "confidence": 0.0-1.0,        # Confidence in completeness
+            "stop": True/False            # Whether we have enough information
+        }}
+    \"\""
+    # Your implementation here
+    pass
+
+Requirements:
+1. Evaluate ALL chunks in the chunks list
+2. Return structured dict matching the schema above
+3. Use simple string operations (no imports)
+4. Be specific to this iteration and previous findings
+5. Narrow focus each iteration (select fewer chunks)
+6. selected_chunk_ids MUST be a subset of provided chunk IDs (validate before returning)
+7. Return at least 2 selected_chunk_ids unless stop=True
+8. confidence MUST be a float in range [0.0, 1.0]
+9. Return ONLY function code with no markdown or explanations
+
+Generate ONLY the function code with no explanations:"""
+
+    try:
+        code_generation_deployment = "gpt-4o-mini"
+        if model_deployment.startswith(('gpt-', 'gpt4')):
+            code_generation_deployment = model_deployment
+
+        params = _build_completion_params(
+            code_generation_deployment,
+            model=code_generation_deployment,
+            messages=[
+                {"role": "system", "content": "You are a Python expert implementing MIT RLM. Generate clean, executable code with no explanations."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_completion_tokens=600
+        )
+
+        response = await llm_client.chat.completions.create(**params)
+        program_code = response.choices[0].message.content.strip()
+
+        if program_code.startswith("```"):
+            lines = program_code.split("\n")
+            program_code = "\n".join(lines[1:-1]) if len(lines) > 2 else program_code
+
+        if not program_code or "def inspect_iteration" not in program_code:
+            logger.warning(f"⚠️  LLM returned incomplete program for iteration {iteration}")
+            return _get_fallback_inspection_program(query, iteration)
+
+        logger.debug(f"    Generated {len(program_code)} char program for iteration {iteration}")
+        return program_code
+
+    except Exception as e:
+        logger.warning(f"⚠️  Failed to generate program for iteration {iteration}: {e}")
+        return _get_fallback_inspection_program(query, iteration)
+
+
+def _get_fallback_inspection_program(query: str, iteration: int) -> str:
+    """Fallback inspection program when LLM fails."""
+    query_terms = query.lower().split()
+
+    return f"""def inspect_iteration(chunks):
+    \"\""Fallback program based on query term matching.\"\""
+    query_terms = {repr(query_terms)}
+    selected_ids = []
+    extracted_data = {{}}
+
+    for chunk in chunks:
+        text_lower = chunk['text'].lower()
+        matches = sum(1 for term in query_terms if term in text_lower)
+        if matches >= max(2, len(query_terms) // 2):
+            selected_ids.append(chunk['chunk_id'])
+
+    confidence = min(1.0, len(selected_ids) / max(1, len(chunks)))
+    stop = iteration >= 3 or confidence > 0.8
+
+    return {{
+        "selected_chunk_ids": selected_ids,
+        "extracted_data": {{"fallback": True}},
+        "confidence": confidence,
+        "stop": stop
+    }}"""
+
+
 async def _evaluate_chunk_with_code(
     chunk_text: str,
     inspection_code: str,
@@ -400,6 +532,117 @@ async def _evaluate_chunk_with_code(
     except Exception as e:
         logger.warning(f"⚠️  Error executing code for {chunk_id}: {e}")
         return False
+
+
+async def _execute_inspection_program(
+    chunks: List[Dict],
+    program: str,
+    iteration: int
+) -> Dict:
+    """
+    Execute MIT RLM inspection program and return structured output.
+
+    The program is expected to define:
+        def inspect_iteration(chunks) -> Dict
+    """
+    try:
+        safe_globals = {
+            "__builtins__": {
+                "len": len,
+                "list": list,
+                "dict": dict,
+                "set": set,
+                "sum": sum,
+                "min": min,
+                "max": max,
+                "int": int,
+                "float": float,
+                "str": str,
+                "range": range,
+                "enumerate": enumerate,
+                "sorted": sorted,
+                "any": any,
+                "all": all
+            }
+        }
+        namespace = {}
+        exec(program, safe_globals, namespace)
+
+        inspect_func = namespace.get("inspect_iteration")
+
+        if inspect_func is None:
+            logger.warning(f"⚠️  Program for iteration {iteration} missing inspect_iteration function")
+            return _get_fallback_result(chunks, iteration)
+
+        chunk_list = [
+            {"chunk_id": chunk.get("chunk_id", f"unknown-{i}"), "text": chunk.get("text", "")}
+            for i, chunk in enumerate(chunks)
+        ]
+        valid_chunk_ids = set(chunk.get("chunk_id") for chunk in chunk_list)
+
+        result = inspect_func(chunk_list)
+
+        if not isinstance(result, dict):
+            logger.warning(f"⚠️  Program returned non-dict: {type(result)}")
+            return _get_fallback_result(chunks, iteration)
+
+        MIN_KEEP = 2
+        selected_ids = result.get("selected_chunk_ids", [])
+        should_stop = result.get("stop", False)
+
+        if isinstance(selected_ids, list):
+            selected_ids = [cid for cid in selected_ids if cid in valid_chunk_ids]
+        else:
+            selected_ids = []
+
+        if not should_stop and len(selected_ids) < MIN_KEEP:
+            candidate_ids_ordered = [chunk.get("chunk_id") for chunk in chunk_list if chunk.get("chunk_id") in valid_chunk_ids]
+            selected_ids = candidate_ids_ordered[:MIN_KEEP]
+            logger.debug(f"    📌 Enforcing MIN_KEEP={MIN_KEEP}, selected first {len(selected_ids)} chunks by original order")
+
+        extracted = result.get("extracted_data", {})
+        MAX_EXTRACTED_SIZE = 50000
+        if isinstance(extracted, dict):
+            extracted_size = len(str(extracted))
+            if extracted_size > MAX_EXTRACTED_SIZE:
+                logger.warning(
+                    f"    ⚠️  Iteration {iteration}: extracted_data too large ({extracted_size} bytes), truncating"
+                )
+                truncated = {}
+                for k, v in extracted.items():
+                    if isinstance(v, str):
+                        truncated[k] = v[:500]
+                    elif isinstance(v, (int, float, bool)):
+                        truncated[k] = v
+                extracted = truncated
+
+        validated_result = {
+            "selected_chunk_ids": selected_ids,
+            "extracted_data": extracted,
+            "confidence": max(0.0, min(1.0, result.get("confidence", 0.5))),
+            "stop": bool(should_stop)
+        }
+
+        return validated_result
+
+    except SyntaxError as e:
+        logger.warning(f"⚠️  Syntax error in program for iteration {iteration}: {e}")
+        return _get_fallback_result(chunks, iteration)
+    except Exception as e:
+        logger.warning(f"⚠️  Error executing program for iteration {iteration}: {e}")
+        return _get_fallback_result(chunks, iteration)
+
+
+def _get_fallback_result(chunks: List[Dict], iteration: int) -> Dict:
+    """Generate safe fallback result when program execution fails."""
+    chunk_ids = [chunk.get("chunk_id", f"unknown-{i}") for i, chunk in enumerate(chunks)]
+
+    return {
+        "selected_chunk_ids": chunk_ids[:min(10, len(chunk_ids))],
+        "extracted_data": {"fallback": True, "iteration": iteration},
+        "confidence": 0.3,
+        "stop": iteration >= 3
+    }
 
 
 async def _apply_inspection_logic(

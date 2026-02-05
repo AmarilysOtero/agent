@@ -23,6 +23,29 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 
+def _build_completion_params(model_deployment: str, **kwargs) -> dict:
+    """
+    Build completion parameters compatible with the model.
+    o1/o3 models don't support temperature parameter.
+    
+    Args:
+        model_deployment: Model deployment name
+        **kwargs: Other parameters like max_completion_tokens, messages, etc.
+    
+    Returns:
+        Dict with appropriate parameters for the model
+    """
+    # Check if this is an o1/o3 model
+    is_o_series = any(model_deployment.startswith(prefix) for prefix in ['o1', 'o3'])
+    
+    # Remove temperature for o-series models
+    if is_o_series and 'temperature' in kwargs:
+        kwargs.pop('temperature')
+        logger.debug(f"Removed 'temperature' parameter for {model_deployment} (o-series model)")
+    
+    return kwargs
+
+
 @dataclass
 class FileSummary:
     """Summary of a file's relevant chunks."""
@@ -284,15 +307,17 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 Generate executable Python code now:"""
 
     try:
-        response = await llm_client.chat.completions.create(
+        params = _build_completion_params(
+            model_deployment,
             model=model_deployment,
             messages=[
                 {"role": "system", "content": "You are a Python expert implementing the MIT RLM model. Generate executable Python code for chunk evaluation."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=500
+            max_completion_tokens=500
         )
+        response = await llm_client.chat.completions.create(**params)
         inspection_code = response.choices[0].message.content.strip()
         logger.debug(f"Generated inspection code:\n{inspection_code}")
         return inspection_code
@@ -409,15 +434,17 @@ Return a JSON list of chunk indices that are relevant. Format: {{"relevant_indic
 Include only chunks that clearly match the criteria. If fewer than 3 chunks match, include the most relevant ones anyway."""
 
     try:
-        response = await llm_client.chat.completions.create(
+        params = _build_completion_params(
+            model_deployment,
             model=model_deployment,
             messages=[
                 {"role": "system", "content": "You are a document analysis expert. Respond with valid JSON only."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.2,
-            max_tokens=200
+            max_completion_tokens=200
         )
+        response = await llm_client.chat.completions.create(**params)
         response_text = response.choices[0].message.content.strip()
 
         # Parse JSON response
@@ -473,15 +500,17 @@ Provide a concise summary (3-5 sentences) that:
 Return only the summary text, without preamble."""
 
     try:
-        response = await llm_client.chat.completions.create(
+        params = _build_completion_params(
+            model_deployment,
             model=model_deployment,
             messages=[
                 {"role": "system", "content": "You are a summarization expert. Provide clear, concise summaries."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.5,
-            max_tokens=500
+            max_completion_tokens=500
         )
+        response = await llm_client.chat.completions.create(**params)
         summary = response.choices[0].message.content.strip()
         return summary
     except Exception as e:

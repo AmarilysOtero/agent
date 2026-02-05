@@ -223,7 +223,7 @@ Return only the merged summary, no preamble. Focus on answering the query compre
                 {"role": "user", "content": prompt}
             ],
             temperature=0.5,
-            max_tokens=1000
+            max_completion_tokens=1000
         )
         merged_context = response.choices[0].message.content.strip()
         return merged_context
@@ -282,7 +282,7 @@ Return only the answer, no preamble. Answer should be 2-5 sentences."""
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=800
+            max_completion_tokens=800
         )
         answer = response.choices[0].message.content.strip()
         return answer

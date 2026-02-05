@@ -1,10 +1,10 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-05T03:06:07.865275
+**Execution Time:** 2026-02-05T03:52:05.652979
 
-**Query:** Tell me the     skills you an find for Kevin
+**Query:** Give the list of   Kevin skills
 
-**Total Inspection Programs:** 2
+**Total Inspection Programs:** 1
 
 **Implementation:** MIT Recursive Inspection Model (RLM)
 
@@ -28,29 +28,15 @@ These functions are executed by the recursive summarizer to filter chunks before
 
 ---
 
-## 1. Inspection Code (File ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
+## 1. Inspection Code (File ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf)
 
-**Purpose:** Filter chunks relevant to query: "Tell me the     skills you an find for Kevin"
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    """Fallback relevance filter based on query terms."""
-    text_lower = chunk_text.lower()
-    query_terms = ['tell', 'me', 'the', 'skills', 'you', 'an', 'find', 'for', 'kevin']
-    return sum(1 for term in query_terms if term in text_lower) >= 2
-```
-
----
-
-## 2. Inspection Code (File ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf)
-
-**Purpose:** Filter chunks relevant to query: "Tell me the     skills you an find for Kevin"
+**Purpose:** Filter chunks relevant to query: "Give the list of   Kevin skills"
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     """Fallback relevance filter based on query terms."""
     text_lower = chunk_text.lower()
-    query_terms = ['tell', 'me', 'the', 'skills', 'you', 'an', 'find', 'for', 'kevin']
+    query_terms = ['give', 'the', 'list', 'of', 'kevin', 'skills']
     return sum(1 for term in query_terms if term in text_lower) >= 2
 ```
 

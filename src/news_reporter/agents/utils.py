@@ -331,14 +331,22 @@ def filter_results_by_exact_match(
                 )
                 continue
         
-        # 🔥 PERSON IDENTITY MODE: Requires name in text/header for verification
+        # 🔥 PERSON IDENTITY MODE: Requires name in text/header or file match for verification
         # For relationship queries: Keep ALL chunks that mention ANY of the people, regardless of similarity
+        name_match = name_found_in_text or name_found_in_header
+        name_or_file_match = name_match or name_found_in_file
+
+        if not is_relationship_query and not name_or_file_match:
+            logger.info(
+                f"❌ [filter] Result {i} FILTERED OUT: no name/file match, sim={similarity:.3f}, file='{file_name}'"
+            )
+            print(f"❌ [filter] Result {i} FILTERED OUT: no name/file match")
+            continue
+
         # Standard similarity threshold only for non-relationship queries
         if not is_relationship_query and similarity < 0.3:
             logger.info(f"❌ [filter] Result {i} FILTERED OUT: similarity={similarity:.3f} < 0.3")
             continue
-        
-        name_match = name_found_in_text or name_found_in_header
         
         # For relationship queries: Keep if ANY person name matches
         if is_relationship_query and name_match:
@@ -349,8 +357,8 @@ def filter_results_by_exact_match(
                 f"file='{file_name}'"
             )
             print(f"✅ [filter] Result {i} KEPT (RELATIONSHIP): sim={similarity:.3f}, name_match={name_match}")
-        # For other person queries: Keep if name matches or high similarity
-        elif not is_relationship_query and (name_match or similarity >= min_similarity):
+        # For other person queries: Keep if name or file scope matches
+        elif not is_relationship_query and name_or_file_match:
             filtered.append(res)
             logger.info(
                 f"✅ [filter] Result {i} KEPT (PERSON): similarity={similarity:.3f}, "

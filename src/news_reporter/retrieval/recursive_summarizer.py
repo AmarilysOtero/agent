@@ -4,10 +4,13 @@ This module implements the MIT RLM recursive inspection model:
 - Apply LLM-generated inspection logic to expanded chunks
 - Selectively summarize matched content per file
 - Return file-level summaries with metadata for citations
+
+Uses Azure OpenAI API for LLM-based summarization.
 """
 
 import logging
 import asyncio
+import os
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 
@@ -29,8 +32,8 @@ class FileSummary:
 async def recursive_summarize_files(
     expanded_files: Dict[str, Dict],
     query: str,
-    llm_client: Any,
-    model_name: str = "gpt-4"
+    llm_client: Optional[Any] = None,
+    model_deployment: Optional[str] = None
 ) -> List[FileSummary]:
     """
     Apply LLM-based recursive summarization to expanded file chunks.
@@ -44,13 +47,42 @@ async def recursive_summarize_files(
     Args:
         expanded_files: Output from Phase 3 {file_id: {chunks: [...], file_name: str, ...}}
         query: User query for context
-        llm_client: LLM client (e.g., OpenAI, Anthropic)
-        model_name: Model to use for summarization
+        llm_client: Optional Azure OpenAI client (created if not provided)
+        model_deployment: Azure OpenAI deployment name (reads from AZURE_OPENAI_CHAT_DEPLOYMENT if not provided)
 
     Returns:
         List of FileSummary objects with file-level summaries
     """
-    logger.info(f"🔄 Phase 4: Starting recursive summarization for {len(expanded_files)} files")
+    # Initialize Azure OpenAI client if not provided
+    if llm_client is None:
+        try:
+            from azure.openai import AsyncAzureOpenAI
+            
+            azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+            api_key = os.getenv("AZURE_OPENAI_API_KEY")
+            api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+            
+            if not (azure_endpoint and api_key):
+                logger.warning("⚠️  Phase 4: Azure OpenAI credentials not configured; skipping recursive summarization")
+                return []
+            
+            llm_client = AsyncAzureOpenAI(
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=azure_endpoint
+            )
+        except ImportError:
+            logger.warning("⚠️  Phase 4: Azure OpenAI SDK not available; skipping recursive summarization")
+            return []
+        except Exception as e:
+            logger.warning(f"⚠️  Phase 4: Failed to initialize Azure OpenAI client: {e}")
+            return []
+    
+    # Get deployment name from environment or parameter
+    if model_deployment is None:
+        model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
+    
+    logger.info(f"🔄 Phase 4: Starting recursive summarization for {len(expanded_files)} files (deployment: {model_deployment})")
 
     summaries = []
 
@@ -93,7 +125,7 @@ async def recursive_summarize_files(
                 file_name=file_name,
                 sample_chunks=chunk_texts[:3],  # Use first 3 chunks as sample
                 llm_client=llm_client,
-                model_name=model_name
+                model_deployment=model_deployment
             )
 
             # Step 2: Apply inspection logic to identify relevant chunks
@@ -102,7 +134,7 @@ async def recursive_summarize_files(
                 chunks=chunk_texts,
                 inspection_logic=inspection_logic,
                 llm_client=llm_client,
-                model_name=model_name
+                model_deployment=model_deployment
             )
 
             if not relevant_chunks:
@@ -120,7 +152,7 @@ async def recursive_summarize_files(
                 query=query,
                 file_name=file_name,
                 llm_client=llm_client,
-                model_name=model_name
+                model_deployment=model_deployment
             )
 
             # Map back to chunk IDs for citations
@@ -161,7 +193,7 @@ async def _generate_inspection_logic(
     file_name: str,
     sample_chunks: List[str],
     llm_client: Any,
-    model_name: str
+    model_deployment: str
 ) -> str:
     """
     Generate LLM-based inspection logic (rules/patterns) for relevance filtering.
@@ -173,8 +205,8 @@ async def _generate_inspection_logic(
         query: User query
         file_name: Name of file being analyzed
         sample_chunks: First few chunks for context
-        llm_client: LLM client
-        model_name: Model to use
+        llm_client: Azure OpenAI client
+        model_deployment: Azure deployment name
 
     Returns:
         Inspection logic description/rules as string
@@ -198,8 +230,8 @@ chunks containing information relevant to the user's query. Focus on:
 Return only the rules, formatted as a numbered list. Be specific and actionable."""
 
     try:
-        response = await llm_client.acreate(
-            model=model_name,
+        response = await llm_client.chat.completions.create(
+            model=model_deployment,
             messages=[
                 {"role": "system", "content": "You are a document analysis expert."},
                 {"role": "user", "content": prompt}
@@ -220,7 +252,7 @@ async def _apply_inspection_logic(
     chunks: List[str],
     inspection_logic: str,
     llm_client: Any,
-    model_name: str,
+    model_deployment: str,
     max_chunks: int = 10
 ) -> List[str]:
     """
@@ -229,8 +261,8 @@ async def _apply_inspection_logic(
     Args:
         chunks: List of chunk texts
         inspection_logic: Rules/patterns for relevance
-        llm_client: LLM client
-        model_name: Model to use
+        llm_client: Azure OpenAI client
+        model_deployment: Azure deployment name
         max_chunks: Max chunks to select
 
     Returns:
@@ -255,8 +287,8 @@ Return a JSON list of chunk indices that are relevant. Format: {{"relevant_indic
 Include only chunks that clearly match the rules. If fewer than 3 chunks match, include the most relevant ones anyway."""
 
     try:
-        response = await llm_client.acreate(
-            model=model_name,
+        response = await llm_client.chat.completions.create(
+            model=model_deployment,
             messages=[
                 {"role": "system", "content": "You are a document analysis expert. Respond with valid JSON only."},
                 {"role": "user", "content": prompt}
@@ -288,7 +320,7 @@ async def _summarize_chunks(
     query: str,
     file_name: str,
     llm_client: Any,
-    model_name: str
+    model_deployment: str
 ) -> str:
     """
     Summarize selected chunks into a cohesive file-level summary.
@@ -297,8 +329,8 @@ async def _summarize_chunks(
         chunks: List of relevant chunk texts
         query: User query for context
         file_name: Name of file being summarized
-        llm_client: LLM client
-        model_name: Model to use
+        llm_client: Azure OpenAI client
+        model_deployment: Azure deployment name
 
     Returns:
         Summary text
@@ -319,8 +351,8 @@ Provide a concise summary (3-5 sentences) that:
 Return only the summary text, without preamble."""
 
     try:
-        response = await llm_client.acreate(
-            model=model_name,
+        response = await llm_client.chat.completions.create(
+            model=model_deployment,
             messages=[
                 {"role": "system", "content": "You are a summarization expert. Provide clear, concise summaries."},
                 {"role": "user", "content": prompt}

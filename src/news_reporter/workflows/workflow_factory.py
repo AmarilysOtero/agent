@@ -359,47 +359,59 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             try:
                 logger.info("🔄 Phase 4: Attempting recursive summarization for expanded files...")
 
-                # Try to use OpenAI for LLM-based summarization
+                # Try to use Azure OpenAI for LLM-based summarization
                 try:
-                    from openai import AsyncOpenAI
-                    llm_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                    model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4")
-
-                    file_summaries = await recursive_summarize_files(
-                        expanded_files=expanded_files,
-                        query=goal,
-                        llm_client=llm_client,
-                        model_name=model_name
-                    )
-
-                    # Log Phase 4 file summaries to markdown
-                    try:
-                        await log_file_summaries_to_markdown(
-                            file_summaries=file_summaries,
-                            query=goal,
-                            rlm_enabled=True,
-                            output_dir="/app/logs/chunk_analysis"
+                    from azure.openai import AsyncAzureOpenAI
+                    
+                    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+                    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+                    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+                    model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
+                    
+                    if not (azure_endpoint and api_key):
+                        logger.warning("⚠️  Phase 4: Azure OpenAI credentials not configured; skipping")
+                    else:
+                        llm_client = AsyncAzureOpenAI(
+                            api_key=api_key,
+                            api_version=api_version,
+                            azure_endpoint=azure_endpoint
                         )
-                    except Exception as e:
-                        logger.warning(f"⚠️  Failed to log Phase 4 summaries: {e}")
 
-                    # If we have summaries, assemble them into the context
-                    if file_summaries:
-                        summary_parts = []
-                        for summary in file_summaries:
-                            summary_parts.append(f"### File: {summary.file_name} (ID: {summary.file_id})")
-                            summary_parts.append(f"**Expansion:** {summary.summarized_chunk_count}/{summary.chunk_count} chunks ({summary.expansion_ratio:.2f}x)")
-                            summary_parts.append(summary.summary_text)
-                            summary_parts.append(f"**Citations:** {', '.join(summary.source_chunk_ids)}")
+                        file_summaries = await recursive_summarize_files(
+                            expanded_files=expanded_files,
+                            query=goal,
+                            llm_client=llm_client,
+                            model_deployment=model_deployment
+                        )
 
-                        if summary_parts:
-                            summary_context = "\n".join(summary_parts)
-                            # Use summaries as primary context instead of raw expanded context
-                            expanded_context = summary_context
-                            logger.info(f"✅ Phase 4: Successfully assembled {len(file_summaries)} file summaries into context")
+                        # Log Phase 4 file summaries to markdown
+                        try:
+                            await log_file_summaries_to_markdown(
+                                file_summaries=file_summaries,
+                                query=goal,
+                                rlm_enabled=True,
+                                output_dir="/app/logs/chunk_analysis"
+                            )
+                        except Exception as e:
+                            logger.warning(f"⚠️  Failed to log Phase 4 summaries: {e}")
+
+                        # If we have summaries, assemble them into the context
+                        if file_summaries:
+                            summary_parts = []
+                            for summary in file_summaries:
+                                summary_parts.append(f"### File: {summary.file_name} (ID: {summary.file_id})")
+                                summary_parts.append(f"**Expansion:** {summary.summarized_chunk_count}/{summary.chunk_count} chunks ({summary.expansion_ratio:.2f}x)")
+                                summary_parts.append(summary.summary_text)
+                                summary_parts.append(f"**Citations:** {', '.join(summary.source_chunk_ids)}")
+
+                            if summary_parts:
+                                summary_context = "\n".join(summary_parts)
+                                # Use summaries as primary context instead of raw expanded context
+                                expanded_context = summary_context
+                                logger.info(f"✅ Phase 4: Successfully assembled {len(file_summaries)} file summaries into context")
 
                 except ImportError:
-                    logger.warning("⚠️  Phase 4: OpenAI not available; skipping recursive summarization")
+                    logger.warning("⚠️  Phase 4: Azure OpenAI SDK not available; skipping recursive summarization")
                 except Exception as llm_error:
                     logger.warning(f"⚠️  Phase 4: LLM-based summarization failed - {llm_error}", exc_info=True)
 

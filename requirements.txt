@@ -26,7 +26,8 @@ azure-search-documents
 azure-storage-blob
 azure-cosmos
 pymupdf
-openai
+openai>=1.0.0
+azure-openai>=1.0.0
 requests>=2.31.0
 
 # Auth dependencies

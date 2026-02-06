@@ -4,6 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 import os
 import logging
+from pathlib import Path
 
 # Optional MongoDB imports
 try:
@@ -34,6 +35,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+# Default workflow fallback path (bundled with application)
+DEFAULT_WORKFLOW_PATH = Path(__file__).parent.parent / "workflows" / "default_workflow.json"
 
 
 def filter_results_by_exact_match(results: List[dict], query: str, min_similarity: float = 0.9) -> List[dict]:
@@ -525,23 +529,32 @@ async def add_message(
                 error_msg = str(workflow_error)
                 logger.error(
                     f"Active workflow '{active_workflow.workflow_id}' failed: {error_msg}, "
-                    f"falling back to sequential workflow",
+                    f"falling back to default workflow",
                     exc_info=True
                 )
+                
                 # Track failed workflow information
                 workflow_failed = {
                     "name": workflow_name,
                     "error": error_msg
                 }
-                # Fallback to sequential workflow
-                workflow_name = "Fallback"
+                
+                # Fallback to default workflow
+                workflow_name = "Default Workflow"
                 try:
-                    assistant_response = await run_sequential_goal(cfg, user_message_content)
-                    logger.info("Sequential workflow fallback completed successfully")
+                    logger.info(f"Executing default workflow fallback: {DEFAULT_WORKFLOW_PATH}")
+                    assistant_response = await run_graph_workflow(
+                        cfg,
+                        user_message_content,
+                        graph_path=str(DEFAULT_WORKFLOW_PATH)
+                    )
+                    logger.info("Default workflow execution completed successfully")
                     print(f"Assistant Response Type: {type(assistant_response)}")
                     print(f"Assistant Response Preview: {str(assistant_response)[:100]}")
-                except Exception as sequential_error:
-                    logger.error(f"Sequential workflow fallback also failed: {sequential_error}", exc_info=True)
+                except Exception as default_error:
+                    logger.error(f"Default workflow also failed: {default_error}", exc_info=True)
+                    # Update workflow_failed to include default workflow failure
+                    workflow_failed["default_workflow_error"] = str(default_error)
                     raise
         else:
             # No active workflow set, check for JSON workflow file

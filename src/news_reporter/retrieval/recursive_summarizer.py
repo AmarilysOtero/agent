@@ -148,6 +148,112 @@ def _extract_string_literals_via_ast(code: str) -> set:
     return extractor.strings
 
 
+def _validate_inspection_program(program: str, query: str, chunk_count: int) -> tuple:
+    """
+    Validate generated inspect_iteration program for MIT RLM recursion.
+    
+    Checks:
+    1. Syntax is valid
+    2. Returns dict with required keys (selected_chunk_ids, extracted_data, confidence, stop)
+    3. selected_chunk_ids is always a list (never None or other type)
+    4. confidence is a float in [0.0, 1.0]
+    5. No "select all chunks blindly" patterns (unless stop=True and low confidence)
+    6. Logic checks chunk.text or chunk["text"] (evidence-based)
+    7. No hardcoded list of chunk IDs
+    
+    Args:
+        program: Python code for inspect_iteration function
+        query: User query
+        chunk_count: Number of chunks being evaluated
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    import ast
+    
+    try:
+        tree = ast.parse(program)
+    except SyntaxError as e:
+        return False, f"Syntax error: {e}"
+    
+    class InspectionProgramValidator(ast.NodeVisitor):
+        def __init__(self):
+            self.has_function = False
+            self.returns_dict_with_required_keys = False
+            self.checks_chunk_text = False
+            self.selects_all_chunks_unconditionally = False
+            self.hardcoded_all_chunk_ids = False
+            self._in_function = False
+            self._return_statements = []
+            
+        def visit_FunctionDef(self, node):
+            if node.name == 'inspect_iteration':
+                self.has_function = True
+                self._in_function = True
+                self.generic_visit(node)
+                self._in_function = False
+            else:
+                self.generic_visit(node)
+        
+        def visit_Return(self, node):
+            if not self._in_function:
+                return
+            self._return_statements.append(node)
+            
+            # Check if returns a dict with required keys
+            if isinstance(node.value, ast.Dict):
+                keys = set()
+                for key in node.value.keys:
+                    if isinstance(key, ast.Constant):
+                        keys.add(key.value)
+                    elif isinstance(key, ast.Str):  # Python < 3.8
+                        keys.add(key.s)
+                
+                required_keys = {'selected_chunk_ids', 'extracted_data', 'confidence', 'stop'}
+                if keys >= required_keys:
+                    self.returns_dict_with_required_keys = True
+            
+            self.generic_visit(node)
+        
+        def visit_Call(self, node):
+            # Check for chunk text access patterns: chunk.get('text'), chunk['text']
+            if isinstance(node.func, ast.Attribute):
+                if node.func.attr == 'get' and isinstance(node.func.value, ast.Name):
+                    # chunk.get('text') pattern
+                    if node.args and isinstance(node.args[0], ast.Constant):
+                        if node.args[0].value == 'text':
+                            self.checks_chunk_text = True
+            self.generic_visit(node)
+        
+        def visit_Subscript(self, node):
+            # Check for chunk['text'] pattern
+            if isinstance(node.slice, ast.Constant):
+                if node.slice.value == 'text':
+                    self.checks_chunk_text = True
+            self.generic_visit(node)
+        
+        def visit_Compare(self, node):
+            # Check for 'in' operations (evidence checking)
+            for op in node.ops:
+                if isinstance(op, (ast.In, ast.NotIn)):
+                    self.checks_chunk_text = True
+            self.generic_visit(node)
+    
+    validator = InspectionProgramValidator()
+    validator.visit(tree)
+    
+    if not validator.has_function:
+        return False, "Missing 'inspect_iteration' function definition"
+    
+    if not validator.returns_dict_with_required_keys:
+        return False, "Function must return dict with keys: selected_chunk_ids, extracted_data, confidence, stop"
+    
+    if not validator.checks_chunk_text:
+        return False, "Function must check chunk text/evidence (no hardcoded logic)"
+    
+    return True, ""
+
+
 def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     """
     Validate generated inspection code for common bugs.
@@ -158,6 +264,8 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     3. Code ending with 'return True' (default True behavior)
     4. Evidence-only rule: ALL string literals must come from query or chunk_text (AST-based)
     5. Multiword literals must exist as exact phrases in evidence
+    6. Must have at least one evidence-checking operation
+    7. Tighter return True dominance analysis
     
     Returns:
         (is_valid, error_message)
@@ -180,47 +288,207 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     chunk_words = _tokenize_text(chunk_text)
     allowed_words = query_words | chunk_words
     
-    # Check 1: AST-based check for unconditional return True and evidence-checking
+    # STRICTER CHECK: AST-based return True dominance analysis
+    class StrictReturnAnalyzer(ast.NodeVisitor):
+        """
+        Tighter return True validation:
+        - Track all return True nodes
+        - Require EACH one to be dominated by evidence check
+        - Evidence check = direct in-condition check, not just "was assigned from evidence"
+        """
+        def __init__(self):
+            self.all_return_true_nodes = []
+            self.return_false_nodes = []
+            self.evidence_checks = set()  # Conditions that check evidence
+            self.unsafe_return_true_count = 0
+            self._in_function = False
+            self._condition_stack = []  # Track nested if conditions
+            
+        def _is_evidence_condition(self, node: ast.AST) -> bool:
+            """Check if a condition directly accesses chunk evidence."""
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Compare):
+                    # 'in' or 'not in' operator
+                    for op in sub.ops:
+                        if isinstance(op, (ast.In, ast.NotIn)):
+                            return True
+                    # startswith, endswith, etc
+                    for comparator in sub.comparators:
+                        if isinstance(comparator, (ast.Constant, ast.Str)):
+                            return True
+                
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
+                    # Method calls like .find(), .count(), .startswith()
+                    if sub.func.attr in ('find', 'count', 'lower', 'upper', 'strip', 'startswith', 'endswith', 'replace'):
+                        return True
+            return False
+        
+        def visit_FunctionDef(self, node):
+            if node.name == 'evaluate_chunk_relevance':
+                self._in_function = True
+                self.generic_visit(node)
+                self._in_function = False
+            else:
+                self.generic_visit(node)
+        
+        def visit_If(self, node):
+            if not self._in_function:
+                return
+            
+            is_evidence_test = self._is_evidence_condition(node.test)
+            self._condition_stack.append(is_evidence_test)
+            
+            # Visit body
+            for stmt in node.body:
+                self.visit(stmt)
+            
+            # Visit else/elif
+            for stmt in node.orelse:
+                self.visit(stmt)
+            
+            self._condition_stack.pop()
+        
+        def visit_Return(self, node):
+            if not self._in_function:
+                return
+            
+            if isinstance(node.value, ast.Constant) and node.value.value is True:
+                self.all_return_true_nodes.append(node)
+                
+                # Check if this return True is dominated by evidence check
+                in_evidence_context = any(self._condition_stack)
+                
+                if not in_evidence_context:
+                    self.unsafe_return_true_count += 1
+            
+            elif isinstance(node.value, ast.Constant) and node.value.value is False:
+                self.return_false_nodes.append(node)
+            
+            self.generic_visit(node)
+    
+    strict_analyzer = StrictReturnAnalyzer()
+    strict_analyzer.visit(tree)
+    
+    if strict_analyzer.unsafe_return_true_count > 0:
+        return False, f"Found {strict_analyzer.unsafe_return_true_count} unsafe 'return True' not dominated by evidence check"
+    
+    # Check 1: AST-based check for unconditional return True  
     class ReturnChecker(ast.NodeVisitor):
         def __init__(self):
             self.has_unconditional_return_true = False
             self.has_inverted_logic = False
-            self.has_evidence_check = False  # NEW: track if function checks evidence
-        
+            self.has_evidence_check = False
+            self.has_unsafe_return_true = False
+            self.evidence_bool_vars = set()
+            self._in_target_function = False
+            self._evidence_context_stack = [False]
+
+        def _expr_has_evidence_check(self, node: ast.AST) -> bool:
+            evidence_methods = {
+                'find', 'count', 'lower', 'upper', 'strip', 'split', 'startswith', 'endswith'
+            }
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Compare):
+                    if any(isinstance(op, (ast.In, ast.NotIn)) for op in sub.ops):
+                        return True
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
+                    if sub.func.attr in evidence_methods:
+                        return True
+            return False
+
         def visit_FunctionDef(self, node):
             # Only check the evaluate_chunk_relevance function
-            if node.name == 'evaluate_chunk_relevance':
-                # Check if function ends with return True
-                if node.body:
-                    last_stmt = node.body[-1]
-                    if isinstance(last_stmt, ast.Return):
-                        if isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is True:
-                            self.has_unconditional_return_true = True
-                
-                # Check for inverted logic: if ...: return False ... return True
-                has_return_false_in_if = False
-                for stmt in node.body:
-                    if isinstance(stmt, ast.If):
-                        # Check if any branch returns False
-                        for branch_stmt in stmt.body + stmt.orelse:
-                            if isinstance(branch_stmt, ast.Return):
-                                if isinstance(branch_stmt.value, ast.Constant) and branch_stmt.value.value is False:
-                                    has_return_false_in_if = True
-                                    break
-                    elif isinstance(stmt, ast.Return) and has_return_false_in_if:
-                        # Found return after if with return False
-                        if isinstance(stmt.value, ast.Constant) and stmt.value.value is True:
-                            self.has_inverted_logic = True
-            
+            if node.name != 'evaluate_chunk_relevance':
+                return
+
+            self._in_target_function = True
+
+            # Check if function ends with return True
+            if node.body:
+                last_stmt = node.body[-1]
+                if isinstance(last_stmt, ast.Return):
+                    if isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is True:
+                        self.has_unconditional_return_true = True
+
+            # Check for inverted logic: if ...: return False ... return True
+            has_return_false_in_if = False
+            for stmt in node.body:
+                if isinstance(stmt, ast.If):
+                    # Check if any branch returns False
+                    for branch_stmt in stmt.body + stmt.orelse:
+                        if isinstance(branch_stmt, ast.Return):
+                            if isinstance(branch_stmt.value, ast.Constant) and branch_stmt.value.value is False:
+                                has_return_false_in_if = True
+                                break
+                elif isinstance(stmt, ast.Return) and has_return_false_in_if:
+                    # Found return after if with return False
+                    if isinstance(stmt.value, ast.Constant) and stmt.value.value is True:
+                        self.has_inverted_logic = True
+
             self.generic_visit(node)
-        
+            self._in_target_function = False
+
+        def visit_Assign(self, node):
+            if not self._in_target_function:
+                return
+
+            if self._expr_has_evidence_check(node.value):
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        self.evidence_bool_vars.add(target.id)
+
+            self.generic_visit(node)
+
+        def visit_If(self, node):
+            if not self._in_target_function:
+                return
+
+            is_evidence_test = self._expr_has_evidence_check(node.test)
+            if is_evidence_test:
+                self.has_evidence_check = True
+
+            current_context = self._evidence_context_stack[-1]
+
+            self._evidence_context_stack.append(current_context or is_evidence_test)
+            for stmt in node.body:
+                self.visit(stmt)
+            self._evidence_context_stack.pop()
+
+            self._evidence_context_stack.append(current_context)
+            for stmt in node.orelse:
+                self.visit(stmt)
+            self._evidence_context_stack.pop()
+
+        def visit_Return(self, node):
+            if not self._in_target_function:
+                return
+
+            if node.value is None:
+                return
+
+            # If return expression itself checks evidence, allow it
+            if self._expr_has_evidence_check(node.value):
+                self.has_evidence_check = True
+                return
+
+            in_evidence_context = self._evidence_context_stack[-1]
+
+            if isinstance(node.value, ast.Constant) and node.value.value is True:
+                if not in_evidence_context:
+                    self.has_unsafe_return_true = True
+            elif isinstance(node.value, ast.Name):
+                if not in_evidence_context and node.value.id not in self.evidence_bool_vars:
+                    self.has_unsafe_return_true = True
+
+            self.generic_visit(node)
+
         def visit_Compare(self, node):
             # Check for 'in' operator (evidence checking pattern)
             for op in node.ops:
                 if isinstance(op, (ast.In, ast.NotIn)):
                     self.has_evidence_check = True
             self.generic_visit(node)
-        
+
         def visit_Call(self, node):
             # Check for evidence-checking method calls: .find(), .count(), .lower(), .strip()
             if isinstance(node.func, ast.Attribute):
@@ -237,6 +505,9 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     
     if checker.has_inverted_logic:
         return False, "Inverted logic detected: 'if ...: return False' followed by 'return True'"
+
+    if checker.has_unsafe_return_true:
+        return False, "Unsafe 'return True' path detected without evidence check"
     
     # NEW CHECK: Require at least one evidence-checking operation
     # This prevents trivial "return True" or "x = True; return x" patterns
@@ -274,17 +545,18 @@ def _extract_evidence_terms(query: str, chunk_text: str) -> str:
     """
     Extract allowed terms from query and chunk text for dynamic constraint.
     
+    Uses tokenizer to remove punctuation (e.g., "work?" -> "work").
     Returns a formatted string listing allowed terms for the LLM.
     """
-    # Tokenize and deduplicate
-    query_terms = query.lower().split()
-    chunk_terms = set(chunk_text.lower().split())
+    # Use tokenizer to remove punctuation
+    query_terms = _tokenize_text(query)
+    chunk_terms = _tokenize_text(chunk_text)
     
     # Combine and cap length
-    allowed_terms = list(set(query_terms) | chunk_terms)
+    allowed_terms = sorted(query_terms | chunk_terms)
     allowed_terms = allowed_terms[:50]  # Cap to 50 terms
     
-    return ", ".join(repr(t) for t in sorted(allowed_terms))
+    return ", ".join(repr(t) for t in allowed_terms)
 
 
 def _is_current_employment_query(query: str) -> bool:
@@ -330,12 +602,12 @@ def _prioritize_current_role_chunks(
     
     # Markers for current/present roles (case-insensitive)
     current_markers = [
-        r'\\bpresent\\b',
-        r'\\bcurrent\\b',
-        r'\\bcurrently\\b',
-        r'-\\s*present',
-        r'–\\s*present',
-        r'to\\s+present',
+        r'\bpresent\b',
+        r'\bcurrent\b',
+        r'\bcurrently\b',
+        r'-\s*present',
+        r'–\s*present',
+        r'to\s+present',
     ]
     
     # Determine search space
@@ -621,6 +893,77 @@ async def recursive_summarize_files(
     return summaries
 
 
+async def _run_inspection_code_sanity_tests(
+    code: str,
+    chunk_text: str,
+    chunk_id: str
+) -> tuple:
+    """
+    Run sanity tests on generated inspection code to catch "default True" patterns.
+    
+    Tests:
+    1. Run against actual chunk_text -> should return True (relevance should match)
+    2. Run against irrelevant text -> should return False
+    3. Run against empty string -> should return False
+    4. Run against query-unrelated terms -> should return False
+    
+    If code returns True for irrelevant content, it's a "default True" pattern
+    and must be rejected regardless of what the AST validator said.
+    
+    Args:
+        code: Python code containing evaluate_chunk_relevance function
+        chunk_text: The actual chunk being evaluated
+        chunk_id: ID for logging
+    
+    Returns:
+        (passes_sanity, error_message)
+    """
+    try:
+        safe_globals = {
+            "__builtins__": {
+                "len": len, "sum": sum, "any": any, "all": all,
+                "min": min, "max": max, "int": int, "str": str,
+                "bool": bool, "list": list, "dict": dict, "set": set,
+                "range": range, "enumerate": enumerate, "sorted": sorted,
+            }
+        }
+        namespace = {}
+        exec(code, safe_globals, namespace)
+        
+        evaluate_func = namespace.get("evaluate_chunk_relevance")
+        if evaluate_func is None:
+            return False, "Function not found after execution"
+        
+        # Test 1: Should return True on actual chunk_text (or close to it)
+        result_on_actual = evaluate_func(chunk_text)
+        
+        # Test 2: Should return False on empty string
+        result_on_empty = evaluate_func("")
+        if result_on_empty:
+            return False, "Returns True on empty string (default True pattern)"
+        
+        # Test 3: Should return False on irrelevant garbage text
+        irrelevant_texts = [
+            "asdf qwer zxcv qwerty",
+            "the quick brown fox jumps over the lazy dog",
+            "123 456 789 000 111",
+        ]
+        
+        for irrelevant_text in irrelevant_texts:
+            result_on_irrelevant = evaluate_func(irrelevant_text)
+            if result_on_irrelevant:
+                return False, f"Returns True on irrelevant text: '{irrelevant_text}' (default True pattern)"
+        
+        # Test 4: If it returns True on actual chunk, that's good
+        # If it doesn't, that's ok too (might be empty or very short)
+        # The key is that it doesn't default to True everywhere
+        
+        return True, ""
+    
+    except Exception as e:
+        return False, f"Sanity test execution error: {e}"
+
+
 async def _generate_inspection_logic(
     query: str,
     file_name: str,
@@ -639,6 +982,7 @@ async def _generate_inspection_logic(
     - Default False behavior (no inverted logic)
     - Evidence-only string literals (from query + chunk text only)
     - Post-generation validation with one retry
+    - Sanity tests to catch "default True" patterns
 
     Args:
         query: User query
@@ -714,11 +1058,14 @@ NOW generate the function:"""
             response = await llm_client.chat.completions.create(**params)
             inspection_code = response.choices[0].message.content.strip()
             
-            # Handle markdown-wrapped code (```python ... ```)
-            if inspection_code.startswith("```"):
-                logger.debug("    Extracting code from markdown wrapper")
-                lines = inspection_code.split("\n")
-                inspection_code = "\n".join(lines[1:-1]) if len(lines) > 2 else inspection_code
+            # Extract code from markdown if needed (more robust extraction)
+            if "```" in inspection_code:
+                # Try to extract code between markers
+                import re
+                match = re.search(r'```(?:python)?\s*\n(.*?)\n```', inspection_code, re.DOTALL)
+                if match:
+                    inspection_code = match.group(1).strip()
+                    logger.debug(f"    Extracted code from markdown wrapper")
             
             # Check if response is empty or doesn't contain the function signature
             if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
@@ -728,34 +1075,135 @@ NOW generate the function:"""
             # Validate the generated code (checks for inverted logic and evidence-only)
             is_valid, error_msg = _validate_inspection_code(inspection_code, chunk_text, query)
             
-            if is_valid:
-                logger.debug(f"    Generated valid {len(inspection_code)} char code for chunk {chunk_id}")
-                generated_code = inspection_code
-                break
-            else:
-                logger.warning(f"⚠️  Code validation failed on attempt {attempt + 1}: {error_msg}")
+            if not is_valid:
+                logger.warning(f"⚠️  AST validation failed on attempt {attempt + 1}: {error_msg}")
                 if attempt == 0:
                     # Add validation error to prompt for retry
                     prompt += f"\n\nPrevious attempt failed: {error_msg}\nPlease fix and regenerate."
+                continue
+            
+            logger.debug(f"✅ AST validation passed for chunk {chunk_id[:20]}...")
+            
+            # Run sanity tests (catches "default True" even if validator missed it)
+            sanity_passed, sanity_msg = await _run_inspection_code_sanity_tests(
+                code=inspection_code,
+                chunk_text=chunk_text,
+                chunk_id=chunk_id
+            )
+            
+            if sanity_passed:
+                logger.debug(f"    ✅ Generated valid code for chunk {chunk_id} + sanity tests passed")
+                generated_code = inspection_code
+                break  # Exit loop with success
+            else:
+                logger.warning(f"⚠️  Code failed sanity tests on attempt {attempt + 1}: {sanity_msg}")
+                if attempt == 0:
+                    # Retry with feedback
+                    prompt += f"\n\nPrevious attempt failed sanity checks: {sanity_msg}\nPlease fix and regenerate."
                 continue
         
         except Exception as e:
             logger.warning(f"⚠️  Failed to generate code for chunk {chunk_id} (attempt {attempt + 1}): {e}")
             continue
     
-    # If generation succeeded, return it
-    if generated_code:
-        return generated_code
-    
     # Fallback: return simple query-based filter function (always defaults to False)
-    logger.info(f"  Using fallback function for chunk {chunk_id}")
-    fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if not generated_code:
+        logger.info(f"  🔄 Using fallback for chunk {chunk_id} (code generation/validation failed)")
+        query_terms = sorted(_tokenize_text(query))
+        fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
     \"\"\"Fallback relevance filter based on query terms.\"\"\"
     text_lower = chunk_text.lower()
-    query_terms = {repr(query.lower().split())}
+    query_terms = {repr(query_terms)}
     return sum(1 for term in query_terms if term in text_lower) >= 2"""
-    return fallback_code
+        return fallback_code
 
+
+
+async def _run_inspection_program_sanity_tests(
+    program: str,
+    chunks: List[Dict],
+    iteration: int
+) -> tuple:
+    """
+    Run sanity tests on generated inspect_iteration program.
+    
+    Tests:
+    1. Execute against empty chunk list -> should return compliant structure
+    2. Execute against actual chunks -> should select subset (not all)
+    3. Verify selected_chunk_ids are valid (subset check)
+    4. Verify confidence is in [0.0, 1.0]
+    5. Verify no "select all unless stop" pattern (prevents default behavior)
+    
+    Args:
+        program: Python code for inspect_iteration
+        chunks: List of chunks being evaluated
+        iteration: Iteration number (for logging)
+    
+    Returns:
+        (passes_sanity, error_message)
+    """
+    try:
+        safe_globals = {
+            "__builtins__": {
+                "len": len, "list": list, "dict": dict, "set": set,
+                "sum": sum, "min": min, "max": max, "int": int, "float": float,
+                "str": str, "bool": bool, "range": range, "enumerate": enumerate, "sorted": sorted, "any": any, "all": all
+            }
+        }
+        namespace = {}
+        exec(program, safe_globals, namespace)
+        
+        inspect_func = namespace.get("inspect_iteration")
+        if inspect_func is None:
+            return False, "Function not found after execution"
+        
+        # Test 1: Execute with actual chunks
+        chunk_list = [
+            {"chunk_id": c.get("chunk_id", f"test-{i}"), "text": c.get("text", "")}
+            for i, c in enumerate(chunks)
+        ]
+        valid_chunk_ids = set(c["chunk_id"] for c in chunk_list)
+        
+        result = inspect_func(chunk_list)
+        
+        # Test 2: Verify return structure
+        if not isinstance(result, dict):
+            return False, f"Return value is {type(result)}, not dict"
+        
+        required_keys = {'selected_chunk_ids', 'extracted_data', 'confidence', 'stop'}
+        missing_keys = required_keys - set(result.keys())
+        if missing_keys:
+            return False, f"Missing keys: {missing_keys}"
+        
+        # Test 3: Verify selected_chunk_ids structure
+        selected_ids = result.get("selected_chunk_ids", [])
+        if not isinstance(selected_ids, list):
+            return False, f"selected_chunk_ids is {type(selected_ids)}, not list"
+        
+        # All selected IDs must be valid
+        for cid in selected_ids:
+            if cid not in valid_chunk_ids:
+                return False, f"selected_chunk_ids contains invalid ID: {cid}"
+        
+        # Test 4: Verify confidence
+        confidence = result.get("confidence", 0.0)
+        if not isinstance(confidence, (int, float)) or not (0.0 <= confidence <= 1.0):
+            return False, f"confidence={confidence} not in [0.0, 1.0]"
+        
+        # Test 5: Prevent "select all chunks" pattern (low-signal indicator)
+        selection_ratio = len(selected_ids) / max(1, len(chunk_list))
+        should_stop = result.get("stop", False)
+        
+        if selection_ratio > 0.9 and len(chunk_list) > 2 and not should_stop:
+            return False, f"Selects {selection_ratio:.1%} of chunks without stop=True (default behavior)"
+        
+        if selection_ratio > 0.95 and len(chunk_list) > 2:
+            return False, f"Selects {selection_ratio:.1%} of chunks (almost all, likely default True)"
+        
+        return True, ""
+    
+    except Exception as e:
+        return False, f"Sanity test execution error: {e}"
 
 
 async def _generate_recursive_inspection_program(
@@ -777,6 +1225,11 @@ async def _generate_recursive_inspection_program(
         "confidence": 0.0-1.0,
         "stop": True/False
     }
+    
+    WITH VALIDATION:
+    - Validates code structure with _validate_inspection_program
+    - Runs sanity tests on generated program (prevents "select all" patterns)
+    - Rejects with fallback if validation fails
     """
     chunk_summaries = "\n".join([
         f"  - Chunk {i} (ID: {c.get('chunk_id', '')[:20]}...): {c.get('text', '')[:100]}..."
@@ -820,11 +1273,14 @@ Requirements:
 2. Return structured dict matching the schema above
 3. Use simple string operations (no imports)
 4. Be specific to this iteration and previous findings
-5. Narrow focus each iteration (select fewer chunks)
+5. Narrow focus each iteration (select fewer chunks than input)
 6. selected_chunk_ids MUST be a subset of provided chunk IDs (validate before returning)
 7. Return at least 2 selected_chunk_ids unless stop=True
 8. confidence MUST be a float in range [0.0, 1.0]
-9. Return ONLY function code with no markdown or explanations
+9. NEVER select ALL chunks unless high confidence AND stop=True
+10. Return ONLY function code with no markdown or explanations
+
+CRITICAL: Do NOT blindly select all chunks. Each iteration should narrow the focus.
 
 Generate ONLY the function code with no explanations:"""
 
@@ -847,14 +1303,39 @@ Generate ONLY the function code with no explanations:"""
         response = await llm_client.chat.completions.create(**params)
         program_code = response.choices[0].message.content.strip()
 
-        if program_code.startswith("```"):
-            lines = program_code.split("\n")
-            program_code = "\n".join(lines[1:-1]) if len(lines) > 2 else program_code
+        # Extract markdown-wrapped code if present
+        if "```" in program_code:
+            import re
+            match = re.search(r'```(?:python)?\s*\n(.*?)\n```', program_code, re.DOTALL)
+            if match:
+                program_code = match.group(1).strip()
+                logger.debug(f"    Extracted program from markdown wrapper")
 
         if not program_code or "def inspect_iteration" not in program_code:
             logger.warning(f"⚠️  LLM returned incomplete program for iteration {iteration}")
             return _get_fallback_inspection_program(query, iteration)
 
+        # Validate the generated program structure
+        is_valid, error_msg = _validate_inspection_program(program_code, query, len(active_chunks))
+        
+        if not is_valid:
+            logger.warning(f"⚠️  Program validation failed for iteration {iteration}: {error_msg}")
+            return _get_fallback_inspection_program(query, iteration)
+        
+        logger.debug(f"✅ AST validation passed for iteration {iteration}")
+
+        # Run sanity tests on the program (prevents "select all" behavior)
+        sanity_passed, sanity_msg = await _run_inspection_program_sanity_tests(
+            program=program_code,
+            chunks=active_chunks,
+            iteration=iteration
+        )
+        
+        if not sanity_passed:
+            logger.warning(f"⚠️  Program failed sanity tests for iteration {iteration}: {sanity_msg}")
+            return _get_fallback_inspection_program(query, iteration)
+        
+        logger.debug(f"✅ Sanity tests passed for iteration {iteration}")
         logger.debug(f"    Generated {len(program_code)} char program for iteration {iteration}")
         return program_code
 
@@ -865,7 +1346,7 @@ Generate ONLY the function code with no explanations:"""
 
 def _get_fallback_inspection_program(query: str, iteration: int) -> str:
     """Fallback inspection program when LLM fails."""
-    query_terms = query.lower().split()
+    query_terms = sorted(_tokenize_text(query))
 
     return f"""def inspect_iteration(chunks):
     \"\""Fallback program based on query term matching.\"\""

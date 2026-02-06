@@ -318,8 +318,8 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
                             return True
                 
                 if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
-                    # Method calls like .find(), .count(), .startswith()
-                    if sub.func.attr in ('find', 'count', 'lower', 'upper', 'strip', 'startswith', 'endswith', 'replace'):
+                    # FIX #4: Method calls like .find(), .count(), .startswith()
+                    if sub.func.attr in ('find', 'count', 'startswith', 'endswith'):
                         return True
             return False
         
@@ -384,8 +384,9 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
             self._evidence_context_stack = [False]
 
         def _expr_has_evidence_check(self, node: ast.AST) -> bool:
+            # FIX #4: Only count actual evidence checks, not string helpers
             evidence_methods = {
-                'find', 'count', 'lower', 'upper', 'strip', 'split', 'startswith', 'endswith'
+                'find', 'count', 'startswith', 'endswith'
             }
             for sub in ast.walk(node):
                 if isinstance(sub, ast.Compare):
@@ -490,10 +491,10 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
             self.generic_visit(node)
 
         def visit_Call(self, node):
-            # Check for evidence-checking method calls: .find(), .count(), .lower(), .strip()
+            # FIX #4: Check for actual evidence-checking method calls only
             if isinstance(node.func, ast.Attribute):
                 method_name = node.func.attr
-                if method_name in ('find', 'count', 'lower', 'upper', 'strip', 'split', 'startswith', 'endswith'):
+                if method_name in ('find', 'count', 'startswith', 'endswith'):
                     self.has_evidence_check = True
             self.generic_visit(node)
     
@@ -867,13 +868,14 @@ async def recursive_summarize_files(
 
     if inspection_code:
         try:
-            # Distinguish mode in logging: iterative vs per-chunk
+            # FIX #3: Distinguish mode in logging: iterative vs per-chunk
             mode_label = "iterative" if USE_MIT_RLM_RECURSION else "per_chunk"
             await log_inspection_code_to_markdown(
                 inspection_rules=inspection_code,
                 query=query,
                 rlm_enabled=USE_MIT_RLM_RECURSION,  # True for iterative, False for per-chunk
-                output_dir="/app/logs/chunk_analysis"
+                output_dir="/app/logs/chunk_analysis",
+                mode=mode_label  # Pass mode explicitly
             )
         except Exception as e:
             logger.warning(f"⚠️  Failed to log inspection code: {e}")
@@ -954,9 +956,11 @@ async def _run_inspection_code_sanity_tests(
             if result_on_irrelevant:
                 return False, f"Returns True on irrelevant text: '{irrelevant_text}' (default True pattern)"
         
-        # Test 4: If it returns True on actual chunk, that's good
-        # If it doesn't, that's ok too (might be empty or very short)
-        # The key is that it doesn't default to True everywhere
+        # FIX #5: Enforce that function should match the real chunk (if non-trivial)
+        # Prevents overly-strict "always return False" functions
+        if chunk_text.strip() and len(chunk_text.strip()) > 20:
+            if not result_on_actual:
+                return False, "Returns False on the actual chunk (overly-strict / always-false pattern)"
         
         return True, ""
     
@@ -1109,13 +1113,25 @@ NOW generate the function:"""
     # Fallback: return simple query-based filter function (always defaults to False)
     if not generated_code:
         logger.info(f"  🔄 Using fallback for chunk {chunk_id} (code generation/validation failed)")
-        query_terms = sorted(_tokenize_text(query))
+        # Remove stopwords to reduce false positives
+        STOPWORDS = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
+                     "is", "are", "was", "were", "where", "who", "what", "does", "do", "did",
+                     "work", "works", "working", "at", "from", "by", "be", "been"}
+        query_terms = [t for t in _tokenize_text(query) if t not in STOPWORDS and len(t) >= 3]
         fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    \"\"\"Fallback relevance filter based on query terms.\"\"\"
+    \"\"\"Fallback relevance filter based on query terms (stopwords removed).\"\"\"
+    if not chunk_text.strip():
+        return False
     text_lower = chunk_text.lower()
     query_terms = {repr(query_terms)}
-    return sum(1 for term in query_terms if term in text_lower) >= 2"""
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)"""
         return fallback_code
+    
+    # FIX #1: Return the successfully generated code
+    return generated_code
 
 
 
@@ -2003,7 +2019,8 @@ async def log_inspection_code_to_markdown(
     inspection_rules: Dict[str, Dict[str, str]],
     query: str,
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: str = "/app/logs/chunk_analysis",
+    mode: str = "per_chunk"
 ) -> None:
     """
     Log LLM-generated Python inspection code to markdown file.
@@ -2017,6 +2034,7 @@ async def log_inspection_code_to_markdown(
         query: User query that drove the analysis
         rlm_enabled: Whether RLM is enabled
         output_dir: Output directory for logs
+        mode: Either "iterative" or "per_chunk" to label correctly
     """
     from pathlib import Path
     from datetime import datetime
@@ -2032,6 +2050,16 @@ async def log_inspection_code_to_markdown(
         # Calculate total number of inspection programs (all chunks)
         total_programs = sum(len(chunk_codes) for chunk_codes in inspection_rules.values())
 
+        # FIX #3: Correct header based on mode
+        if mode == "iterative":
+            impl_description = "MIT Recursive Inspection Model (RLM) - Iterative Refinement"
+            function_signature = "inspect_iteration(chunks) -> dict"
+            function_desc = "Each iteration gets a program that evaluates all chunks and returns selected subset."
+        else:
+            impl_description = "MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation"
+            function_signature = "evaluate_chunk_relevance(chunk_text: str) -> bool"
+            function_desc = "Each chunk gets its own Python function that determines if that specific chunk contains information relevant to the user's query."
+
         # Build markdown content
         timestamp = datetime.now().isoformat()
         lines = [
@@ -2039,18 +2067,18 @@ async def log_inspection_code_to_markdown(
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
             f"\n**Total Inspection Programs:** {total_programs}",
-            f"\n**Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation",
+            f"\n**Implementation:** {impl_description}",
+            f"\n**Mode:** {mode}",
             "\n---\n",
             "## Overview\n",
             "This file stores the **executable Python code** generated by the LLM per MIT RLM.",
-            "Each chunk gets its own Python function `evaluate_chunk_relevance(chunk_text: str) -> bool`",
-            "that determines if that specific chunk contains information relevant to the user's query.\n",
+            function_desc + "\n",
             "### Purpose\n",
-            "- Generate chunk-specific relevance evaluation code",
-            "- Each chunk receives tailored inspection logic",
+            "- Generate chunk-specific relevance evaluation code" if mode == "per_chunk" else "- Generate iteration-specific inspection programs",
+            "- Each chunk receives tailored inspection logic" if mode == "per_chunk" else "- Each iteration narrows focus on relevant chunks",
             "- More precise relevance filtering per MIT RLM approach\n",
             "### Usage\n",
-            "These functions are executed by the recursive summarizer to evaluate each chunk individually.\n",
+            f"These functions ({function_signature}) are executed by the recursive summarizer.\n",
             "---\n",
         ]
 

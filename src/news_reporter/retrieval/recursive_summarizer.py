@@ -132,48 +132,46 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if last_return and re.match(r'return\s+True\s*$', last_return):
         return False, "Code ends with 'return True' - default should be False"
     
-    # Check 4: Evidence-only rule - ONLY for strings used in matching operations
-    # Find strings actually used in matching: "term" in text, .find("term"), .startswith("term"), etc.
-    # This avoids false positives on docstrings, schema keys, error messages, etc.
+    # Check 4: Evidence-only rule - ONLY for strings in matching operations
+    # Extract strings used in actual matching contexts (in, .find(), .startswith(), etc.)
+    # Ignored: docstrings, dict keys, schema literals, error messages
     matching_patterns = [
-        r'"([^"]+)"\s+in\s+',           # "term" in
-        r"'([^']+)'\s+in\s+",           # 'term' in
-        r'\.find\s*\(\s*["\']([^"\']+)["\']',   # .find("term")
-        r'\.startswith\s*\(\s*["\']([^"\']+)["\']',  # .startswith("term")
-        r'\.endswith\s*\(\s*["\']([^"\']+)["\']',    # .endswith("term")
-        r'\.count\s*\(\s*["\']([^"\']+)["\']',       # .count("term")
+        r'"([^"]+)"\s+in\s+',                      # "term" in
+        r"'([^']+)'\s+in\s+",                      # 'term' in
+        r'\.find\s*\(\s*["\']([^"\']+)["\']',      # .find("term")
+        r'\.startswith\s*\(\s*["\']([^"\']+)["\']', # .startswith("term")
+        r'\.endswith\s*\(\s*["\']([^"\']+)["\']',   # .endswith("term")
+        r'\.count\s*\(\s*["\']([^"\']+)["\']',      # .count("term")
     ]
     
+    # Extract strings only from matching contexts
     matching_strings = set()
     for pattern in matching_patterns:
         matches = re.findall(pattern, code)
         matching_strings.update(matches)
     
-    # Build allowlist: query terms + chunk terms + common schema keys
+    # Exclude dict keys (pattern: "key": or 'key':)
+    dict_key_pattern = r'["\']([^"\']+)["\'](?:\s*:)'
+    dict_keys = set(re.findall(dict_key_pattern, code))
+    matching_strings -= dict_keys  # Remove any dict keys from validation
+    
+    # Build allowlist of allowed evidence
     allowed_evidence = set()
-    allowed_evidence.update(query.lower().split())
-    allowed_evidence.update(chunk_text.lower().split())
+    allowed_evidence.update(query.lower().split())      # Query terms
+    allowed_evidence.update(chunk_text.lower().split())   # Chunk terms
     
-    # Add common schema/operation keys that are normal in generated code
-    common_keys = {
-        'chunk_id', 'text', 'selected_chunk_ids', 'extracted_data', 'confidence',
-        'stop', 'chunks', 'query_terms', 'chunk_list', 'fallback', 'id', 'data',
-        'iteration', 'matches', 'result', 'true', 'false', 'none', ''
-    }
-    allowed_evidence.update(common_keys)
-    
-    # Only validate strings that are actually used in matching operations
+    # Validate matching strings
     suspicious_literals = []
     for literal in matching_strings:
         literal_lower = literal.lower()
+        # Skip if it's in query/chunk or is a substring of any allowed term
         if literal_lower not in allowed_evidence:
-            # Allow partial matches (substring of allowed term)
             is_substring = any(literal_lower in term for term in allowed_evidence)
             if not is_substring:
                 suspicious_literals.append(literal)
     
     if suspicious_literals:
-        return False, f"Evidence-only violation in matching operations: {suspicious_literals} don't appear in query or chunk text"
+        return False, f"Evidence-only violation: {suspicious_literals} used in matching but not found in query or chunk text"
     
     return True, ""
 

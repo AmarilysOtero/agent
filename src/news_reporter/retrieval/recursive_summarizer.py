@@ -34,6 +34,30 @@ MAX_TOTAL_CHARS_FOR_SUMMARY = int(os.getenv("MAX_TOTAL_CHARS_FOR_SUMMARY", "1200
 MAX_EXEC_ITERATIONS = 1000  # Prevent infinite loops in generated code
 MAX_EXEC_STRING_LENGTH = 100000  # Prevent memory bombs
 
+# Structural whitelist: universal parsing aids that are NOT domain knowledge.
+# These terms help the LLM detect employment/time/role structure in chunks
+# even when the chunk text doesn't literally contain query verbs like "work".
+# Keeps the no-hardcoding spirit while fixing the evidence-only constraint
+# that was too strict for structural-intent queries.
+STRUCTURAL_WHITELIST = {
+    # Employment / time markers
+    "present", "current", "currently", "to present",
+    "- present", "– present", "— present",
+    # Date / delimiter tokens
+    " - ", " – ", " — ", " to ",
+    # Role / org delimiters
+    " at ", "@",
+    # Generic verbs for matching query intent (not domain-specific)
+    "work", "works", "working", "worked",
+    "employ", "employed", "employer", "employment",
+    "company", "position", "role", "job", "title",
+    "organization", "org",
+    # Education markers
+    "university", "college", "school", "degree",
+    # Location markers
+    "located", "based",
+}
+
 logger.info(f"🔧 MIT RLM Recursion: {'ENABLED' if USE_MIT_RLM_RECURSION else 'DISABLED'}")
 logger.info(f"📊 Selection Budgets: max_chunks={MAX_SELECTED_CHUNKS_PER_FILE}, max_chars={MAX_TOTAL_CHARS_FOR_SUMMARY}")
 
@@ -584,13 +608,33 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     # - Pathological string operations
     # TODO: Run generated code in separate process with resource limits
     
+    # NEW CHECK: Last statement in evaluate_chunk_relevance must be 'return False'
+    # This kills patterns like "return True unless ..." that sneak through AST checks.
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == 'evaluate_chunk_relevance':
+            if node.body:
+                last_stmt = node.body[-1]
+                # Allow: bare return False, or if/elif chain that doesn't end with return True
+                if isinstance(last_stmt, ast.Return):
+                    if isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is True:
+                        return False, "Last statement is 'return True' — function must default to False (last statement must be 'return False')"
+                    # Also catch 'return <expression>' that isn't False
+                    # Allow: return False, return any(...), return <variable>
+                elif isinstance(last_stmt, ast.If):
+                    # If block at end is fine (it's conditional)
+                    pass
+                elif isinstance(last_stmt, ast.Expr):
+                    # Expression statement at end (rare but ok)
+                    pass
+            break
+
     # Check 2: Extract ALL string literals using AST
     all_literals = _extract_string_literals_via_ast(code)
     
     # FIX #6: Whitelist harmless literals that are not evidence-based
     harmless_literals = {"", " ", "\n", "\t", ",", ".", ":", "-", "—", "–", "!", "?", "'", '"'}
     
-    # Validate each literal against evidence
+    # Validate each literal against evidence OR structural whitelist
     suspicious_literals = []
     for literal in all_literals:
         # Skip harmless punctuation/whitespace
@@ -600,17 +644,25 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
         literal_norm = _normalize_text(literal.lower())
         literal_words = _tokenize_text(literal)
         
+        # Check structural whitelist first (universal parsing aids)
+        if literal_norm in STRUCTURAL_WHITELIST:
+            continue
+        
         # If literal contains multiple words, it must exist as an exact phrase
         if ' ' in literal_norm or len(literal_words) > 1:
-            # Multiword: must exist as substring in evidence
+            # Multiword: check whitelist first, then evidence
+            if literal_norm in STRUCTURAL_WHITELIST:
+                continue
             if literal_norm not in query_norm and literal_norm not in chunk_norm:
-                suspicious_literals.append(f"'{literal}' (multiword phrase not in evidence)")
+                suspicious_literals.append(f"'{literal}' (multiword phrase not in evidence or whitelist)")
         else:
-            # Single word: must be in allowed word set
+            # Single word: must be in allowed word set OR structural whitelist
             if literal_words and not literal_words.issubset(allowed_words):
-                # Also check if it's a substring of evidence (case-insensitive)
-                if literal_norm not in query_norm and literal_norm not in chunk_norm:
-                    suspicious_literals.append(f"'{literal}' (not in query/chunk)")
+                # Check if any word is in structural whitelist
+                if not literal_words.issubset(allowed_words | STRUCTURAL_WHITELIST):
+                    # Also check if it's a substring of evidence (case-insensitive)
+                    if literal_norm not in query_norm and literal_norm not in chunk_norm:
+                        suspicious_literals.append(f"'{literal}' (not in query/chunk/whitelist)")
     
     if suspicious_literals:
         return False, f"Evidence-only violation: {suspicious_literals}"
@@ -1244,11 +1296,11 @@ async def _run_inspection_code_sanity_tests(
             if result_on_irrelevant:
                 return False, f"Returns True on irrelevant text: '{irrelevant_text}' (default True pattern)"
         
-        # FIX #5: Enforce that function should match the real chunk (if non-trivial)
-        # Prevents overly-strict "always return False" functions
-        if chunk_text.strip() and len(chunk_text.strip()) > 20:
-            if not result_on_actual:
-                return False, "Returns False on the actual chunk (overly-strict / always-false pattern)"
+        # NOTE: Removed "must return True on actual chunk" test.
+        # For most chunks the correct behavior IS False — the chunk is irrelevant.
+        # Forcing True on every chunk pushed the LLM toward "always-true-ish" code
+        # just to survive the sanity test, which is the opposite of what we want.
+        # We keep only negative controls (empty, garbage) which are universally valid.
         
         return True, ""
     
@@ -1318,18 +1370,22 @@ Requirements:
 - Return ONLY the function code with no explanations
 - No imports needed
 
-CRITICAL RULES - Default Behavior & Evidence-Only Literals:
+CRITICAL RULES - Default Behavior & Evidence-Based Literals:
 1. Your default return should ALWAYS be False, not True
    - Only return True when you explicitly find matching/relevant content
    - NEVER use inverted logic like "if keyword found: return False; else: return True"
-   - Pattern: if <relevant_condition>: return True; else: return False
+   - Pattern: if <relevant_condition>: return True; ... return False
+   - THE LAST STATEMENT of your function MUST be 'return False'
 
-2. EVIDENCE-ONLY RULE: Any string literal you use must come from ONLY these sources:
-   - The user query: {query}
-   - The chunk text (shown above)
-   - Do NOT invent terms from document metadata or filenames
-   - Do NOT use generic keywords not present in query or chunk
-   - Allowed terms: {allowed_terms_str}
+2. EVIDENCE-BASED RULE: String literals must come from one of these sources:
+   a) The user query: {query}
+   b) The chunk text (shown above)
+   c) Structural whitelist (universal parsing aids, NOT domain knowledge):
+      - Employment/time: "present", "current", "currently", "to present", "- present", "– present"
+      - Generic intent verbs: "work", "works", "employed", "employer", "company", "position", "role", "job"
+      - Delimiters: " - ", " – ", " at ", "@"
+   - Do NOT invent domain-specific terms not present in query, chunk, or whitelist
+   - Allowed evidence terms: {allowed_terms_str}
 
 NOW generate the function:"""
 

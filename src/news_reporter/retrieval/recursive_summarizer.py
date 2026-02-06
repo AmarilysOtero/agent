@@ -38,6 +38,45 @@ logger.info(f"🔧 MIT RLM Recursion: {'ENABLED' if USE_MIT_RLM_RECURSION else '
 logger.info(f"📊 Selection Budgets: max_chunks={MAX_SELECTED_CHUNKS_PER_FILE}, max_chars={MAX_TOTAL_CHARS_FOR_SUMMARY}")
 
 
+def _safe_range(*args):
+    """Capped range() replacement to prevent CPU bombs in exec() sandboxes."""
+    if len(args) == 1:
+        start, stop, step = 0, int(args[0]), 1
+    elif len(args) == 2:
+        start, stop, step = int(args[0]), int(args[1]), 1
+    elif len(args) == 3:
+        start, stop, step = int(args[0]), int(args[1]), int(args[2])
+    else:
+        raise ValueError("range() takes 1 to 3 arguments")
+    step = step or 1
+    iters = (stop - start) // step if step else 10**9
+    if abs(iters) > 10000:
+        raise ValueError(f"range() capped at 10k iterations, got {abs(iters)}")
+    return range(start, stop, step)
+
+
+def _build_safe_globals() -> dict:
+    """Build a unified restricted globals dict for all exec() sandboxes.
+
+    Uses _safe_range instead of range and omits sorted() entirely.
+    Must be used in: _evaluate_chunk_with_code, _execute_inspection_program,
+    _run_inspection_code_sanity_tests, _run_inspection_program_sanity_tests,
+    and any other exec() call sites.
+    """
+    return {
+        "__builtins__": {
+            "len": len, "sum": sum, "any": any, "all": all,
+            "min": min, "max": max, "int": int, "float": float,
+            "str": str, "bool": bool, "list": list, "dict": dict,
+            "set": set, "range": _safe_range, "enumerate": enumerate,
+            # NOTE: sorted() intentionally omitted – can be O(n log n) on
+            # attacker-chosen data.  enumerate is bounded by input size.
+        },
+        "_exec_counter": 0,
+        "_MAX_ITERATIONS": MAX_EXEC_ITERATIONS,
+    }
+
+
 def _build_completion_params(model_deployment: str, **kwargs) -> dict:
     """
     Build completion parameters compatible with the model.
@@ -127,13 +166,12 @@ def _extract_string_literals_via_ast(code: str) -> set:
     class StringExtractor(ast.NodeVisitor):
         def __init__(self):
             self.strings = set()
-            self.in_dict_key = False
         
         def visit_Constant(self, node):
             # Python 3.8+ uses Constant for all literals
             if isinstance(node.value, str):
                 # Skip very short strings (likely not search terms)
-                if len(node.value) > 0 and not self.in_dict_key:
+                if len(node.value) > 0:
                     self.strings.add(node.value)
             self.generic_visit(node)
         
@@ -1175,41 +1213,10 @@ async def _run_inspection_code_sanity_tests(
     Returns:
         (passes_sanity, error_message)
     """
-    def safe_range(*args):
-        """Capped range to prevent DOS attacks."""
-        # Parse args like range()
-        if len(args) == 1:
-            max_val = args[0]
-            start, step = 0, 1
-        elif len(args) == 2:
-            start, max_val = args
-            step = 1
-        elif len(args) == 3:
-            start, max_val, step = args
-        else:
-            raise ValueError("range() takes 1 to 3 arguments")
-        
-        # Cap at 10k iterations to prevent DOS
-        if (max_val - start) // max(1, step) > 10000:
-            raise ValueError(f"range() capped at 10k iterations, got {(max_val - start) // max(1, step)}")
-        return range(start, max_val, step)
-    
     try:
         # PRODUCTION WARNING: exec() without process isolation is unsafe
         # TODO: Use subprocess with timeout and resource limits
-        # FIX #4: Remove sorted (risky at scale), cap range to prevent DOS
-        safe_globals = {
-            "__builtins__": {
-                "len": len, "sum": sum, "any": any, "all": all,
-                "min": min, "max": max, "int": int, "str": str,
-                "bool": bool, "list": list, "dict": dict, "set": set,
-                "range": safe_range, "enumerate": enumerate,
-                # NOTE: sorted() removed - can blow up; enumerate is limited by safe_range
-            },
-            # Add iteration budget tracking (basic protection)
-            "_exec_counter": 0,
-            "_MAX_ITERATIONS": MAX_EXEC_ITERATIONS,
-        }
+        safe_globals = _build_safe_globals()
         namespace = {}
         exec(code, safe_globals, namespace)
         
@@ -1440,13 +1447,7 @@ async def _run_inspection_program_sanity_tests(
         (passes_sanity, error_message)
     """
     try:
-        safe_globals = {
-            "__builtins__": {
-                "len": len, "list": list, "dict": dict, "set": set,
-                "sum": sum, "min": min, "max": max, "int": int, "float": float,
-                "str": str, "bool": bool, "range": range, "enumerate": enumerate, "sorted": sorted, "any": any, "all": all
-            }
-        }
+        safe_globals = _build_safe_globals()
         namespace = {}
         exec(program, safe_globals, namespace)
         
@@ -1645,30 +1646,37 @@ Generate ONLY the function code with no explanations:"""
 
 
 def _get_fallback_inspection_program(query: str, iteration: int) -> str:
-    """Fallback inspection program when LLM fails."""
-    query_terms = sorted(_tokenize_text(query))
+    """Fallback inspection program when LLM fails.
 
-    return f"""def inspect_iteration(chunks):
-    \"\""Fallback program based on query term matching.\"\""
-    query_terms = {repr(query_terms)}
-    selected_ids = []
-    extracted_data = {{}}
+    The current *iteration* value is baked into the generated source so the
+    function body never references an outer variable that doesn't exist.
+    """
+    query_terms = list(_tokenize_text(query))  # sorted() removed from sandbox
+    it = int(iteration)
 
-    for chunk in chunks:
-        text_lower = chunk['text'].lower()
-        matches = sum(1 for term in query_terms if term in text_lower)
-        if matches >= max(2, len(query_terms) // 2):
-            selected_ids.append(chunk['chunk_id'])
-
-    confidence = min(1.0, len(selected_ids) / max(1, len(chunks)))
-    stop = iteration >= 3 or confidence > 0.8
-
-    return {{
-        "selected_chunk_ids": selected_ids,
-        "extracted_data": {{"fallback": True}},
-        "confidence": confidence,
-        "stop": stop
-    }}"""
+    return (
+        "def inspect_iteration(chunks):\n"
+        '    """Fallback program based on query term matching."""\n'
+        f"    query_terms = {repr(query_terms)}\n"
+        "    selected_ids = []\n"
+        "    extracted_data = {}\n"
+        "\n"
+        "    for chunk in chunks:\n"
+        "        text_lower = (chunk.get('text') or '').lower()\n"
+        "        matches = sum(1 for term in query_terms if term in text_lower)\n"
+        "        if matches >= max(2, len(query_terms) // 2):\n"
+        "            selected_ids.append(chunk.get('chunk_id'))\n"
+        "\n"
+        "    confidence = min(1.0, len(selected_ids) / max(1, len(chunks)))\n"
+        f"    stop = ({it} >= 3) or (confidence > 0.8)\n"
+        "\n"
+        "    return {\n"
+        '        "selected_chunk_ids": [cid for cid in selected_ids if cid],\n'
+        '        "extracted_data": {"fallback": True},\n'
+        '        "confidence": float(confidence),\n'
+        '        "stop": bool(stop)\n'
+        "    }\n"
+    )
 
 
 async def _evaluate_chunk_with_code(
@@ -1701,26 +1709,8 @@ async def _evaluate_chunk_with_code(
         return False
     
     try:
-        # Use restricted global namespace (no imports, minimal builtins)
-        safe_globals = {
-            "__builtins__": {
-                "len": len,
-                "sum": sum,
-                "any": any,
-                "all": all,
-                "min": min,
-                "max": max,
-                "int": int,
-                "str": str,
-                "bool": bool,
-                "list": list,
-                "dict": dict,
-                "set": set,
-                "range": range,
-                "enumerate": enumerate,
-                "sorted": sorted,
-            }
-        }
+        # Use unified restricted global namespace
+        safe_globals = _build_safe_globals()
         
         # Execute the generated Python code in restricted environment
         namespace = {}
@@ -1760,25 +1750,7 @@ async def _execute_inspection_program(
         def inspect_iteration(chunks) -> Dict
     """
     try:
-        safe_globals = {
-            "__builtins__": {
-                "len": len,
-                "list": list,
-                "dict": dict,
-                "set": set,
-                "sum": sum,
-                "min": min,
-                "max": max,
-                "int": int,
-                "float": float,
-                "str": str,
-                "range": range,
-                "enumerate": enumerate,
-                "sorted": sorted,
-                "any": any,
-                "all": all
-            }
-        }
+        safe_globals = _build_safe_globals()
         namespace = {}
         exec(program, safe_globals, namespace)
 
@@ -2072,26 +2044,8 @@ async def _apply_inspection_logic(
                 chunks, inspection_logic, llm_client, model_deployment, max_chunks
             )
         
-        # Use restricted global namespace (safe_globals) - same as _evaluate_chunk_with_code
-        safe_globals = {
-            "__builtins__": {
-                "len": len,
-                "sum": sum,
-                "any": any,
-                "all": all,
-                "min": min,
-                "max": max,
-                "int": int,
-                "str": str,
-                "bool": bool,
-                "list": list,
-                "dict": dict,
-                "set": set,
-                "range": range,
-                "enumerate": enumerate,
-                "sorted": sorted,
-            }
-        }
+        # Use unified restricted global namespace
+        safe_globals = _build_safe_globals()
         
         # Execute the generated Python code in restricted environment
         namespace = {}
@@ -2348,7 +2302,7 @@ async def log_file_summaries_to_markdown(
         raise
 
 
-async async def log_inspection_code_to_markdown(
+async def log_inspection_code_to_markdown(
     inspection_rules: Dict[str, Dict[str, str]],
     query: str,
     rlm_enabled: bool = True,

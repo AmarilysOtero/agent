@@ -28,7 +28,7 @@ class WorkflowRecord:
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     tags: List[str] = field(default_factory=list)
-    is_active: bool = True
+    is_active: bool = False  # Default to False - must be explicitly set as active
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""

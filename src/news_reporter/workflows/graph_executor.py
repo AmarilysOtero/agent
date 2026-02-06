@@ -1,8 +1,8 @@
 """Graph Executor - Queue-based execution with NodeResult and ExecutionContext (Phase 5)"""
 
 from __future__ import annotations
-from typing import Dict, List, Set, Optional, Any, Tuple
-from collections import deque
+from typing import Dict, List, Set, Optional, Any, Tuple, TYPE_CHECKING
+from collections import deque, defaultdict
 import asyncio
 import time
 import logging
@@ -15,7 +15,7 @@ from .execution_context import ExecutionContext
 from .node_result import NodeResult, NodeStatus
 from .execution_tracker import ExecutionTracker, FanoutTracker, LoopTracker
 from .state_checkpoint import StateCheckpoint
-from .nodes import create_node
+from .nodes import create_node, AgentNode, FanoutNode, LoopNode, ConditionalNode, MergeNode
 from .agent_adapter import AgentAdapterRegistry
 from .performance_metrics import get_metrics_collector
 from .cache_manager import get_cache_manager
@@ -136,8 +136,15 @@ class GraphExecutor:
             TimeoutError: If execution exceeds timeout
             RuntimeError: If execution fails or exceeds max steps
         """
+        # NOTE: `goal` is the inbound user text for this run (System.LastMessage.Text source of truth).
+        user_text = goal
+        
         # Initialize state
         state = WorkflowState(goal=goal)
+        
+        # Set System.LastMessage.Text once at run start (never derived from state.latest)
+        state.system_vars["System.LastMessage.Text"] = user_text
+        
         logger.info("=" * 100)
         logger.info("=" * 100)
         logger.info(f"🚀 GRAPH EXECUTOR STARTING - Goal: {goal}")
@@ -273,6 +280,7 @@ class GraphExecutor:
         # Process queue
         while queue and step_count < self.max_steps:
             step_count += 1
+            logger.info(f"[DEBUG] Step {step_count}: Queue size={len(queue)}")
             
             # Check for parallel execution limit
             if self.max_parallel and len(executing) >= self.max_parallel:
@@ -287,9 +295,17 @@ class GraphExecutor:
             # Create execution key (node_id, iteration)
             exec_key = (node_id, context.iteration)
             
-            # Skip if already executed (unless it's a loop iteration)
-            if exec_key in executed and context.iteration == 0:
+            # Skip if already executed (unless it's a loop iteration or loop node re-entry)
+            node_config = self.nodes.get(node_id)
+            is_loop_node = node_config and node_config.type == "loop"
+            
+            # Loop nodes can be re-executed (they manage iterations internally)
+            # Other nodes are skipped if already executed at this iteration
+            if exec_key in executed and not is_loop_node:
+                logger.debug(f"[DEBUG] Skipping already executed node {node_id} at iteration {context.iteration}")
                 continue
+            
+            logger.info(f"[DEBUG] Processing node {node_id}, is_loop={is_loop_node}, exec_key={exec_key}")
             
             # Check if node is already executing (prevent duplicate execution)
             if node_id in executing:
@@ -318,15 +334,64 @@ class GraphExecutor:
                     result_type="NodeResult",
                     args={"node_id": node_id}
                 )
+               # Track execution
+                executed.add(exec_key)
+                node_results[node_id] = result
                 
                 # Apply state updates
                 self._apply_state_updates(state, result.state_updates)
                 
-                # Track branch results
-                if context.branch_id not in branch_results:
-                    branch_results[context.branch_id] = []
-                branch_results[context.branch_id].append(result)
+                # Update branch results
+                if context.branch_id in branch_results:
+                    branch_results[context.branch_id].append(result)
+                else:
+                    branch_results[context.branch_id] = [result]
                 
+                # Remove from executing set
+                executing.discard(node_id)
+                
+                # ============================================================================
+                # PHASE 5: Loop Feedback Routing
+                # ============================================================================
+                # If this node was reached via loop_continue (has parent_loop_id), 
+                # check if it has outgoing edges. If not, route back to loop.
+                # If yes, follow edges normally (for sequential body chains like B→C→Loop)
+                if context.parent_loop_id:
+                    outgoing = self.outgoing_edges.get(node_id, [])
+                    has_outgoing = len(outgoing) > 0
+                    
+                    if not has_outgoing:
+                        # Terminal node in loop body - route back to loop
+                        logger.info(
+                            f"LoopNode {context.parent_loop_id}: Body node {node_id} completed (terminal), "
+                            f"routing back to loop for re-entry"
+                        )
+                        
+                        # Create context for loop re-entry
+                        loop_context = context.create_child_branch(context.parent_loop_id)
+                        loop_context.parent_loop_id = None  # CRITICAL: Clear parent_loop_id - loop is not its own body!
+                        
+                        # Queue loop node for re-entry
+                        queue.append(ExecutionToken(
+                            node_id=context.parent_loop_id,
+                            context=loop_context,
+                            parent_result=result
+                        ))
+                        logger.info(f"[DEBUG] Queued loop re-entry, queue size now: {len(queue)}")
+                        
+                        # Skip normal edge routing - loop re-entry takes precedence
+                        continue
+                    else:
+                        # Non-terminal node in loop body - continue to next node in body chain
+                        logger.info(
+                            f"LoopNode {context.parent_loop_id}: Body node {node_id} has outgoing edges, "
+                            f"continuing to next body node(s)"
+                        )
+                        # Fall through to normal edge routing, parent_loop_id will propagate
+                
+                # ============================================================================
+                # Normal Edge Routing (non-loop nodes)
+                # ============================================================================
                 # Phase 3: Mark branch as complete if it's part of a fanout
                 # Only mark complete if this branch is actually tracked (part of a fanout)
                 if context.branch_id in tracker.branch_to_fanout:
@@ -368,24 +433,36 @@ class GraphExecutor:
                 if loop_node_id and not next_nodes:
                     logger.info(f"Node {node_id} is part of loop {loop_node_id} and has no valid edges, looping back to check exit condition")
                     next_nodes = [loop_node_id]
-                else:
-                    # Find if any outgoing edge goes to a loop node
-                    outgoing = self.outgoing_edges.get(node_id, [])
-                    for edge in outgoing:
-                        next_node_config = self.nodes.get(edge.to_node)
-                        if next_node_config and next_node_config.type == "loop":
-                            # This is a loop back - check if loop should continue
-                            loop_tracker = tracker.get_loop_tracker(edge.to_node)
-                            if loop_tracker and loop_tracker.should_continue:
-                                # Loop back to loop node for next iteration check
-                                next_nodes = [edge.to_node]
-                                break
                 
                 # Add next nodes to queue
                 for next_node_id in next_nodes:
                     # Create child branch (loop iteration handling is done in _handle_loop_node)
                     next_context = context.create_child_branch(next_node_id)
                     next_context.node_id = next_node_id
+                    
+                    # Phase 5: Check if this edge is a loop edge and set parent_loop_id
+                    outgoing = self.outgoing_edges.get(node_id, [])
+                    for edge in outgoing:
+                        if edge.to_node == next_node_id:
+                            if edge.condition == "loop_continue":
+                                # Body node - track parent loop for feedback routing
+                                next_context.parent_loop_id = node_id
+                                # CRITICAL: Use loop's internal iter_no for body execution
+                                loop_iter = result.artifacts.get("iter_no", 1)
+                                next_context.iteration = loop_iter
+                                logger.debug(f"Setting parent_loop_id={node_id} for body node {next_node_id}, iter={loop_iter}")
+                            elif edge.condition == "loop_exit":
+                                # Exit node - clear loop membership
+                                next_context.parent_loop_id = None
+                                logger.debug(f"Clearing parent_loop_id for exit node {next_node_id}")
+                            else:
+                                # Normal edge - inherit parent_loop_id if current node is in a loop
+                                if context.parent_loop_id:
+                                    next_context.parent_loop_id = context.parent_loop_id
+                                    next_context.iteration = context.iteration  # Also inherit iteration
+                                    logger.debug(f"Propagating parent_loop_id={context.parent_loop_id} to {next_node_id} (loop body chain)")
+                            break
+                    
                     branch_contexts[next_context.branch_id] = next_context
                     
                     # Regression guard: Log parent_result presence for debugging
@@ -402,6 +479,7 @@ class GraphExecutor:
                     ))
                 
                 executed.add(exec_key)
+                logger.info(f"[DEBUG] Added {exec_key} to executed set, total executed={len(executed)}")
                 
                 # Phase 3: Periodic checkpointing (every 10 steps)
                 if self.checkpoint_manager and step_count % 10 == 0:
@@ -691,94 +769,77 @@ class GraphExecutor:
         tracker: ExecutionTracker,
         queue: deque[ExecutionToken]
     ) -> List[str]:
-        """Handle loop node - loop back to body or continue"""
+        """
+        Handle loop node - Phase 1 for_each routing with loop_continue/loop_exit.
+        
+        Routing is controlled exclusively by loop node artifacts:
+        - should_continue=True → route via loop_continue edges or explicit body_node_id
+        - should_continue=False → route via loop_exit edges
+        
+        NEVER evaluate loop_continue/loop_exit as conditions (they are deterministic tags).
+        """
         node_config = self.nodes[node_id]
         artifacts = result.artifacts
         
         should_continue = artifacts.get("should_continue", False)
         body_node_id = artifacts.get("body_node_id")
         
+        logger.info(
+            f"LoopNode {node_id}: should_continue={should_continue}, "
+            f"body_node_id={body_node_id}"
+        )
+        
         if not should_continue:
-            # Loop is done, continue to next nodes
-            return self._determine_next_nodes(node_id, result, state)
-        
-        # Loop should continue
-        if body_node_id:
-            # Use explicit body node
-            loop_tracker = tracker.get_loop_tracker(node_id)
-            if not loop_tracker:
-                # Register loop
-                loop_tracker = tracker.register_loop(
-                    loop_node_id=node_id,
-                    max_iters=node_config.max_iters or 10,
-                    body_node_id=body_node_id
-                )
-            
-            # Increment iteration
-            new_iter = tracker.increment_loop_iteration(node_id)
-            tracker.set_loop_should_continue(node_id, should_continue)
-            
-            # Create iteration context and loop back to body
-            body_context = context.create_iteration(body_node_id)
-            body_context.node_id = body_node_id
-            
-            queue.append(ExecutionToken(
-                node_id=body_node_id,
-                context=body_context,
-                parent_result=result
-            ))
-            
-            # After body completes, it should loop back to loop node
-            # This is handled by the executor checking if body's next node is the loop node
-            return []
-        else:
-            # Use outgoing edges to find body
+            # Loop exit: route via loop_exit edges
             outgoing = self.outgoing_edges.get(node_id, [])
-            # Find body nodes - "loop_body" is a special condition that means "enter loop body"
-            body_nodes = []
+            exit_nodes = []
+            
             for edge in outgoing:
-                if edge.condition == "loop_body" or edge.condition is None:
-                    body_nodes.append(edge.to_node)
-                elif edge.condition:
-                    # Check if condition is true
-                    try:
-                        from .condition_evaluator import ConditionEvaluator
-                        if ConditionEvaluator.evaluate(edge.condition, state):
-                            body_nodes.append(edge.to_node)
-                    except Exception as e:
-                        logger.warning(f"Error evaluating edge condition '{edge.condition}': {e}")
+                if edge.condition == "loop_exit":
+                    exit_nodes.append(edge.to_node)
+                    logger.debug(f"LoopNode {node_id}: Exit edge to {edge.to_node}")
             
-            if not body_nodes:
-                # Fallback: use all outgoing nodes
-                body_nodes = [edge.to_node for edge in outgoing]
+            # NO FALLBACK: Require explicit loop_exit tags
+            if not exit_nodes:
+                error_msg = (
+                    f"LoopNode {node_id}: No loop_exit edges found. "
+                    f"Loop nodes require explicit 'loop_exit' edge tags for exit routing."
+                )
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
             
-            if body_nodes:
-                # Register loop if not already registered (for tracking purposes)
-                loop_tracker = tracker.get_loop_tracker(node_id)
-                if not loop_tracker:
-                    tracker.register_loop(
-                        loop_node_id=node_id,
-                        max_iters=node_config.max_iters or 10,
-                        body_node_id=None  # Using edges, not explicit body
-                    )
-                
-                # Increment iteration
-                new_iter = tracker.increment_loop_iteration(node_id)
-                tracker.set_loop_should_continue(node_id, should_continue)
-                
-                # Loop back to first body node
-                body_context = context.create_iteration(body_nodes[0])
-                body_context.node_id = body_nodes[0]
-                
-                queue.append(ExecutionToken(
-                    node_id=body_nodes[0],
-                    context=body_context,
-                    parent_result=result
-                ))
-                return []
+            logger.info(f"LoopNode {node_id}: Exiting loop, routing to {exit_nodes}")
+            return exit_nodes
         
-        # No body found, just continue
-        return self._determine_next_nodes(node_id, result, state)
+        # Loop continue: route via loop_continue edges or explicit body_node_id
+        if body_node_id:
+            # Explicit body node specified in config
+            logger.info(f"LoopNode {node_id}: Continuing to explicit body node {body_node_id}")
+            return [body_node_id]
+        
+        # Find body via loop_continue edges (STRICT - no condition=None fallback)
+        outgoing = self.outgoing_edges.get(node_id, [])
+        continue_nodes = []
+        
+        for edge in outgoing:
+            if edge.condition == "loop_continue":
+                continue_nodes.append(edge.to_node)
+                logger.debug(f"LoopNode {node_id}: Continue edge to {edge.to_node}")
+        
+        # NO FALLBACK: Require explicit loop_continue tags
+        if not continue_nodes:
+            error_msg = (
+                f"LoopNode {node_id}: No loop_continue edges found. "
+                f"Loop nodes require explicit 'loop_continue' edge tags for body routing."
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        logger.info(
+            f"LoopNode {node_id}: Continuing loop, routing to body nodes {continue_nodes}"
+        )
+        return continue_nodes
+    
     
     async def _handle_merge_node(
         self,
@@ -868,14 +929,38 @@ class GraphExecutor:
         node_config = self.nodes[node_id]
         start_time = time.time()
         
-        # Phase 4: Check cache (but skip cache for loop nodes - they need to re-evaluate conditions)
+        # Phase 4: Check cache (but skip cache for loop nodes AND loop body nodes)
+        # Loop nodes need to re-evaluate, body nodes need fresh execution each iteration
         # Always get node inputs (needed for caching even if we skip cache check for loops)
         node_inputs = self._get_node_inputs(node_config, state)
         
         cache_hit = False
-        if node_config.type != "loop":
+        is_loop_body = context.parent_loop_id is not None
+        has_parent_result = parent_result is not None
+        is_agent_node = node_config.type == "agent"
+        
+        # Debug logging
+        logger.info(f"[CACHE DEBUG] {node_id}: type={node_config.type}, parent_result={'YES' if has_parent_result else 'NO'}, is_loop_body={is_loop_body}")
+        
+        # Skip cache for: loop nodes, loop body nodes, agent nodes (dynamic parent_result inputs), 
+        # and nodes with parent_result (chained nodes)
+        # Agent nodes removed from cacheing because cache key doesn't include parent_result data
+        if not is_agent_node and node_config.type != "loop" and not is_loop_body and not has_parent_result:
             cached_result = self.cache_manager.get(node_id, node_inputs)
             cache_hit = cached_result is not None
+            if cache_hit:
+                logger.info(f"[CACHE DEBUG] {node_id}: Cache HIT - will use cached result")
+        else:
+            skip_reasons = []
+            if is_agent_node:
+                skip_reasons.append("agent_node")
+            if node_config.type == "loop":
+                skip_reasons.append("loop_node")
+            if is_loop_body:
+                skip_reasons.append("loop_body")
+            if has_parent_result:
+                skip_reasons.append("has_parent_result")
+            logger.info(f"[CACHE DEBUG] {node_id}: Cache SKIP - reasons: {', '.join(skip_reasons)}")
         
         if cache_hit:
             logger.info(f"Cache hit for node {node_id}")

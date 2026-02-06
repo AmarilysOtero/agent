@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Depends
 from pydantic import BaseModel, Field
 
 from ..config import Settings
@@ -61,8 +61,15 @@ async def list_foundry_agents():
     Uses the same implementation as /api/agents/all.
     """
     try:
-        from ..services.agent_service import list_all_foundry_agents
-        agents = list_all_foundry_agents()
+        from ..agents.agents import list_agents_from_foundry
+        try:
+            agents = list_agents_from_foundry()
+        except Exception as foundry_error:
+            print(f"Foundry queries failed: {foundry_error}")
+            # Return empty list rather than crashing
+            return []
+        
+        print(f"Returned {len(agents)} workflow agents: {[a.get('name') for a in agents]}")
         return agents
     except HTTPException:
         raise
@@ -86,55 +93,52 @@ async def execute_workflow(
     """
     import time
     import uuid
+    from ..models.graph_schema import GraphDefinition
+    from ..workflows.graph_normalizer import normalize_workflow_graph
     
     config = Settings.load()
-    
     run_id = str(uuid.uuid4())
     start_time = time.time()
-    
-    # Setup checkpointing if requested
-    if request.checkpoint_dir:
-        config.checkpoint_dir = request.checkpoint_dir
     
     # Start metrics collection
     metrics_collector = get_metrics_collector()
     metrics_collector.start_workflow(run_id, request.goal)
     
     try:
-        # Determine graph source: workflow_definition > workflow_id > graph_path
-        graph_path = request.graph_path
-        
-        if request.workflow_definition:
-            # Use provided workflow definition - save to temp file
-            import tempfile
-            import json
-            from pathlib import Path
-            
-            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-            json.dump(request.workflow_definition, temp_file)
-            temp_file.close()
-            graph_path = temp_file.name
-        elif request.workflow_id:
+        # Load workflow definition
+        if request.workflow_id:
             # Load from persistence
             persistence = get_workflow_persistence()
-            workflow = persistence.get_workflow(request.workflow_id)
-            if workflow:
-                import tempfile
-                import json
-                
-                temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-                json.dump(workflow.graph_definition, temp_file)
-                temp_file.close()
-                graph_path = temp_file.name
-            else:
+            workflow_record = persistence.get_workflow(request.workflow_id)
+            if not workflow_record:
                 raise HTTPException(status_code=404, detail=f"Workflow {request.workflow_id} not found")
+            workflow_def = workflow_record.graph_definition
+        elif request.workflow_definition:
+            workflow_def = request.workflow_definition
+        elif request.graph_path:
+            # Load from file
+            workflow_def = load_graph_definition(request.graph_path)
+        else:
+            raise HTTPException(status_code=400, detail="Must provide workflow_id, workflow_definition, or graph_path")
+        
+        # CRITICAL: Normalize workflow to strip UI artifacts before execution
+        raw_graph = GraphDefinition.model_validate(workflow_def)
+        normalized_graph = normalize_workflow_graph(raw_graph)
+        
+        # Validate normalized graph
+        errors = normalized_graph.validate()
+        if errors:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid graph definition: {', '.join(errors)}"
+            )
         
         # Execute workflow
         if request.use_graph:
             result = await run_graph_workflow(
                 cfg=config,
                 goal=request.goal,
-                graph_path=graph_path
+                workflow_definition=normalized_graph.model_dump()
             )
         else:
             result = await run_sequential_goal(cfg=config, goal=request.goal)
@@ -145,15 +149,46 @@ async def execute_workflow(
         workflow_metrics = metrics_collector.end_workflow()
         metrics_dict = workflow_metrics.to_dict() if workflow_metrics else None
         
+        # Record execution
+        persistence = get_workflow_persistence()
+        execution_record = ExecutionRecord(
+            execution_id=run_id,  # Use run_id as unique execution identifier
+            run_id=run_id,
+            workflow_id=request.workflow_id or "adhoc",
+            goal=request.goal,
+            result=result,
+            # execution_time_ms=execution_time_ms,
+            status=WorkflowStatus.COMPLETED
+        )
+        persistence.save_execution(execution_record)
+        
         return WorkflowResponse(
             run_id=run_id,
             result=result,
             metrics=metrics_dict,
             execution_time_ms=execution_time_ms
         )
-    
+        
+    except HTTPException:
+        metrics_collector.end_workflow() # Ensure metrics are ended even on HTTPException
+        raise
     except Exception as e:
-        metrics_collector.end_workflow()
+        execution_time_ms = (time.time() - start_time) * 1000
+        metrics_collector.end_workflow() # Ensure metrics are ended on general exception
+        
+        # Record failed execution
+        persistence = get_workflow_persistence()
+        execution_record = ExecutionRecord(
+            execution_id=run_id,  # Use run_id as unique execution identifier
+            run_id=run_id,
+            workflow_id=request.workflow_id or "adhoc",
+            goal=request.goal,
+            result=str(e),
+            # execution_time_ms=execution_time_ms,
+            status=WorkflowStatus.FAILED
+        )
+        persistence.save_execution(execution_record)
+        
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
 
 
@@ -563,7 +598,23 @@ async def get_workflow_definition(
         persistence = get_workflow_persistence()
         workflow = persistence.get_workflow(workflow_id)
         if workflow:
-            return workflow.graph_definition
+            # Clean metadata fields from graph_definition before returning
+            # These fields should only exist at root level, not duplicated in graph_definition
+            metadata_fields = {
+                'workflow_id', 'name', 'description', 'is_active',
+                'created_at', 'updated_at', 'created_by', 'tags', 'version'
+            }
+            graph_clean = {k: v for k, v in workflow.graph_definition.items() 
+                          if k not in metadata_fields}
+            
+            # Return workflow with metadata at root level and clean graph_definition
+            return {
+                'workflow_id': workflow.workflow_id,
+                'name': workflow.name,
+                'description': workflow.description,
+                'is_active': workflow.is_active,
+                **graph_clean  # Spread cleaned graph structure (entry_node_id, nodes, edges, etc.)
+            }
     
     # Otherwise, load from graph_path or default
     try:
@@ -573,51 +624,107 @@ async def get_workflow_definition(
         raise HTTPException(status_code=404, detail=f"Workflow definition not found: {graph_path or 'default'}")
 
 
-@router.post("/definitions")
+@router.post("/definitions", status_code=201)
 async def save_workflow_definition(
-    request: Dict[str, Any] = Body(...)
-) -> Dict[str, Any]:
-    """Save a workflow definition
-    
-    Accepts either:
-    - {definition: {...}, name: "..."} (nested)
-    - {...workflow_definition...} (flat - workflow definition fields directly)
+    request: dict
+) -> dict:
     """
+    Save a workflow definition.
+    
+    Request body:
+        {
+            "definition": GraphDefinition dict,
+            "name": str (optional)
+        }
+    
+    Returns: {
+        "success": true,
+        "path": "path/to/saved/file.json",
+        "workflow_id": "unique_identifier"
+    }
+    """
+    from ..workflows.graph_normalizer import normalize_workflow_graph
     from ..models.graph_schema import GraphDefinition
     import uuid
     
-    # Check if request has nested 'definition' field
+    # Parse request to extract definition and name
     if "definition" in request:
-        definition = request["definition"]
+        definition_data = request["definition"]
         name = request.get("name")
     else:
-        # Request is the definition itself (flat structure from frontend)
-        definition = request
+        # Request is the definition itself (flat structure)
+        definition_data = request
         name = request.get("name")
     
-    # Validate the definition structure
+    # Parse the graph definition WITHOUT validation to allow incomplete workflows
+    # Using model_construct bypasses Pydantic validation
     try:
-        graph_def = GraphDefinition(**definition)
+        raw_definition = GraphDefinition.model_construct(**definition_data)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid workflow definition: {str(e)}")
+        # If construction fails entirely, try using model_validate to get better error messages
+        # but wrap it to allow saving anyway
+        try:
+            raw_definition = GraphDefinition.model_validate(definition_data)
+        except Exception:
+            # Even if validation fails, we still want to save the raw data
+            raise HTTPException(status_code=400, detail=f"Invalid workflow structure: {str(e)}")
+    
+    # CRITICAL: Defensively normalize graph to strip UI helpers and convert to loop_continue/loop_exit
+    # This may fail for incomplete graphs, so wrap in try-except
+    try:
+        normalized_definition = normalize_workflow_graph(raw_definition)
+        graph_to_save = normalized_definition.model_dump()
+    except Exception as normalize_error:
+        # If normalization fails (e.g., incomplete loop clusters), save the raw definition
+        print(f"Warning: Graph normalization failed, saving raw definition: {normalize_error}")
+        graph_to_save = definition_data
+    
+    # REMOVED: Validation step - workflows can now be saved incomplete
+    # errors = normalized_definition.validate()
+    # if errors:
+    #     raise HTTPException(status_code=400, detail=f"Validation errors: {', '.join(errors)}")
     
     # Generate workflow_id if not provided
-    workflow_id = definition.get("workflow_id") or str(uuid.uuid4())
+    workflow_id = definition_data.get("workflow_id") or str(uuid.uuid4())
+    
+    # Extract metadata fields that should NOT be in graph_definition
+    name = definition_data.get("name") or "Untitled Workflow"
+    description = definition_data.get("description")
+    is_active = definition_data.get("is_active", False)
+    
+    # Clean graph_definition - remove metadata fields that belong at root level
+    # These fields should only exist in the root document, not in graph_definition
+    metadata_fields = {
+        'workflow_id', 'name', 'description', 'is_active',
+        'created_at', 'updated_at', 'created_by', 'tags', 'version'
+    }
+    graph_clean = {k: v for k, v in graph_to_save.items() if k not in metadata_fields}
     
     # Save using persistence
     persistence = get_workflow_persistence()
     workflow = WorkflowRecord(
         workflow_id=workflow_id,
-        name=name or definition.get("name") or "Untitled Workflow",
-        description=definition.get("description"),
-        graph_definition=definition
+        name=name,
+        description=description,
+        graph_definition=graph_clean,  # Clean version without metadata
+        is_active=is_active
     )
     persistence.save_workflow(workflow)
+    
+    # If this workflow should be active, deactivate all others
+    if is_active:
+        success = persistence.set_active_workflow(workflow_id)
+        if success:
+            print(f"Saved workflow {workflow_id} ({name}) and set as active (deactivated other workflows)")
+        else:
+            print(f"Warning: Saved workflow {workflow_id} but failed to set as active")
+    else:
+        print(f"Saved workflow {workflow_id} ({name}) as inactive")
     
     return {
         "success": True,
         "workflow_id": workflow_id,
-        "path": f"/workflows/{workflow_id}",
+        "path": f"workflows/{workflow_id}.json"  # Informational
     }
 
 
@@ -627,14 +734,27 @@ async def validate_workflow_definition(
 ) -> Dict[str, Any]:
     """Validate a workflow definition"""
     from ..models.graph_schema import GraphDefinition
-    
+    from ..workflows.graph_normalizer import normalize_workflow_graph
+
     try:
-        graph_def = GraphDefinition(**definition)
-        errors = graph_def.validate()
+        # Parse the raw definition
+        raw_definition = GraphDefinition.model_validate(definition)
+        
+        # CRITICAL: Normalize to strip UI helpers before validation
+        normalized_definition = normalize_workflow_graph(raw_definition)
+        
+        # Validate the normalized graph
+        errors = normalized_definition.validate()
         
         return {
             "valid": len(errors) == 0,
             "errors": errors if errors else None
+        }
+    except ValueError as e:
+        # Normalization error (e.g., helper nodes not wired)
+        return {
+            "valid": False,
+            "errors": [str(e)]
         }
     except Exception as e:
         return {
@@ -656,13 +776,12 @@ async def get_persisted_workflow(workflow_id: str) -> Dict[str, Any]:
 @router.get("/persist")
 async def list_persisted_workflows(
     tags: Optional[List[str]] = Query(None),
-    is_active: Optional[bool] = Query(None, description="Filter by active status. Defaults to True (only active workflows)")
+    is_active: Optional[bool] = Query(None, description="Filter by active status. If not specified, returns all workflows.")
 ) -> List[Dict[str, Any]]:
-    """List persisted workflows. By default, only returns active workflows."""
+    """List persisted workflows. Returns all workflows by default (active and inactive)."""
     persistence = get_workflow_persistence()
-    # Default to only active workflows if not specified
-    if is_active is None:
-        is_active = True
+    # Return all workflows by default (both active and inactive)
+    # If is_active is explicitly set to True or False, filter accordingly
     workflows = persistence.list_workflows(tags=tags, is_active=is_active)
     return [w.to_dict() for w in workflows]
 

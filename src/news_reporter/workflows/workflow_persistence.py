@@ -125,14 +125,14 @@ class WorkflowPersistence:
         return workflows
     
     def delete_workflow(self, workflow_id: str) -> bool:
-        """Delete a workflow (soft delete by setting is_active=False)"""
+        """Delete a workflow (permanently remove from database)"""
         # Try MongoDB backend first
         if self.storage_backend and hasattr(self.storage_backend, 'delete_workflow'):
             try:
                 if self.storage_backend.delete_workflow(workflow_id):
-                    # Sync in-memory cache
+                    # Remove from in-memory cache
                     if workflow_id in self._workflows:
-                        self._workflows[workflow_id].is_active = False
+                        del self._workflows[workflow_id]
                     logger.info(f"Deleted workflow: {workflow_id}")
                     return True
             except Exception as e:
@@ -140,7 +140,7 @@ class WorkflowPersistence:
         
         # Fall back to in-memory
         if workflow_id in self._workflows:
-            self._workflows[workflow_id].is_active = False
+            del self._workflows[workflow_id]
             logger.info(f"Deleted workflow: {workflow_id}")
             return True
         return False

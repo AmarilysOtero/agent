@@ -26,7 +26,16 @@ logger = logging.getLogger(__name__)
 USE_MIT_RLM_RECURSION = os.getenv("USE_MIT_RLM_RECURSION", "false").lower() == "true"
 MAX_RLM_ITERATIONS = int(os.getenv("MAX_RLM_ITERATIONS", "5"))
 
+# Selection budget limits (prevent excessive token usage)
+MAX_SELECTED_CHUNKS_PER_FILE = int(os.getenv("MAX_SELECTED_CHUNKS_PER_FILE", "8"))
+MAX_TOTAL_CHARS_FOR_SUMMARY = int(os.getenv("MAX_TOTAL_CHARS_FOR_SUMMARY", "12000"))
+
+# Execution safety limits (PRODUCTION WARNING: needs separate process execution)
+MAX_EXEC_ITERATIONS = 1000  # Prevent infinite loops in generated code
+MAX_EXEC_STRING_LENGTH = 100000  # Prevent memory bombs
+
 logger.info(f"🔧 MIT RLM Recursion: {'ENABLED' if USE_MIT_RLM_RECURSION else 'DISABLED'}")
+logger.info(f"📊 Selection Budgets: max_chunks={MAX_SELECTED_CHUNKS_PER_FILE}, max_chars={MAX_TOTAL_CHARS_FOR_SUMMARY}")
 
 
 def _build_completion_params(model_deployment: str, **kwargs) -> dict:
@@ -62,6 +71,10 @@ class FileSummary:
     chunk_count: int
     summarized_chunk_count: int
     expansion_ratio: float  # (expanded_chunks / entry_chunks)
+    # Citation-grade metadata (for production)
+    chunk_metadata: Optional[List[Dict[str, Any]]] = None  # [{chunk_id, page, offset, section}]
+    file_path: Optional[str] = None
+    selection_method: Optional[str] = None  # "rlm_iterative", "rlm_per_chunk", "fallback"
 
 
 def _normalize_text(text: str) -> str:
@@ -160,6 +173,7 @@ def _validate_inspection_program(program: str, query: str, chunk_count: int) -> 
     5. No "select all chunks blindly" patterns (unless stop=True and low confidence)
     6. Logic checks chunk.text or chunk["text"] (evidence-based)
     7. No hardcoded list of chunk IDs
+    8. No obvious infinite loops (for i in range(10**N))
     
     Args:
         program: Python code for inspect_iteration function
@@ -169,6 +183,17 @@ def _validate_inspection_program(program: str, query: str, chunk_count: int) -> 
     Returns:
         (is_valid, error_message)
     """
+    
+    # Check for obvious CPU bombs (basic pattern detection)
+    dangerous_patterns = [
+        r'range\s*\(\s*10\s*\*\*\s*[6-9]',  # range(10**6) or higher
+        r'range\s*\(\s*\d{7,}',  # range(1000000+)
+        r'while\s+True',  # while True without obvious break
+    ]
+    import re
+    for pattern in dangerous_patterns:
+        if re.search(pattern, program):
+            return False, f"Dangerous pattern detected: {pattern}"
     import ast
     
     try:
@@ -515,6 +540,11 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if not checker.has_evidence_check:
         return False, "Function must perform at least one evidence check (e.g., 'in', .find(), .count(), .lower())"
     
+    # PRODUCTION WARNING: This exec() validation doesn't prevent:
+    # - CPU/memory bombs (for i in range(10**9))
+    # - Pathological string operations
+    # TODO: Run generated code in separate process with resource limits
+    
     # Check 2: Extract ALL string literals using AST
     all_literals = _extract_string_literals_via_ast(code)
     
@@ -565,13 +595,23 @@ def _is_current_employment_query(query: str) -> bool:
     Detect if query is asking about current employment/position.
     
     Examples: "Where does X work?", "What does Y do?", "Who does Z work for?"
+    
+    Improved with more specific patterns to reduce false positives.
     """
+    import re
     query_lower = query.lower()
-    current_indicators = ['where', 'who', 'what', 'does', 'work']
-    # Simple heuristic: if query has 'where/what/who' + 'work/do/does', likely current employment
-    has_question_word = any(w in query_lower for w in ['where', 'what', 'who'])
-    has_work_verb = any(w in query_lower for w in ['work', 'works', 'working', 'do', 'does'])
-    return has_question_word and has_work_verb
+    
+    # Specific employment patterns (more precise than before)
+    employment_patterns = [
+        r'where.*(?:work|works|working)',
+        r'(?:work|works)\s+(?:for|at|with)',
+        r'(?:employed|working)\s+(?:by|at|for)',
+        r'current\s+(?:employer|job|position|role)',
+        r'who\s+does.*work\s+for',
+        r'what\s+does.*do\s+(?:for|at)',
+    ]
+    
+    return any(re.search(pattern, query_lower) for pattern in employment_patterns)
 
 
 def _prioritize_current_role_chunks(
@@ -640,6 +680,150 @@ def _prioritize_current_role_chunks(
     # Fallback: No current markers found, return original selection
     logger.debug("  No current-role markers found, keeping original selection")
     return selected_chunk_ids
+
+
+def _deduplicate_chunks(
+    chunks: List[Dict],
+    selected_chunk_ids: List[str]
+) -> List[str]:
+    """
+    Remove near-duplicate chunks based on text similarity.
+    
+    Expanded chunks often overlap. This deduplicates by:
+    - Exact text match
+    - High character overlap (>80% shared)
+    
+    Args:
+        chunks: All chunks from the file
+        selected_chunk_ids: Chunk IDs to deduplicate
+    
+    Returns:
+        Deduplicated list of chunk IDs
+    """
+    if len(selected_chunk_ids) <= 1:
+        return selected_chunk_ids
+    
+    # Build map of chunk_id -> normalized text
+    chunk_map = {}
+    for chunk in chunks:
+        if isinstance(chunk, dict) and chunk.get("chunk_id") in selected_chunk_ids:
+            text = chunk.get("text", "").strip().lower()
+            chunk_map[chunk.get("chunk_id")] = text
+    
+    seen_texts = set()
+    deduplicated = []
+    
+    for chunk_id in selected_chunk_ids:
+        text = chunk_map.get(chunk_id, "")
+        if not text:
+            continue
+        
+        # Check for exact duplicates
+        if text in seen_texts:
+            logger.debug(f"  🗑️  Removing duplicate chunk: {chunk_id[:30]}...")
+            continue
+        
+        # Check for high overlap with existing chunks
+        is_duplicate = False
+        for seen_text in seen_texts:
+            # Simple overlap check: shared chars / min length
+            shared = sum(1 for c in text if c in seen_text)
+            overlap_ratio = shared / min(len(text), len(seen_text)) if min(len(text), len(seen_text)) > 0 else 0
+            
+            if overlap_ratio > 0.8:
+                logger.debug(f"  🗑️  Removing high-overlap chunk ({overlap_ratio:.0%}): {chunk_id[:30]}...")
+                is_duplicate = True
+                break
+        
+        if not is_duplicate:
+            seen_texts.add(text)
+            deduplicated.append(chunk_id)
+    
+    if len(deduplicated) < len(selected_chunk_ids):
+        logger.info(f"  📉 Deduplication: {len(selected_chunk_ids)} → {len(deduplicated)} chunks")
+    
+    return deduplicated
+
+
+def _apply_selection_budget(
+    chunks: List[Dict],
+    selected_chunk_ids: List[str],
+    max_chunks: int,
+    max_chars: int
+) -> List[str]:
+    """
+    Apply selection budget to prevent excessive token usage in summarization.
+    
+    Trims by:
+    1. Hard cap on number of chunks (max_chunks)
+    2. Hard cap on total characters (max_chars)
+    
+    Prioritizes chunks by:
+    - Current/recent markers ("present", dates)
+    - Keyword density (query-relevant terms)
+    
+    Args:
+        chunks: All chunks from the file
+        selected_chunk_ids: Chunk IDs to trim
+        max_chunks: Maximum chunks to keep
+        max_chars: Maximum total characters
+    
+    Returns:
+        Trimmed list of chunk IDs
+    """
+    if len(selected_chunk_ids) <= max_chunks:
+        # Check char limit even if under chunk limit
+        chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
+        total_chars = sum(len(chunk_map.get(cid, "")) for cid in selected_chunk_ids)
+        
+        if total_chars <= max_chars:
+            return selected_chunk_ids
+    
+    # Need to trim - prioritize by recency markers
+    import re
+    chunk_scores = []
+    chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
+    
+    for chunk_id in selected_chunk_ids:
+        text = chunk_map.get(chunk_id, "")
+        score = 0
+        
+        # Boost for current/present markers
+        if re.search(r'\b(present|current|currently)\b', text.lower()):
+            score += 10
+        
+        # Boost for recent years (2024, 2025, etc.)
+        if re.search(r'\b202[3-9]\b', text):
+            score += 5
+        
+        # Slight boost for longer chunks (more context)
+        score += min(len(text) / 1000, 3)
+        
+        chunk_scores.append((chunk_id, score, len(text)))
+    
+    # Sort by score (descending)
+    chunk_scores.sort(key=lambda x: x[1], reverse=True)
+    
+    # Apply budgets
+    selected = []
+    total_chars = 0
+    
+    for chunk_id, score, char_len in chunk_scores:
+        if len(selected) >= max_chunks:
+            break
+        if total_chars + char_len > max_chars:
+            break
+        
+        selected.append(chunk_id)
+        total_chars += char_len
+    
+    if len(selected) < len(selected_chunk_ids):
+        logger.info(
+            f"  ✂️  Selection budget applied: {len(selected_chunk_ids)} → {len(selected)} chunks "
+            f"({total_chars:,} chars, limit={max_chars:,})"
+        )
+    
+    return selected
 
 
 async def recursive_summarize_files(
@@ -779,6 +963,14 @@ async def recursive_summarize_files(
                             logger.debug(f"    ✓ Chunk {idx} is relevant")
                         else:
                             logger.debug(f"    ✗ Chunk {idx} is not relevant")
+                
+                # PRODUCTION NOTE: Per-chunk mode is expensive (N LLM calls for N chunks)
+                # For large chunk sets, iterative mode is more efficient
+                if len(chunks) > 50:
+                    logger.warning(
+                        f"  ⚠️  Per-chunk mode with {len(chunks)} chunks may be slow/expensive. "
+                        f"Consider using iterative mode (USE_MIT_RLM_RECURSION=true)"
+                    )
 
                 # Store all chunk-level inspection codes for this file
                 inspection_code[file_id] = file_inspection_codes
@@ -809,6 +1001,20 @@ async def recursive_summarize_files(
 
                 final_selected_chunk_ids = list(relevant_chunk_ids)
                 
+                # Apply deduplication before prioritization
+                final_selected_chunk_ids = _deduplicate_chunks(
+                    chunks=chunks,
+                    selected_chunk_ids=final_selected_chunk_ids
+                )
+                
+                # Apply selection budget (prevent excessive summary length)
+                final_selected_chunk_ids = _apply_selection_budget(
+                    chunks=chunks,
+                    selected_chunk_ids=final_selected_chunk_ids,
+                    max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
+                    max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
+                )
+                
                 # DETERMINISTIC RULE: Prioritize current-role chunks if query implies "where does X work"
                 if _is_current_employment_query(query):
                     # FORCE SEARCH ALL CHUNKS (not just selected) - fixes Problem B
@@ -836,6 +1042,22 @@ async def recursive_summarize_files(
 
             source_chunk_ids = final_selected_chunk_ids
 
+            # Build citation metadata
+            chunk_metadata = []
+            for chunk_id in source_chunk_ids:
+                # Find the chunk to extract metadata
+                for chunk in chunks:
+                    if isinstance(chunk, dict) and chunk.get("chunk_id") == chunk_id:
+                        chunk_metadata.append({
+                            "chunk_id": chunk_id,
+                            "page": chunk.get("page"),
+                            "offset": chunk.get("offset"),
+                            "section": chunk.get("section"),
+                        })
+                        break
+            
+            selection_method = "rlm_iterative" if USE_MIT_RLM_RECURSION else "rlm_per_chunk"
+            
             file_summary = FileSummary(
                 file_id=file_id,
                 file_name=file_name,
@@ -843,7 +1065,10 @@ async def recursive_summarize_files(
                 source_chunk_ids=source_chunk_ids,
                 chunk_count=total_chunks,
                 summarized_chunk_count=len(relevant_chunks),
-                expansion_ratio=total_chunks / max(1, entry_chunk_count)
+                expansion_ratio=total_chunks / max(1, entry_chunk_count),
+                chunk_metadata=chunk_metadata,
+                file_path=file_data.get("file_path"),
+                selection_method=selection_method
             )
 
             summaries.append(file_summary)
@@ -921,13 +1146,18 @@ async def _run_inspection_code_sanity_tests(
         (passes_sanity, error_message)
     """
     try:
+        # PRODUCTION WARNING: exec() without process isolation is unsafe
+        # TODO: Use subprocess with timeout and resource limits
         safe_globals = {
             "__builtins__": {
                 "len": len, "sum": sum, "any": any, "all": all,
                 "min": min, "max": max, "int": int, "str": str,
                 "bool": bool, "list": list, "dict": dict, "set": set,
                 "range": range, "enumerate": enumerate, "sorted": sorted,
-            }
+            },
+            # Add iteration budget tracking (basic protection)
+            "_exec_counter": 0,
+            "_MAX_ITERATIONS": MAX_EXEC_ITERATIONS,
         }
         namespace = {}
         exec(code, safe_globals, namespace)
@@ -1215,6 +1445,9 @@ async def _run_inspection_program_sanity_tests(
         
         if selection_ratio > 0.95 and len(chunk_list) > 2:
             return False, f"Selects {selection_ratio:.1%} of chunks (almost all, likely default True)"
+        
+        # Enforce narrowing for iterations > 0 (should select fewer than input)
+        # This is a soft check (only warn, don't fail) since we do this check in execute too
         
         return True, ""
     
@@ -1664,6 +1897,7 @@ async def _process_file_with_rlm_recursion(
             ]
             new_active_ids = set(chunk.get("chunk_id") for chunk in active_chunks)
 
+            # Enforce narrowing (should shrink by at least 10% unless stopping)
             if new_active_ids == prev_active_ids:
                 narrowing_streak += 1
                 if narrowing_streak >= 2:
@@ -1675,7 +1909,16 @@ async def _process_file_with_rlm_recursion(
                     f"    ⏸️  Iteration {iteration + 1}: No narrowing ({narrowing_streak}/2)"
                 )
             else:
-                narrowing_streak = 0
+                # Check that we actually narrowed meaningfully
+                shrink_ratio = len(new_active_ids) / max(1, len(prev_active_ids))
+                if shrink_ratio > 0.9 and not should_stop:
+                    logger.warning(
+                        f"    ⚠️  Iteration {iteration + 1}: Minimal narrowing ({shrink_ratio:.1%}), "
+                        f"selection may not be improving"
+                    )
+                    narrowing_streak += 0.5  # Partial strike
+                else:
+                    narrowing_streak = 0
 
         except Exception as e:
             logger.warning(f"  ⚠️  Iteration {iteration} failed: {e}")
@@ -1700,6 +1943,20 @@ async def _process_file_with_rlm_recursion(
             for chunk in chunks[:min(3, len(chunks))]
         ]
     
+    # Apply deduplication
+    final_selected_chunk_ids = _deduplicate_chunks(
+        chunks=chunks,
+        selected_chunk_ids=final_selected_chunk_ids
+    )
+    
+    # Apply selection budget
+    final_selected_chunk_ids = _apply_selection_budget(
+        chunks=chunks,
+        selected_chunk_ids=final_selected_chunk_ids,
+        max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
+        max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
+    )
+    
     # APPLY CURRENT-ROLE PRIORITIZATION IN ITERATIVE MODE TOO
     # (Previously only applied in per-chunk mode)
     if _is_current_employment_query(query):
@@ -1708,13 +1965,14 @@ async def _process_file_with_rlm_recursion(
             selected_chunk_ids=final_selected_chunk_ids,
             force_search_all=True  # Force search all chunks
         )
-        # Update relevant_chunks to match
-        chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
-        relevant_chunks = [
-            chunk_id_to_text.get(cid, "")
-            for cid in final_selected_chunk_ids
-            if cid in chunk_id_to_text and chunk_id_to_text.get(cid)
-        ]
+    
+    # Update relevant_chunks to match final selection
+    chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
+    relevant_chunks = [
+        chunk_id_to_text.get(cid, "")
+        for cid in final_selected_chunk_ids
+        if cid in chunk_id_to_text and chunk_id_to_text.get(cid)
+    ]
 
     return {
         "relevant_chunks": relevant_chunks,

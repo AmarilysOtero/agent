@@ -180,11 +180,12 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     chunk_words = _tokenize_text(chunk_text)
     allowed_words = query_words | chunk_words
     
-    # Check 1: AST-based check for unconditional return True
+    # Check 1: AST-based check for unconditional return True and evidence-checking
     class ReturnChecker(ast.NodeVisitor):
         def __init__(self):
             self.has_unconditional_return_true = False
             self.has_inverted_logic = False
+            self.has_evidence_check = False  # NEW: track if function checks evidence
         
         def visit_FunctionDef(self, node):
             # Only check the evaluate_chunk_relevance function
@@ -212,6 +213,21 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
                             self.has_inverted_logic = True
             
             self.generic_visit(node)
+        
+        def visit_Compare(self, node):
+            # Check for 'in' operator (evidence checking pattern)
+            for op in node.ops:
+                if isinstance(op, (ast.In, ast.NotIn)):
+                    self.has_evidence_check = True
+            self.generic_visit(node)
+        
+        def visit_Call(self, node):
+            # Check for evidence-checking method calls: .find(), .count(), .lower(), .strip()
+            if isinstance(node.func, ast.Attribute):
+                method_name = node.func.attr
+                if method_name in ('find', 'count', 'lower', 'upper', 'strip', 'split', 'startswith', 'endswith'):
+                    self.has_evidence_check = True
+            self.generic_visit(node)
     
     checker = ReturnChecker()
     checker.visit(tree)
@@ -221,6 +237,11 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     
     if checker.has_inverted_logic:
         return False, "Inverted logic detected: 'if ...: return False' followed by 'return True'"
+    
+    # NEW CHECK: Require at least one evidence-checking operation
+    # This prevents trivial "return True" or "x = True; return x" patterns
+    if not checker.has_evidence_check:
+        return False, "Function must perform at least one evidence check (e.g., 'in', .find(), .count(), .lower())"
     
     # Check 2: Extract ALL string literals using AST
     all_literals = _extract_string_literals_via_ast(code)

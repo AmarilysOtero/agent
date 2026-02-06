@@ -69,10 +69,10 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     Validate generated inspection code for common bugs.
     
     Checks for:
-    1. Unconditional 'return True' at base statement level (not nested in if/for/while)
+    1. Unconditional 'return True' at base statement level (simple indent check)
     2. Inverted logic patterns (if condition: return False; followed by return True)
     3. Code ending with 'return True' (default True behavior)
-    4. Evidence-only rule: string literals must appear in query or chunk_text
+    4. Evidence-only rule: string literals used in matching operations must come from query or chunk_text
     
     Returns:
         (is_valid, error_message)
@@ -91,7 +91,7 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if func_def_idx is None:
         return False, "Function definition 'def evaluate_chunk_relevance' not found"
     
-    # Get the base indentation of the function body (first non-empty, non-comment line after def)
+    # Get the base indentation of the function body
     body_base_indent = None
     for i in range(func_def_idx + 1, len(lines)):
         line = lines[i]
@@ -103,7 +103,9 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if body_base_indent is None:
         return False, "Function body is empty or only contains comments"
     
-    # Check 1: Unconditional return True (only at base statement level, not nested in if/for/while)
+    # Check 1: Unconditional return True at base statement level
+    # SIMPLE RULE: If return True is at base indent, it's unconditional by definition (by Python scoping)
+    # No backward scan needed—base-indented code is always statement-level, never "inside" a block
     for i, line in enumerate(lines):
         stripped = line.strip()
         if not stripped or stripped.startswith('#'):
@@ -111,33 +113,9 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
         
         current_indent = len(line) - len(line.lstrip())
         
-        # Only check return statements at function body base indentation (statement-level)
+        # Base-indented return True = unconditional. Reject.
         if current_indent == body_base_indent and re.match(r'return\s+True\s*$', stripped):
-            # Search backwards to see if this return is inside an if/for/while/try block
-            is_conditional = False
-            for j in range(i - 1, func_def_idx, -1):
-                prev_line = lines[j]
-                prev_stripped = prev_line.strip()
-                prev_indent = len(prev_line) - len(prev_line.lstrip())
-                
-                if not prev_stripped or prev_stripped.startswith('#'):
-                    continue
-                
-                # If we find a control flow keyword at base indentation, this return is in that block
-                if prev_indent == body_base_indent:
-                    if re.match(r'(if|elif|else|try|for|while|except)\s*', prev_stripped):
-                        is_conditional = True
-                        break
-                    # If we hit another return/pass at base level, no control flow above
-                    if prev_stripped.startswith(('return', 'pass')):
-                        break
-                
-                # If we find something at lower indentation, we've left the function body
-                if prev_indent < body_base_indent:
-                    break
-            
-            if not is_conditional:
-                return False, f"Line {i+1}: Unconditional 'return True' at statement level - only return True inside if/elif/try blocks"
+            return False, f"Line {i+1}: Unconditional 'return True' at statement level"
     
     # Check 2: Inverted logic pattern (if X: return False ... return True)
     code_lower = code.lower()
@@ -154,33 +132,48 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if last_return and re.match(r'return\s+True\s*$', last_return):
         return False, "Code ends with 'return True' - default should be False"
     
-    # Check 4: Evidence-only rule - string literals must be in query or chunk
-    # Find all string literals in the code
-    string_pattern = r"['\"]([^'\"]+)['\"]"
-    found_strings = set(re.findall(string_pattern, code))
+    # Check 4: Evidence-only rule - ONLY for strings used in matching operations
+    # Find strings actually used in matching: "term" in text, .find("term"), .startswith("term"), etc.
+    # This avoids false positives on docstrings, schema keys, error messages, etc.
+    matching_patterns = [
+        r'"([^"]+)"\s+in\s+',           # "term" in
+        r"'([^']+)'\s+in\s+",           # 'term' in
+        r'\.find\s*\(\s*["\']([^"\']+)["\']',   # .find("term")
+        r'\.startswith\s*\(\s*["\']([^"\']+)["\']',  # .startswith("term")
+        r'\.endswith\s*\(\s*["\']([^"\']+)["\']',    # .endswith("term")
+        r'\.count\s*\(\s*["\']([^"\']+)["\']',       # .count("term")
+    ]
     
+    matching_strings = set()
+    for pattern in matching_patterns:
+        matches = re.findall(pattern, code)
+        matching_strings.update(matches)
+    
+    # Build allowlist: query terms + chunk terms + common schema keys
     allowed_evidence = set()
-    # Add query terms (lowercase)
     allowed_evidence.update(query.lower().split())
-    # Add chunk text terms (lowercase, limited to avoid excessive matching)
-    chunk_words = set(chunk_text.lower().split())
-    allowed_evidence.update(chunk_words)
+    allowed_evidence.update(chunk_text.lower().split())
     
+    # Add common schema/operation keys that are normal in generated code
+    common_keys = {
+        'chunk_id', 'text', 'selected_chunk_ids', 'extracted_data', 'confidence',
+        'stop', 'chunks', 'query_terms', 'chunk_list', 'fallback', 'id', 'data',
+        'iteration', 'matches', 'result', 'true', 'false', 'none', ''
+    }
+    allowed_evidence.update(common_keys)
+    
+    # Only validate strings that are actually used in matching operations
     suspicious_literals = []
-    for literal in found_strings:
+    for literal in matching_strings:
         literal_lower = literal.lower()
-        # Skip common Python terms
-        if literal_lower in ('true', 'false', 'none', ''):
-            continue
-        # Check if literal appears in evidence
         if literal_lower not in allowed_evidence:
-            # Check if it's a substring of any evidence term (allow partial matches)
+            # Allow partial matches (substring of allowed term)
             is_substring = any(literal_lower in term for term in allowed_evidence)
             if not is_substring:
                 suspicious_literals.append(literal)
     
     if suspicious_literals:
-        return False, f"Evidence-only violation: terms {suspicious_literals} don't appear in query or chunk text (likely metadata inference)"
+        return False, f"Evidence-only violation in matching operations: {suspicious_literals} don't appear in query or chunk text"
     
     return True, ""
 

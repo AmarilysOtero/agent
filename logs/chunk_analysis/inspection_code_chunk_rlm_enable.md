@@ -1,8 +1,8 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-06T03:24:22.578996
+**Execution Time:** 2026-02-05T20:34:58.178315
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 **Total Inspection Programs:** 20
 
@@ -30,31 +30,38 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf)
 
-
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:0
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'work?' in chunk_text.lower():
+    query_keywords = ["work", "employ", "job", "position", "company"]
+    chunk_text_lower = chunk_text.lower()
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
         return True
+    if "introduction" in chunk_text_lower:
+        return False
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Introduction
 <!-- image -->
 ```
 
 #### First Read
+
 ```text
 Introduction
 <!-- image -->
 ```
 
 #### Recursive Text
+
 ```text
 Introduction
 <!-- image -->
@@ -62,32 +69,36 @@ Introduction
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
-    if 'clients' in chunk_text.lower() and 'serve' in chunk_text.lower():
-        return True
-    if 'engineer' in chunk_text.lower() and 'development' in chunk_text.lower():
-        return True
+    chunk_text = chunk_text.lower()
+    query_keywords = ["work", "employ", "company", "organization", "job"]
+    relevant_phrases = ["software engineer", "full-stack engineer", "clients", "development solutions"]
+
+    if any(keyword in chunk_text for keyword in query_keywords):
+        if any(phrase in chunk_text for phrase in relevant_phrases):
+            return True
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Kevin J. Ramírez Pomales
 I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with great problem-solving skills looking to develop experience in cloud development.
 ```
 
 #### First Read
+
 ```text
 Kevin J. Ramírez Pomales
 I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with grea
 ```
 
 #### Recursive Text
+
 ```text
 Kevin J. Ramírez Pomales
 I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with grea
@@ -95,28 +106,38 @@ I'm a disciplined and enthusiastic software engineer with a passionate vision of
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'skills' in chunk_text.lower():
-        return True
-    return False
+    query_keywords = ["work", "employ", "company", "job", "position"]
+    chunk_text_lower = chunk_text.lower()
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        return False
+
+    if "skills" in chunk_text_lower:
+        return False
+
+    return True
 ```
 
 #### Chunk Text
+
 ```text
 Skills
 ## Skills
 ```
 
 #### First Read
+
 ```text
 Skills
 ## Skills
 ```
 
 #### Recursive Text
+
 ```text
 Skills
 ## Skills
@@ -124,18 +145,25 @@ Skills
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'work?' in chunk_text.lower():
-        return True
-    if 'skills' in chunk_text.lower() and 'where' in chunk_text.lower():
-        return True
+    query_keywords = ["work", "employed", "company", "organization", "job"]
+    relevant_indicators = ["skills", "experience", "projects", "employment", "work history"]
+
+    chunk_text_lower = chunk_text.lower()
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        return False
+    if any(indicator in chunk_text_lower for indicator in relevant_indicators):
+        return False
+
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Top Skills (Technical/Nontechnical skills)
 - Java - (5 years)
@@ -149,6 +177,7 @@ Top Skills (Technical/Nontechnical skills)
 ```
 
 #### First Read
+
 ```text
 Top Skills (Technical/Nontechnical skills)
 - Java - (5 years)
@@ -162,6 +191,7 @@ Top Skills (Technical/Nontechnical skills)
 ```
 
 #### Recursive Text
+
 ```text
 Top Skills (Technical/Nontechnical skills)
 - Java - (5 years)
@@ -176,18 +206,17 @@ Top Skills (Technical/Nontechnical skills)
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'work?' in chunk_text.lower():
-        return True
-    if 'frontend' in chunk_text.lower() or 'software' in chunk_text.lower() or 'manager' in chunk_text.lower():
-        return True
-    return False
+    chunk_text = chunk_text.lower()
+    keywords = ["work", "employed", "company", "organization", "dxc"]
+    return any(keyword in chunk_text for keyword in keywords)
 ```
 
 #### Chunk Text
+
 ```text
 Key Roles Performed
 - Frontend Developer - (5 years)
@@ -196,6 +225,7 @@ Key Roles Performed
 ```
 
 #### First Read
+
 ```text
 Key Roles Performed
 - Frontend Developer - (5 years)
@@ -204,6 +234,7 @@ Key Roles Performed
 ```
 
 #### Recursive Text
+
 ```text
 Key Roles Performed
 - Frontend Developer - (5 years)
@@ -213,18 +244,22 @@ Key Roles Performed
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'work?' in chunk_text.lower():
-        return True
-    if 'technology' in chunk_text.lower() or 'banking' in chunk_text.lower() or 'healthcare' in chunk_text.lower():
-        return True
+    chunk_text = chunk_text.lower()
+    keywords = ["work", "employed", "experience", "industry"]
+    relevant_industries = ["technology", "banking", "healthcare"]
+
+    if any(keyword in chunk_text for keyword in keywords):
+        if any(industry in chunk_text for industry in relevant_industries):
+            return True
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Industry Experience (if applicable)
 - Technology - 5 years
@@ -233,6 +268,7 @@ Industry Experience (if applicable)
 ```
 
 #### First Read
+
 ```text
 Industry Experience (if applicable)
 - Technology - 5 years
@@ -241,6 +277,7 @@ Industry Experience (if applicable)
 ```
 
 #### Recursive Text
+
 ```text
 Industry Experience (if applicable)
 - Technology - 5 years
@@ -250,16 +287,24 @@ Industry Experience (if applicable)
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'kevin' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
+    query_keywords = ["work", "employed", "company", "organization", "current"]
+    relevant_indicators = ["DXC", "employer", "job", "position"]
+
+    chunk_text_lower = chunk_text.lower()
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        if any(indicator in chunk_text_lower for indicator in relevant_indicators):
+            return True
+
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Certifications (Professional Activities, Certifications, and Training Attended)
 Azure AI Fundamentals, granted June 2025
@@ -286,6 +331,7 @@ Azure AI Engineer Associate - Microsoft Training
 ```
 
 #### First Read
+
 ```text
 Certifications (Professional Activities, Certifications, and Training Attended)
 Azure AI Fundamentals, granted June 2025
@@ -307,6 +353,7 @@ Azure AI Engineer Associate - Microsoft Training
 ```
 
 #### Recursive Text
+
 ```text
 Certifications (Professional Activities, Certifications, and Training Attended)
 Azure AI Fundamentals, granted June 2025
@@ -329,42 +376,54 @@ Azure AI Engineer Associate - Microsoft Training
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'work' in chunk_text.lower() and 'experience' in chunk_text.lower():
+    query_keywords = ["work", "employed", "position", "company", "organization"]
+    chunk_text_lower = chunk_text.lower()
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
         return True
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Professional Work Experience
 ```
 
 #### First Read
+
 ```text
 Professional Work Experience
 ```
 
 #### Recursive Text
+
 ```text
 Professional Work Experience
 ```
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'dxc' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
+    query_keywords = ["Kevin", "work", "DXC", "Technology"]
+    chunk_text_lower = chunk_text.lower()
+
+    for keyword in query_keywords:
+        if keyword.lower() in chunk_text_lower:
+            return True
+
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Quantum Computing Analyst Consultant - DXC Technology
 Mar 2025 - Present
@@ -376,6 +435,7 @@ Mar 2025 - Present
 ```
 
 #### First Read
+
 ```text
 Quantum Computing Analyst Consultant - DXC Technology
 Mar 2025 - Present
@@ -387,6 +447,7 @@ Mar 2025 - Present
 ```
 
 #### Recursive Text
+
 ```text
 Quantum Computing Analyst Consultant - DXC Technology
 Mar 2025 - Present
@@ -399,17 +460,18 @@ Mar 2025 - Present
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:9
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'kevin' in chunk_text.lower() and 'dxc' in chunk_text.lower():
-        return True
-    else:
-        return False
+    chunk_text = chunk_text.lower()
+    query_keywords = ["kevin", "work", "dxc", "technology", "microsoft"]
+
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 #### Chunk Text
+
 ```text
 AI Backend Engineer - Microsoft AI Hackathon, DXC Technology
 Apr 2025 - May 2025
@@ -419,6 +481,7 @@ Apr 2025 - May 2025
 ```
 
 #### First Read
+
 ```text
 AI Backend Engineer - Microsoft AI Hackathon, DXC Technology
 Apr 2025 - May 2025
@@ -428,6 +491,7 @@ Apr 2025 - May 2025
 ```
 
 #### Recursive Text
+
 ```text
 AI Backend Engineer - Microsoft AI Hackathon, DXC Technology
 Apr 2025 - May 2025
@@ -438,18 +502,21 @@ Apr 2025 - May 2025
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
-    if 'company' in chunk_text.lower() and 'heinz' in chunk_text.lower():
-        return True
+    chunk_text_lower = chunk_text.lower()
+    query_keywords = ["kevin", "work", "company", "employed", "position"]
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        if "kraft heinz company" in chunk_text_lower:
+            return True
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Software Engineer PM, Kraft Heinz Company (KHC)
 Jun 2024 - Dec 2024
@@ -461,6 +528,7 @@ Jun 2024 - Dec 2024
 ```
 
 #### First Read
+
 ```text
 Software Engineer PM, Kraft Heinz Company (KHC)
 Jun 2024 - Dec 2024
@@ -471,6 +539,7 @@ Jun 2024 - Dec 2024
 ```
 
 #### Recursive Text
+
 ```text
 Software Engineer PM, Kraft Heinz Company (KHC)
 Jun 2024 - Dec 2024
@@ -482,18 +551,18 @@ Jun 2024 - Dec 2024
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'kevin' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
-    if 'dxc' in chunk_text.lower() and 'kevin' in chunk_text.lower():
-        return True
-    return False
+    chunk_text = chunk_text.lower()
+    query_keywords = ["kevin", "work", "dxc technology", "business analyst", "network of giving"]
+
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 #### Chunk Text
+
 ```text
 Business Analyst/Tester - Network of Giving, DXC Technology
 Oct 2023 - Jan 2024
@@ -503,6 +572,7 @@ Oct 2023 - Jan 2024
 ```
 
 #### First Read
+
 ```text
 Business Analyst/Tester - Network of Giving, DXC Technology
 Oct 2023 - Jan 2024
@@ -512,6 +582,7 @@ Oct 2023 - Jan 2024
 ```
 
 #### Recursive Text
+
 ```text
 Business Analyst/Tester - Network of Giving, DXC Technology
 Oct 2023 - Jan 2024
@@ -522,20 +593,20 @@ Oct 2023 - Jan 2024
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
-    if 'capstone' in chunk_text.lower() and 'project' in chunk_text.lower():
-        return True
-    if 'manager' in chunk_text.lower() and 'employee' in chunk_text.lower():
+    chunk_text = chunk_text.lower()
+    query_keywords = ["kevin", "work", "capstone", "el mesón sándwiches", "developer"]
+
+    if any(keyword in chunk_text for keyword in query_keywords):
         return True
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Lead Developer - Capstone Project, UPRM
 Oct 2021 - Dec 2021
@@ -546,6 +617,7 @@ Oct 2021 - Dec 2021
 ```
 
 #### First Read
+
 ```text
 Lead Developer - Capstone Project, UPRM
 Oct 2021 - Dec 2021
@@ -556,6 +628,7 @@ Oct 2021 - Dec 2021
 ```
 
 #### Recursive Text
+
 ```text
 Lead Developer - Capstone Project, UPRM
 Oct 2021 - Dec 2021
@@ -567,16 +640,23 @@ Oct 2021 - Dec 2021
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'work?' in chunk_text.lower() and 'kevin' in chunk_text.lower():
-        return True
+    query_keywords = ["where", "work", "employed", "company"]
+    relevant_phrases = ["Abarca Health", "employed", "worked at", "company"]
+
+    chunk_text_lower = chunk_text.lower()
+
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        if any(phrase in chunk_text_lower for phrase in relevant_phrases):
+            return True
     return False
 ```
 
 #### Chunk Text
+
 ```text
 Software Engineer Intern, Abarca Health, San Juan PR
 Jun 2021 - Aug 2021
@@ -586,6 +666,7 @@ Jun 2021 - Aug 2021
 ```
 
 #### First Read
+
 ```text
 Software Engineer Intern, Abarca Health, San Juan PR
 Jun 2021 - Aug 2021
@@ -595,6 +676,7 @@ Jun 2021 - Aug 2021
 ```
 
 #### Recursive Text
+
 ```text
 Software Engineer Intern, Abarca Health, San Juan PR
 Jun 2021 - Aug 2021
@@ -605,17 +687,22 @@ Jun 2021 - Aug 2021
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    """Fallback relevance filter based on query terms."""
-    text_lower = chunk_text.lower()
-    query_terms = ['where', 'does', 'kevin', 'work?']
-    return sum(1 for term in query_terms if term in text_lower) >= 2
+    chunk_text = chunk_text.lower()
+    query_keywords = ["work", "employed", "job", "company", "organization"]
+    relevant_indicators = ["webmaster", "industrial affiliates program", "full stack developer", "uprm"]
+
+    if any(keyword in chunk_text for keyword in query_keywords):
+        if any(indicator in chunk_text for indicator in relevant_indicators):
+            return True
+    return False
 ```
 
 #### Chunk Text
+
 ```text
 Webmaster, Industrial Affiliates Program, UPRM
 Aug 2017 - Mar 2021
@@ -627,6 +714,7 @@ Aug 2017 - Mar 2021
 ```
 
 #### First Read
+
 ```text
 Webmaster, Industrial Affiliates Program, UPRM
 Aug 2017 - Mar 2021
@@ -638,6 +726,7 @@ Aug 2017 - Mar 2021
 ```
 
 #### Recursive Text
+
 ```text
 Webmaster, Industrial Affiliates Program, UPRM
 Aug 2017 - Mar 2021
@@ -650,16 +739,16 @@ Aug 2017 - Mar 2021
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:15
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'work' in chunk_text.lower() and 'jpmorgan' in chunk_text.lower():
-        return True
-    return False
+    chunk_text = chunk_text.lower()
+    return "kevin" in chunk_text and "jpmorgan chase" in chunk_text
 ```
 
 #### Chunk Text
+
 ```text
 Software Engineer Intern, JPMorgan Chase, Houston TX
 May 2020 - Aug 2020
@@ -668,6 +757,7 @@ May 2020 - Aug 2020
 ```
 
 #### First Read
+
 ```text
 Software Engineer Intern, JPMorgan Chase, Houston TX
 May 2020 - Aug 2020
@@ -676,6 +766,7 @@ May 2020 - Aug 2020
 ```
 
 #### Recursive Text
+
 ```text
 Software Engineer Intern, JPMorgan Chase, Houston TX
 May 2020 - Aug 2020
@@ -685,17 +776,18 @@ May 2020 - Aug 2020
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'work?' in chunk_text.lower():
-        if 'ibm' in chunk_text.lower() or 'durham' in chunk_text.lower():
-            return True
-    return False
+    chunk_text = chunk_text.lower()
+    query_keywords = ["kevin", "work", "ibm", "company"]
+
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 #### Chunk Text
+
 ```text
 Front End Developer (Data &amp; AI), IBM Company, Durham NC
 Jan 2020 - May 2020
@@ -704,6 +796,7 @@ Jan 2020 - May 2020
 ```
 
 #### First Read
+
 ```text
 Front End Developer (Data &amp; AI), IBM Company, Durham NC
 Jan 2020 - May 2020
@@ -712,6 +805,7 @@ Jan 2020 - May 2020
 ```
 
 #### Recursive Text
+
 ```text
 Front End Developer (Data &amp; AI), IBM Company, Durham NC
 Jan 2020 - May 2020
@@ -721,16 +815,21 @@ Jan 2020 - May 2020
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "kevin" in chunk_text.lower() and "work?" in chunk_text.lower():
-        return True
-    return False
+    chunk_text = chunk_text.lower()
+    query_keywords = ["kevin", "work", "employed", "job", "company"]
+
+    if any(keyword in chunk_text for keyword in query_keywords):
+        return False
+
+    return True
 ```
 
 #### Chunk Text
+
 ```text
 Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM
 Oct 2018 - Dec 2018
@@ -739,6 +838,7 @@ Oct 2018 - Dec 2018
 ```
 
 #### First Read
+
 ```text
 Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM
 Oct 2018 - Dec 2018
@@ -747,6 +847,7 @@ Oct 2018 - Dec 2018
 ```
 
 #### Recursive Text
+
 ```text
 Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM
 Oct 2018 - Dec 2018
@@ -756,16 +857,18 @@ Oct 2018 - Dec 2018
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'where' in chunk_text.lower() and 'company,' in chunk_text.lower():
-        return True
-    return False
+    chunk_text = chunk_text.lower()
+    query_keywords = ["where", "kevin", "work", "company"]
+
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 #### Chunk Text
+
 ```text
 Junior Quality Engineer Intern, Shark Ninja Company, Boston MA
 Jun 2018 - Aug 2018
@@ -775,6 +878,7 @@ Jun 2018 - Aug 2018
 ```
 
 #### First Read
+
 ```text
 Junior Quality Engineer Intern, Shark Ninja Company, Boston MA
 Jun 2018 - Aug 2018
@@ -784,6 +888,7 @@ Jun 2018 - Aug 2018
 ```
 
 #### Recursive Text
+
 ```text
 Junior Quality Engineer Intern, Shark Ninja Company, Boston MA
 Jun 2018 - Aug 2018
@@ -794,16 +899,22 @@ Jun 2018 - Aug 2018
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
 
-**Query:** Where does Kevin   work?
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'kevin' in chunk_text.lower() and 'work' in chunk_text.lower():
-        return True
-    return False
+    query_keywords = ["work", "employ", "job", "company"]
+    chunk_text_lower = chunk_text.lower()
+
+    for keyword in query_keywords:
+        if keyword in chunk_text_lower:
+            return False
+
+    return True
 ```
 
 #### Chunk Text
+
 ```text
 Languages
 English - Proficient
@@ -812,6 +923,7 @@ Spanish - Proficient
 ```
 
 #### First Read
+
 ```text
 Languages
 English - Proficient
@@ -820,6 +932,7 @@ Spanish - Proficient
 ```
 
 #### Recursive Text
+
 ```text
 Languages
 English - Proficient

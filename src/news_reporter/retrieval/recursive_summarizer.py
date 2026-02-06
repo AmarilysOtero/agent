@@ -536,9 +536,10 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
         return False, "Unsafe 'return True' path detected without evidence check"
     
     # NEW CHECK: Require at least one evidence-checking operation
-    # This prevents trivial "return True" or "x = True; return x" patterns
+    # FIX #3: Update message to match actual checks (in/not in, find, count, startswith, endswith)
+    # NOTE: .lower(), .upper(), .strip() alone don't count as evidence checks (they're just string prep)
     if not checker.has_evidence_check:
-        return False, "Function must perform at least one evidence check (e.g., 'in', .find(), .count(), .lower())"
+        return False, "Function must perform at least one evidence check (e.g., 'term' in text, .find(), .count(), .startswith(), .endswith())"
     
     # PRODUCTION WARNING: This exec() validation doesn't prevent:
     # - CPU/memory bombs (for i in range(10**9))
@@ -548,9 +549,16 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     # Check 2: Extract ALL string literals using AST
     all_literals = _extract_string_literals_via_ast(code)
     
+    # FIX #6: Whitelist harmless literals that are not evidence-based
+    harmless_literals = {"", " ", "\n", "\t", ",", ".", ":", "-", "—", "–", "!", "?", "'", '"'}
+    
     # Validate each literal against evidence
     suspicious_literals = []
     for literal in all_literals:
+        # Skip harmless punctuation/whitespace
+        if literal in harmless_literals:
+            continue
+        
         literal_norm = _normalize_text(literal.lower())
         literal_words = _tokenize_text(literal)
         
@@ -620,21 +628,21 @@ def _prioritize_current_role_chunks(
     force_search_all: bool = False
 ) -> List[str]:
     """
-    Prioritize chunks with current/present role markers.
+    BOOST current-role chunks, don't replace entire selection.
     
-    CRITICAL FIX: If force_search_all=True (for current employment queries),
-    searches ALL chunks for present/current markers, not just selected ones.
-    This ensures we don't miss "Mar 2025 - Present" if the LLM filter failed.
+    FIX #9: Instead of returning ONLY current-role chunks (which undoes RLM),
+    boost current chunks and combine with top-K from original selection.
     
-    This is purely deterministic date/status logic (no hardcoded job vocab).
+    This ensures queries like "What did Kevin do at DXC and who does he work with?"
+    still get context about past roles, not just current ones.
     
     Args:
         chunks: All chunks from the file
         selected_chunk_ids: Chunk IDs that passed relevance filter
-        force_search_all: If True, search ALL chunks for current markers (ignore selected_chunk_ids)
+        force_search_all: If True, search ALL chunks for current markers (for employment queries)
     
     Returns:
-        Prioritized list of chunk IDs (current role chunks if found)
+        Combined list: current-role boost + original selection (deduped)
     """
     import re
     
@@ -675,7 +683,10 @@ def _prioritize_current_role_chunks(
             f"  🎯 Found {len(current_chunks)} current-role chunks with 'present/current' markers "
             f"({'force-searched all chunks' if force_search_all else 'from selected'})"
         )
-        return current_chunks
+        # FIX #9: Boost by putting current chunks first, then add rest of selection
+        result = current_chunks + [cid for cid in selected_chunk_ids if cid not in current_chunks]
+        logger.info(f"  🚀 Boosted: {current_chunks} moved to top, total {len(result)} chunks")
+        return result
     
     # Fallback: No current markers found, return original selection
     logger.debug("  No current-role markers found, keeping original selection")
@@ -690,8 +701,10 @@ def _deduplicate_chunks(
     Remove near-duplicate chunks based on text similarity.
     
     Expanded chunks often overlap. This deduplicates by:
-    - Exact text match
-    - High character overlap (>80% shared)
+    - Exact text match (fast path)
+    - Token-Jaccard similarity (semantic near-duplicates)
+    
+    FIX #5: Token-Jaccard is cheaper and more correct than character overlap.
     
     Args:
         chunks: All chunks from the file
@@ -700,43 +713,60 @@ def _deduplicate_chunks(
     Returns:
         Deduplicated list of chunk IDs
     """
+    import difflib
+    
     if len(selected_chunk_ids) <= 1:
         return selected_chunk_ids
     
-    # Build map of chunk_id -> normalized text
+    # Build map of chunk_id -> tokens
     chunk_map = {}
     for chunk in chunks:
         if isinstance(chunk, dict) and chunk.get("chunk_id") in selected_chunk_ids:
             text = chunk.get("text", "").strip().lower()
-            chunk_map[chunk.get("chunk_id")] = text
+            # Tokenize into words for Jaccard
+            tokens = set(_tokenize_text(text))
+            chunk_map[chunk.get("chunk_id")] = (text, tokens)
     
-    seen_texts = set()
+    exact_seen = set()
+    seen_chunk_ids = []
     deduplicated = []
     
     for chunk_id in selected_chunk_ids:
-        text = chunk_map.get(chunk_id, "")
-        if not text:
+        if chunk_id not in chunk_map:
             continue
         
-        # Check for exact duplicates
-        if text in seen_texts:
-            logger.debug(f"  🗑️  Removing duplicate chunk: {chunk_id[:30]}...")
+        text, tokens = chunk_map[chunk_id]
+        
+        # Check for exact duplicates (fast path)
+        if text in exact_seen:
+            logger.debug(f"  🗑️  Removing exact duplicate: {chunk_id[:30]}...")
             continue
         
-        # Check for high overlap with existing chunks
-        is_duplicate = False
-        for seen_text in seen_texts:
-            # Simple overlap check: shared chars / min length
-            shared = sum(1 for c in text if c in seen_text)
-            overlap_ratio = shared / min(len(text), len(seen_text)) if min(len(text), len(seen_text)) > 0 else 0
+        # Check for high token overlap (Jaccard similarity)
+        is_near_duplicate = False
+        for seen_id in seen_chunk_ids:
+            seen_text, seen_tokens = chunk_map.get(seen_id, ("", set()))
+            if not seen_tokens or not tokens:
+                continue
             
-            if overlap_ratio > 0.8:
-                logger.debug(f"  🗑️  Removing high-overlap chunk ({overlap_ratio:.0%}): {chunk_id[:30]}...")
-                is_duplicate = True
+            # Jaccard(A, B) = |A ∩ B| / |A ∪ B|
+            intersection = len(tokens & seen_tokens)
+            union = len(tokens | seen_tokens)
+            jaccard = intersection / union if union > 0 else 0
+            
+            # Use SequenceMatcher for string-level similarity (more robust)
+            matcher = difflib.SequenceMatcher(None, text, seen_text)
+            seq_ratio = matcher.ratio()
+            
+            # Consider it a duplicate if both token AND sequence similarity are high
+            if jaccard > 0.75 and seq_ratio > 0.8:
+                logger.debug(f"  🗑️  Removing near-duplicate (Jaccard={jaccard:.2f}, Seq={seq_ratio:.2f}): {chunk_id[:30]}...")
+                is_near_duplicate = True
                 break
         
-        if not is_duplicate:
-            seen_texts.add(text)
+        if not is_near_duplicate:
+            exact_seen.add(text)
+            seen_chunk_ids.append(chunk_id)
             deduplicated.append(chunk_id)
     
     if len(deduplicated) < len(selected_chunk_ids):
@@ -1145,15 +1175,36 @@ async def _run_inspection_code_sanity_tests(
     Returns:
         (passes_sanity, error_message)
     """
+    def safe_range(*args):
+        """Capped range to prevent DOS attacks."""
+        # Parse args like range()
+        if len(args) == 1:
+            max_val = args[0]
+            start, step = 0, 1
+        elif len(args) == 2:
+            start, max_val = args
+            step = 1
+        elif len(args) == 3:
+            start, max_val, step = args
+        else:
+            raise ValueError("range() takes 1 to 3 arguments")
+        
+        # Cap at 10k iterations to prevent DOS
+        if (max_val - start) // max(1, step) > 10000:
+            raise ValueError(f"range() capped at 10k iterations, got {(max_val - start) // max(1, step)}")
+        return range(start, max_val, step)
+    
     try:
         # PRODUCTION WARNING: exec() without process isolation is unsafe
         # TODO: Use subprocess with timeout and resource limits
+        # FIX #4: Remove sorted (risky at scale), cap range to prevent DOS
         safe_globals = {
             "__builtins__": {
                 "len": len, "sum": sum, "any": any, "all": all,
                 "min": min, "max": max, "int": int, "str": str,
                 "bool": bool, "list": list, "dict": dict, "set": set,
-                "range": range, "enumerate": enumerate, "sorted": sorted,
+                "range": safe_range, "enumerate": enumerate,
+                # NOTE: sorted() removed - can blow up; enumerate is limited by safe_range
             },
             # Add iteration budget tracking (basic protection)
             "_exec_counter": 0,
@@ -2134,9 +2185,26 @@ Include only chunks that clearly match the criteria. If fewer than 3 chunks matc
         response = await llm_client.chat.completions.create(**params)
         response_text = response.choices[0].message.content.strip()
 
-        # Parse JSON response
+        # FIX #10: Robust JSON parsing with repair
         import json
-        result = json.loads(response_text)
+        try:
+            result = json.loads(response_text)
+        except json.JSONDecodeError:
+            # Try to extract JSON-like structure if response has trailing text
+            import re
+            match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if match:
+                try:
+                    result = json.loads(match.group())
+                except json.JSONDecodeError:
+                    logger.warning(f"⚠️  Failed to parse JSON even after repair: {response_text[:200]}")
+                    # Fallback: return all chunks (better than nothing)
+                    relevant_indices = list(range(len(chunks)))
+                    return chunks[:min(3, len(chunks))]
+            else:
+                logger.warning(f"⚠️  No JSON found in response: {response_text[:200]}")
+                return chunks[:min(3, len(chunks))]
+        
         relevant_indices = result.get("relevant_indices", [])
 
         # Filter chunks based on selected indices
@@ -2273,7 +2341,7 @@ async def log_file_summaries_to_markdown(
         raise
 
 
-async def log_inspection_code_to_markdown(
+async async def log_inspection_code_to_markdown(
     inspection_rules: Dict[str, Dict[str, str]],
     query: str,
     rlm_enabled: bool = True,
@@ -2298,9 +2366,14 @@ async def log_inspection_code_to_markdown(
     from datetime import datetime
 
     try:
-        # Determine output file
-        file_suffix = "enabled" if rlm_enabled else "disabled"
-        output_path = Path(output_dir) / f"inspection_code_rlm_{file_suffix}.md"
+        # FIX #7: Use different filenames and suffix for iterative vs per-chunk
+        # Determine output file based on mode
+        if mode == "iterative":
+            file_suffix = "enabled" if rlm_enabled else "disabled"
+            output_path = Path(output_dir) / f"inspection_programs_iterative_{file_suffix}.md"
+        else:
+            file_suffix = "enabled" if rlm_enabled else "disabled"
+            output_path = Path(output_dir) / f"inspection_code_rlm_{file_suffix}.md"
 
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2369,7 +2442,10 @@ async def log_inspection_code_to_markdown(
             f.write(content)
 
         logger.info(f"✅ Phase 4 inspection code logged to {output_path}")
-        logger.info(f"   Stored {total_programs} per-chunk inspection programs following MIT RLM model")
+        if mode == "iterative":
+            logger.info(f"   Stored {total_programs} iterative inspection programs (refinement across {total_programs} iterations)")
+        else:
+            logger.info(f"   Stored {total_programs} per-chunk inspection programs following MIT RLM model")
 
 
     except Exception as e:
@@ -2399,7 +2475,8 @@ async def log_inspection_code_with_text_to_markdown(
     from datetime import datetime
 
     try:
-        file_suffix = "enable" if rlm_enabled else "disable"
+        # FIX #7: Use consistent suffix (enabled/disabled, not enable/disable)
+        file_suffix = "enabled" if rlm_enabled else "disabled"
         output_path = Path(output_dir) / f"inspection_code_chunk_rlm_{file_suffix}.md"
 
         output_path.parent.mkdir(parents=True, exist_ok=True)

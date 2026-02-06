@@ -598,7 +598,23 @@ async def get_workflow_definition(
         persistence = get_workflow_persistence()
         workflow = persistence.get_workflow(workflow_id)
         if workflow:
-            return workflow.graph_definition
+            # Clean metadata fields from graph_definition before returning
+            # These fields should only exist at root level, not duplicated in graph_definition
+            metadata_fields = {
+                'workflow_id', 'name', 'description', 'is_active',
+                'created_at', 'updated_at', 'created_by', 'tags', 'version'
+            }
+            graph_clean = {k: v for k, v in workflow.graph_definition.items() 
+                          if k not in metadata_fields}
+            
+            # Return workflow with metadata at root level and clean graph_definition
+            return {
+                'workflow_id': workflow.workflow_id,
+                'name': workflow.name,
+                'description': workflow.description,
+                'is_active': workflow.is_active,
+                **graph_clean  # Spread cleaned graph structure (entry_node_id, nodes, edges, etc.)
+            }
     
     # Otherwise, load from graph_path or default
     try:
@@ -671,17 +687,27 @@ async def save_workflow_definition(
     # Generate workflow_id if not provided
     workflow_id = definition_data.get("workflow_id") or str(uuid.uuid4())
     
-    # Extract is_active parameter (default to False if not provided)
+    # Extract metadata fields that should NOT be in graph_definition
+    name = definition_data.get("name") or "Untitled Workflow"
+    description = definition_data.get("description")
     is_active = definition_data.get("is_active", False)
+    
+    # Clean graph_definition - remove metadata fields that belong at root level
+    # These fields should only exist in the root document, not in graph_definition
+    metadata_fields = {
+        'workflow_id', 'name', 'description', 'is_active',
+        'created_at', 'updated_at', 'created_by', 'tags', 'version'
+    }
+    graph_clean = {k: v for k, v in graph_to_save.items() if k not in metadata_fields}
     
     # Save using persistence
     persistence = get_workflow_persistence()
     workflow = WorkflowRecord(
         workflow_id=workflow_id,
-        name=name or definition_data.get("name") or "Untitled Workflow",
-        description=definition_data.get("description"),
-        graph_definition=graph_to_save,
-        is_active=is_active  # Set is_active from request
+        name=name,
+        description=description,
+        graph_definition=graph_clean,  # Clean version without metadata
+        is_active=is_active
     )
     persistence.save_workflow(workflow)
     

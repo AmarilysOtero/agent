@@ -2,12 +2,17 @@ from __future__ import annotations
 import asyncio
 import logging
 import json
+import os
 from typing import Any, Dict, List
 
 from ..config import Settings
 from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, AssistantAgent, ReviewAgent, SQLAgent
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
+from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance, log_expanded_chunks
+from ..retrieval.chunk_logger import log_chunks_to_markdown
+from ..retrieval.recursive_summarizer import recursive_summarize_files, log_file_summaries_to_markdown
+from ..retrieval.phase_5_answer_generator import generate_final_answer, log_final_answer_to_markdown
 
 # Optional analytics import
 try:
@@ -189,11 +194,21 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
 
     Flow:
       TRIAGE -> SEARCH (retrieve context) -> ASSISTANT (generate response) -> REVIEWER (≤3 passes)
+    
+    Note: When RLM_ENABLED=true, execution routes through RLM-specific branch after Search.
     """
     # ---- 1) TRIAGE ----
     triage = TriageAgent(cfg.agent_id_triage)
     tri = await triage.run(goal)
     print("Triage:", tri.model_dump())
+
+    # RLM Branch Selection
+    if cfg.rlm_enabled:
+        logger.info("RLM branch selected")
+        print("\n🔄 RLM MODE ACTIVATED (currently routes through default sequential for Phase 1)")
+        # Phase 1: Both paths still call the existing flow (no behavioral change)
+    else:
+        logger.debug("Default sequential branch selected (RLM not enabled)")
 
     # Decide whether to fan out across multiple assistant agents
     do_multi = ("multi" in tri.intents) or cfg.multi_route_always
@@ -235,49 +250,301 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         # Search step - retrieve context from RAG sources
         # GENERIC: Always attempt to retrieve context for any user query
         # Let the assistant decide what to do with the retrieved information
+        high_recall_mode = bool(cfg.rlm_enabled)
+        if high_recall_mode:
+            logger.info("🔍 Workflow: High-recall retrieval enabled (RLM mode)")
+        raw_results = None
         if isinstance(search_agent, SQLAgent):
-            context = await search_agent.run(goal, database_id=search_database_id)
-        else:
-            context = await search_agent.run(goal)
-
-        # Assistant step - generate response using retrieved context
-        # GENERIC: Pass all available context to assistant, let it decide what's relevant
-        logger.info(f"🔍 Workflow: Assistant step - context length: {len(context) if context else 0}")
-        print(f"🔍 Workflow: Assistant step - context length: {len(context) if context else 0}")
-        
-        response = await assistant.run(goal, context or "")
-        
-        logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
-        print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
-        if not response:
-            logger.warning(f"🔍 Workflow: No response generated - returning default message")
-            print(f"⚠️ Workflow: No response generated - returning default message")
-            return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
-
-        # Review step (max 3 passes)
-        max_iters = 1 
-        for i in range(1, max_iters + 1):
-            print(f"Review pass {i}/{max_iters}...")
-            verdict = await reviewer.run(goal, response)
-            decision = (verdict.get("decision") or "revise").lower()
-            reason = verdict.get("reason", "")
-            suggested = verdict.get("suggested_changes", "")
-            revised = verdict.get("revised_script", response)
-
-            print(f"Decision: {decision} | Reason: {reason}")
-
-            if decision == "accept":
-                return revised or response
-
-            # Ask assistant to improve using reviewer feedback
-            improve_context = (
-                f"Previous response needs improvement:\n{suggested or reason}\n\n"
-                f"Original response:\n{response}\n\n"
-                f"Context available:\n{context}"
+            context = await search_agent.run(goal, database_id=search_database_id, high_recall_mode=high_recall_mode)
+        elif isinstance(search_agent, AiSearchAgent):
+            # For AiSearchAgent, always return results for logging
+            context, raw_results = await search_agent.run(
+                goal,
+                high_recall_mode=high_recall_mode,
+                return_results=True
             )
-            response = await assistant.run(goal, improve_context)
+        else:
+            context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
 
-        return f"[After {max_iters} review passes]\n{response}"
+        # Log retrieved chunks
+        if raw_results:
+            try:
+                await log_chunks_to_markdown(
+                    chunks=raw_results,
+                    rlm_enabled=high_recall_mode,
+                    query=goal
+                )
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to log chunks: {e}")
+
+        # ===== PHASE 3: Full File Expansion =====
+        # If RLM is enabled, expand entry chunks to full files for broader context
+        expanded_context = context
+        expanded_files = {}  # Initialize for Phase 4
+        if high_recall_mode and raw_results:
+            try:
+                logger.info("🔄 Phase 3: Attempting full file expansion for RLM...")
+
+                entry_chunk_ids = [
+                    res.get("chunk_id") or res.get("id")
+                    for res in raw_results
+                    if res.get("chunk_id") or res.get("id")
+                ]
+
+                if not entry_chunk_ids:
+                    logger.warning("⚠️  Phase 3: No entry chunk IDs found; skipping expansion")
+                else:
+                    neo4j_uri = os.getenv("NEO4J_URI")
+                    neo4j_user = os.getenv("NEO4J_USERNAME")
+                    neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+                    if not (neo4j_uri and neo4j_user and neo4j_password):
+                        logger.warning(
+                            "⚠️  Phase 3: Missing NEO4J_URI/NEO4J_USERNAME/NEO4J_PASSWORD; skipping expansion"
+                        )
+                    else:
+                        from neo4j import AsyncGraphDatabase
+
+                        neo4j_driver = AsyncGraphDatabase.driver(
+                            neo4j_uri,
+                            auth=(neo4j_user, neo4j_password)
+                        )
+
+                        try:
+                            expanded_files = await expand_to_full_files(
+                                entry_chunk_ids=entry_chunk_ids,
+                                neo4j_driver=neo4j_driver
+                            )
+
+                            # Log Phase 3 expanded chunks to markdown
+                            try:
+                                await log_expanded_chunks(
+                                    entry_chunks=raw_results or [],
+                                    expanded_files=expanded_files,
+                                    query=goal
+                                )
+                            except Exception as e:
+                                logger.warning(f"⚠️  Failed to log Phase 3 expanded chunks: {e}")
+
+                            filtered_files = filter_chunks_by_relevance(
+                                expanded_files,
+                                entry_chunk_ids,
+                                context_window=3
+                            )
+
+                            expanded_parts = []
+                            for file_id, chunks in filtered_files.items():
+                                file_name = expanded_files.get(file_id, {}).get("file_name", "unknown")
+                                expanded_parts.append(f"### File: {file_name} (ID: {file_id})")
+                                for chunk in chunks:
+                                    chunk_text = (chunk or {}).get("text", "").replace("\n", " ").strip()
+                                    if chunk_text:
+                                        expanded_parts.append(chunk_text)
+
+                            if expanded_parts:
+                                expanded_context = "\n".join(expanded_parts)
+                                logger.info("✅ Phase 3: Expanded context assembled successfully")
+                            else:
+                                logger.warning("⚠️  Phase 3: Expansion returned no usable text; using original context")
+                                expanded_context = context
+                        finally:
+                            await neo4j_driver.close()
+            except Exception as phase3_error:
+                logger.warning(f"⚠️  Phase 3: File expansion skipped - {phase3_error}", exc_info=True)
+                expanded_context = context
+
+        # ===== PHASE 4: Recursive Summarization =====
+        # If RLM is enabled and Phase 3 expansion succeeded, apply recursive summarization
+        file_summaries = []
+        if high_recall_mode and expanded_files:
+            try:
+                logger.info("🔄 Phase 4: Attempting recursive summarization for expanded files...")
+
+                # Try to use Azure OpenAI for LLM-based summarization
+                try:
+                    from openai import AsyncAzureOpenAI
+                    
+                    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+                    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+                    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+                    model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
+                    
+                    if not (azure_endpoint and api_key):
+                        logger.warning("⚠️  Phase 4: Azure OpenAI credentials not configured; skipping")
+                    else:
+                        llm_client = AsyncAzureOpenAI(
+                            api_key=api_key,
+                            api_version=api_version,
+                            azure_endpoint=azure_endpoint
+                        )
+
+                        file_summaries = await recursive_summarize_files(
+                            expanded_files=expanded_files,
+                            query=goal,
+                            llm_client=llm_client,
+                            model_deployment=model_deployment
+                        )
+
+                        # Log Phase 4 file summaries to markdown
+                        try:
+                            await log_file_summaries_to_markdown(
+                                file_summaries=file_summaries,
+                                query=goal,
+                                rlm_enabled=True,
+                                output_dir="/app/logs/chunk_analysis"
+                            )
+                        except Exception as e:
+                            logger.warning(f"⚠️  Failed to log Phase 4 summaries: {e}")
+
+                        # If we have summaries, assemble them into the context
+                        if file_summaries:
+                            summary_parts = []
+                            for summary in file_summaries:
+                                summary_parts.append(f"### File: {summary.file_name} (ID: {summary.file_id})")
+                                summary_parts.append(f"**Expansion:** {summary.summarized_chunk_count}/{summary.chunk_count} chunks ({summary.expansion_ratio:.2f}x)")
+                                summary_parts.append(summary.summary_text)
+                                summary_parts.append(f"**Citations:** {', '.join(summary.source_chunk_ids)}")
+
+                            if summary_parts:
+                                summary_context = "\n".join(summary_parts)
+                                # Use summaries as primary context instead of raw expanded context
+                                expanded_context = summary_context
+                                logger.info(f"✅ Phase 4: Successfully assembled {len(file_summaries)} file summaries into context")
+
+                except ImportError:
+                    logger.warning("⚠️  Phase 4: Azure OpenAI SDK not available; skipping recursive summarization")
+                except Exception as llm_error:
+                    logger.warning(f"⚠️  Phase 4: LLM-based summarization failed - {llm_error}", exc_info=True)
+
+            except Exception as phase4_error:
+                logger.warning(f"⚠️  Phase 4: Recursive summarization skipped - {phase4_error}", exc_info=True)
+                # Fall back to expanded context from Phase 3
+
+        # ===== PHASE 5: Cross-File Merge + Final Answer + Citations =====
+        # If RLM is enabled and Phase 4 generated summaries, apply Phase 5 answer generation
+        final_answer = None
+        if high_recall_mode and file_summaries:
+            try:
+                logger.info("🔄 Phase 5: Generating final answer with citations...")
+
+                # Get Phase 5 configuration
+                citation_policy = cfg.rlm_citation_policy or "best_effort"
+                max_files = cfg.rlm_max_files or 10
+                max_chunks = cfg.rlm_max_chunks or 50
+
+                try:
+                    from openai import AsyncAzureOpenAI
+                    
+                    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+                    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+                    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+                    model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
+                    
+                    if not (azure_endpoint and api_key):
+                        logger.warning("⚠️  Phase 5: Azure OpenAI credentials not configured; using fallback")
+                    else:
+                        llm_client = AsyncAzureOpenAI(
+                            api_key=api_key,
+                            api_version=api_version,
+                            azure_endpoint=azure_endpoint
+                        )
+
+                        final_answer = await generate_final_answer(
+                            file_summaries=file_summaries,
+                            query=goal,
+                            llm_client=llm_client,
+                            model_deployment=model_deployment,
+                            citation_policy=citation_policy,
+                            max_files=max_files,
+                            max_chunks=max_chunks
+                        )
+
+                        # Log Phase 5 final answer to markdown
+                        try:
+                            await log_final_answer_to_markdown(
+                                answer=final_answer,
+                                query=goal,
+                                output_dir="/app/logs/chunk_analysis"
+                            )
+                        except Exception as e:
+                            logger.warning(f"⚠️  Failed to log Phase 5 answer: {e}")
+
+                except ImportError:
+                    logger.warning("⚠️  Phase 5: Azure OpenAI SDK not available; using fallback")
+                except Exception as llm_error:
+                    logger.warning(f"⚠️  Phase 5: Final answer generation failed - {llm_error}", exc_info=True)
+
+            except Exception as phase5_error:
+                logger.warning(f"⚠️  Phase 5: Answer generation skipped - {phase5_error}", exc_info=True)
+                # Fall back to expanded context from Phase 4
+
+        # If Phase 5 generated a final answer, use it; otherwise use expanded context from Phase 4
+        if final_answer:
+            # Build response from Phase 5 answer with citations
+            answer_with_citations = f"{final_answer.answer_text}\n\n"
+            if final_answer.citations:
+                answer_with_citations += "**Sources:**\n"
+                citations_by_file = {}
+                for citation in final_answer.citations:
+                    if citation.file_name not in citations_by_file:
+                        citations_by_file[citation.file_name] = []
+                    citations_by_file[citation.file_name].append(citation.chunk_id)
+                
+                for file_name, chunk_ids in citations_by_file.items():
+                    answer_with_citations += f"- {file_name}: chunks {', '.join(chunk_ids)}\n"
+            
+            logger.info(f"✅ Phase 5: Final answer ready with {len(final_answer.citations)} citations from {final_answer.file_count} files")
+            # Use Phase 5 answer directly instead of going through Assistant
+            response = answer_with_citations
+            logger.info(f"✅ Using Phase 5 answer directly (skipping Assistant + Review steps)")
+        else:
+            # Fall back to using Assistant with expanded context
+            logger.info("ℹ️  Phase 5 did not generate answer; using Assistant with expanded context")
+
+        # Assistant step - generate response using retrieved context (if Phase 5 didn't generate answer)
+        if not final_answer:
+            # GENERIC: Pass all available context to assistant, let it decide what's relevant
+            logger.info(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
+            print(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
+            
+            response = await assistant.run(goal, expanded_context or "")
+            
+            logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
+            print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
+            if not response:
+                logger.warning(f"🔍 Workflow: No response generated - returning default message")
+                print(f"⚠️ Workflow: No response generated - returning default message")
+                return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
+
+            # Review step (max 3 passes) - only for Assistant-generated responses
+            max_iters = 1 
+            for i in range(1, max_iters + 1):
+                print(f"Review pass {i}/{max_iters}...")
+                verdict = await reviewer.run(goal, response)
+                decision = (verdict.get("decision") or "revise").lower()
+                reason = verdict.get("reason", "")
+                suggested = verdict.get("suggested_changes", "")
+                revised = verdict.get("revised_script", response)
+
+                print(f"Decision: {decision} | Reason: {reason}")
+
+                if decision == "accept":
+                    return revised or response
+
+                # Ask assistant to improve using reviewer feedback
+                improve_context = (
+                    f"Previous response needs improvement:\n{suggested or reason}\n\n"
+                    f"Original response:\n{response}\n\n"
+                    f"Context available:\n{context}"
+                )
+                response = await assistant.run(goal, improve_context)
+
+            return f"[After {max_iters} review passes]\n{response}"
+        else:
+            # Phase 5 generated answer - return directly without review
+            logger.info(f"🔍 Workflow: Phase 5 answer (skipping review step)")
+            print(f"🔍 Workflow: Phase 5 answer (skipping review step)")
+            return response
 
     if len(targets) > 1:
         results = await asyncio.gather(*[run_one(rid) for rid in targets])

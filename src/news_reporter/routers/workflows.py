@@ -45,6 +45,7 @@ class WorkflowRequest(BaseModel):
     workflow_id: Optional[str] = Field(None, description="Optional workflow ID to load from persistence")
     use_graph: bool = Field(True, description="Use graph executor (True) or sequential (False)")
     checkpoint_dir: Optional[str] = Field(None, description="Directory for state checkpoints")
+    rlm_enabled: Optional[bool] = Field(None, description="Enable RLM answering flow (overrides config if provided)")
 
 
 class WorkflowResponse(BaseModel):
@@ -99,6 +100,14 @@ async def execute_workflow(
     config = Settings.load()
     run_id = str(uuid.uuid4())
     start_time = time.time()
+    
+    # Setup checkpointing if requested
+    if request.checkpoint_dir:
+        config.checkpoint_dir = request.checkpoint_dir
+    
+    # Override RLM setting if provided in request (per-execution control)
+    if request.rlm_enabled is not None:
+        config.rlm_enabled = request.rlm_enabled
     
     # Start metrics collection
     metrics_collector = get_metrics_collector()

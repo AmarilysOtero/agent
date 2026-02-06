@@ -18,7 +18,7 @@ class SQLAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, query: str, database_id: Optional[str] = None) -> str:
+    async def run(self, query: str, database_id: Optional[str] = None, high_recall_mode: bool = False) -> str:
         """
         Run query with fallback chain: PostgreSQL SQL → CSV → Vector
         
@@ -119,10 +119,12 @@ class SQLAgent:
             # Get some initial results to find CSV path
             person_names, is_person_query = extract_person_names_and_mode(query)
             keywords = person_names if (is_person_query and person_names) else None
+            initial_top_k = 10 if high_recall_mode else 5
+            initial_similarity_threshold = 0.6 if high_recall_mode else 0.7
             initial_results = graphrag_search(
                 query=query,
-                top_k=5,
-                similarity_threshold=0.7,
+                top_k=initial_top_k,
+                similarity_threshold=initial_similarity_threshold,
                 keywords=keywords,
                 keyword_match_type="any"
             )
@@ -208,10 +210,17 @@ class SQLAgent:
         keywords = person_names if (is_person_query and person_names) else None
         keyword_boost = 0.4 if keywords else 0.0
         
+        top_k = 20 if high_recall_mode else 12
+        similarity_threshold = 0.6 if high_recall_mode else 0.75
+        logger.info(
+            "🔍 [SQLAgent] Calling graphrag_search with: "
+            f"top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}, "
+            f"keyword_boost={keyword_boost}, high_recall_mode={high_recall_mode}"
+        )
         results = graphrag_search(
             query=query,
-            top_k=12,
-            similarity_threshold=0.75,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold,
             keywords=keywords,
             keyword_match_type="any",
             keyword_boost=keyword_boost

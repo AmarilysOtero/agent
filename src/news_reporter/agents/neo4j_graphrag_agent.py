@@ -18,7 +18,7 @@ class Neo4jGraphRAGAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, query: str) -> str:
+    async def run(self, query: str, high_recall_mode: bool = False) -> str:
         logger.info(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
@@ -47,11 +47,18 @@ class Neo4jGraphRAGAgent:
         keywords = person_names if (is_person_query and person_names) else None
         keyword_boost = 0.4 if keywords else 0.0
         
+        top_k = 18 if high_recall_mode else 12
+        similarity_threshold = 0.6 if high_recall_mode else 0.75
+        logger.info(
+            "🔍 [Neo4jGraphRAGAgent] Calling graphrag_search with: "
+            f"top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}, "
+            f"keyword_boost={keyword_boost}, high_recall_mode={high_recall_mode}"
+        )
         # Use improved search parameters to reduce false matches
         results = graphrag_search(
             query=query,
-            top_k=12,  # Get more results initially for filtering
-            similarity_threshold=0.75,  # Increased from 0.7 to reduce false matches
+            top_k=top_k,  # Get more results initially for filtering
+            similarity_threshold=similarity_threshold,
             keywords=keywords,
             keyword_match_type="any",
             keyword_boost=keyword_boost

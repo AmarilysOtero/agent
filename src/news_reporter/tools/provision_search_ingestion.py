@@ -11,10 +11,13 @@ STORAGE_CONN_STR = os.environ["AZURE_STORAGE_CONNECTION_STRING"]  # same value a
 BLOB_CONTAINER   = os.environ.get("BLOB_CONTAINER_RAW", "raw")
 
 # Azure OpenAI (for the Embedding skill)
-AOAI_ENDPOINT     = os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/")
-AOAI_API_KEY      = os.environ["AZURE_OPENAI_API_KEY"]
+AOAI_ENDPOINT     = os.environ.get("AZURE_OPENAI_EMBED_ENDPOINT", os.environ.get("AZURE_OPENAI_ENDPOINT", "")).rstrip("/")
+AOAI_API_KEY      = os.environ.get("AZURE_OPENAI_EMBED_API_KEY", os.environ.get("AZURE_OPENAI_API_KEY", ""))
 AOAI_DEPLOYMENT   = os.environ.get("AZURE_OPENAI_EMBED_DEPLOYMENT", "text-embedding-3-small")
-AOAI_API_VERSION  = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")  # any recent version that supports TE3
+AOAI_API_VERSION  = os.environ.get(
+    "AZURE_OPENAI_EMBED_API_VERSION",
+    os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+)
 
 # Names in Search
 DATASOURCE_NAME = f"ds_blob_{BLOB_CONTAINER}"

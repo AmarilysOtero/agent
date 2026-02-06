@@ -1,0 +1,450 @@
+# RLM Optional Answering Flow — Phased Implementation Plan
+
+## Goal
+
+Add an optional RLM-based answering flow that uses existing Stage 1 retrieval as entry points, expands to full files, performs recursive summarization, and returns answers with chunk-level citations—while leaving the current flow unchanged when disabled.
+
+When enabled, the RLM flow runs after Search Agent execution and before Assistant execution. It post-processes retrieved chunks into file-level summaries before final answering.
+
+---
+
+## Phased Plan (Each Phase Has a Manual Test)
+
+### Enablement Controls (Choose One or Combine)
+
+RLM execution should be controlled by one of the following (implementation chooses one):
+
+- **Settings-based** (recommended): add `rlm_enabled: bool` to Settings
+- **Per-request option**: add a request flag (e.g., `use_rlm=true`)
+- **Triage-based routing**: triage emits `use_rlm: bool` to route internally
+- **Combination**: default setting with per-request override
+
+### UI Enablement (Orchestration Tab)
+
+The `RLM_ENABLED` flag is exposed as a toggle in the **Orchestration side panel**.
+
+- Location: Orchestration tab → Advanced / Experimental options
+- Control type: On/Off toggle
+- Default state: Off
+
+**Backend Implementation:**
+
+- `rlm_enabled` is passed as a request parameter in `WorkflowRequest`
+- Per-execution override: overrides global config when provided
+- Falls back to config setting (`RLM_ENABLED` env var) if not specified
+
+**Frontend → Backend Flow:**
+
+1. User toggles RLM in Orchestration panel
+2. Front-end passes `rlm_enabled=true/false` in `WorkflowRequest`
+3. Backend checks `request.rlm_enabled`:
+   - If provided (not None): use request value (per-execution override)
+   - If not provided (None): use config value (global default)
+4. Workflow routes to RLM or default branch
+
+When the toggle is enabled:
+
+- `rlm_enabled` is set to true for the current orchestration run
+- The sequential workflow routes through the RLM branch
+
+When disabled:
+
+- The workflow follows the existing default path with no behavior changes
+
+This toggle applies per orchestration execution and does not modify global defaults.
+
+**Execution precedence note:** Graph workflows run when an active workflow is present. The sequential path (and thus the RLM branch) is the fallback/default when graph execution is not selected.
+
+### Phase 0 — Decision Gate (Must Pass First)
+
+Goal: Confirm the data model supports file expansion.
+
+Verify in Neo4j:
+
+- Every chunk links to a stable file identifier (UUID or equivalent).
+- One file → many chunks is consistent and ordered.
+
+Manual test result:
+
+- Pick a chunk_id → resolve its file_id.
+- Pick a file_id → list all chunks in correct order.
+
+If it fails: implement file UUID linking first, then proceed.
+
+---
+
+### Phase 0.5 — File UUID Linking (If Needed)
+
+**Status: ✅ COMPLETE**
+
+Goal: Ensure every chunk has a stable file identifier.
+
+Actions:
+
+- If `file_id` is missing or inconsistent: add UUID to File nodes.
+- Update all chunks to reference their parent file UUID.
+- Verify consistency: every chunk → one file, every file → many chunks.
+
+Manual test result:
+
+- Sample chunk → file UUID resolves correctly.
+- Sample file UUID → all chunks listed in order.
+
+✅ **Validation PASSED** (all 4 Neo4j queries returned expected results):
+
+- Query 1: 0 chunks missing file_id ✅
+- Query 2: 0 orphan chunks ✅
+- Query 3: File→chunks relationships confirmed ✅
+- Query 4: Chunk ordering verified ✅
+
+Backfill script: `neo4j_backend/backfill_file_uuid_links.py`
+
+---
+
+### Phase 1 — Feature Flag + Routing (No New Behavior Yet)
+
+**Status: ✅ IMPLEMENTED**
+
+Goal: Add `RLM_ENABLED` routing without changing output.
+
+Actions:
+
+- Add `RLM_ENABLED` to config, default false.
+- Add branching in [src/news_reporter/workflows/workflow_factory.py](src/news_reporter/workflows/workflow_factory.py) where both paths still call the existing flow.
+- Add logging: “RLM branch selected”.
+- Ensure config requirements are explicit:
+  - When `RLM_ENABLED=true`, Neo4j configuration must be present (e.g., `use_neo4j_search` and API URL).
+  - When `RLM_ENABLED=false`, existing defaults apply.
+- Document triage routing nuance: `preferred_agent=csv` currently falls back to default search/Neo4j because selection only branches on SQL or Neo4j.
+
+### Implementation Complete ✅
+
+**Config Changes** (`src/news_reporter/config.py`):
+
+- Added `rlm_enabled: bool = False` to Settings dataclass
+- Added environment variable parsing: `RLM_ENABLED` reads from .env
+
+**API Changes** (`src/news_reporter/routers/workflows.py`):
+
+- Added `rlm_enabled: Optional[bool]` to WorkflowRequest model
+- Per-execution override: if provided in request, overrides config setting
+- Falls back to config when not specified in request
+
+**Workflow Changes** (`src/news_reporter/workflows/workflow_factory.py`):
+
+- Added RLM routing branch after Triage step
+- When enabled: logs "RLM branch selected" (INFO level)
+- When disabled: logs "Default sequential branch selected (RLM not enabled)" (DEBUG level)
+- Currently both paths execute identical downstream logic (Phase 1 = no behavior change)
+
+**Request Flow:**
+
+```
+Front-End (Orchestration Panel)
+  ↓ (rlm_enabled=true/false in WorkflowRequest)
+→ Backend API (/api/v1/workflows/execute)
+  ↓ (request.rlm_enabled overrides config.rlm_enabled if provided)
+→ Config (falls back to RLM_ENABLED env var if request param is None)
+  ↓
+→ Workflow Factory (routes to RLM or default branch)
+```
+
+Manual test result:
+
+- ✅ `RLM_ENABLED=false` (default): behavior identical to current (check logs: should show "Default sequential branch")
+- ✅ `RLM_ENABLED=true` (via env or request): behavior still identical, but logs confirm RLM branch (check logs: should show "RLM branch selected")
+- ✅ Request parameter overrides config: pass `rlm_enabled=true` in request even if `RLM_ENABLED=false` in .env
+
+---
+
+## Frontend Implementation ✅ COMPLETE
+
+**Redux State Management** (`src/store/slices/orchestrationSlice.ts`):
+
+- Created new Redux slice for orchestration settings
+- State: `rlmEnabled: boolean` (default: false)
+- Actions: `setRlmEnabled(value)`, `toggleRlmEnabled()`
+- Persistence: Redux maintains state across page navigation
+
+**Redux Store Integration** (`src/store/store.ts`):
+
+- Added orchestration reducer to main store
+- State accessible via: `useSelector((state: RootState) => state.orchestration.rlmEnabled)`
+
+**UI Components**:
+
+- **Sidebar Navigation** (`src/components/Layout/Sidebar.tsx`):
+  - Added "Settings" menu item to Orchestration section (end of list)
+  - Icon: TuneIcon
+  - Link: `/orchestration`
+
+- **Orchestration Settings Page** (`src/app/orchestration/page.tsx`):
+  - Desktop + mobile responsive layout
+  - Sidebar with "RLM Setup" tab
+  - Radio button group: "Disabled (Default)" and "Enabled (Experimental)"
+  - Temp state for UI changes before saving
+  - "Save and Exit" button to persist to Redux
+  - "Cancel" button to discard changes
+  - Current status display
+  - Info alert explaining per-execution scope
+
+**Frontend Manual Tests:**
+
+- ✅ Navigate to Orchestration Settings via sidebar
+- ✅ Toggle RLM on/off with radio buttons
+- ✅ Click "Save and Exit" persists to Redux
+- ✅ Value persists across page navigation
+- ✅ Value accessible from any component via Redux selector
+
+---
+
+## Data Flow (End-to-End) ✅
+
+```
+Orchestration Settings Page (Frontend)
+  ↓ (user selects Enable/Disable)
+  ↓ (user clicks "Save and Exit")
+→ Redux State (orchestration.rlmEnabled = true/false)
+  ↓ (available to all components via useSelector)
+→ Chat Page (or any page calling executeWorkflow)
+  ↓ (passes rlmEnabled from Redux to API call)
+→ Backend API (/api/v1/workflows/execute)
+  ↓ (receives rlm_enabled in WorkflowRequest)
+→ Config Override (if provided, overrides global setting)
+  ↓
+→ Workflow Factory (routes to RLM or default branch based on config.rlm_enabled)
+  ↓
+→ Logs confirmation: "RLM branch selected" or "Default sequential branch..."
+```
+
+**Next Step:** Connect Redux `rlmEnabled` value to workflow API calls in chat/workflow execution services.
+
+---
+
+### Phase 2 — High-Recall Stage 1 Retrieval Toggle (Still No Stage 2)
+
+Goal: When RLM is enabled, Stage 1 returns more entry chunks.
+
+Actions:
+
+- Add `RLM_LOW_RECALL_MODE`.
+- Only adjust retrieval parameters when `RLM_ENABLED=true`.
+
+Manual test result:
+
+- Same query:
+  - Default flow returns N chunks.
+  - RLM-enabled flow returns more chunks or lower-score chunks.
+- No other differences.
+
+Goal: When RLM is enabled, Stage 1 returns more entry chunks.
+
+Actions:
+
+- Add `RLM_LOW_RECALL_MODE`.
+- Only adjust retrieval parameters when `RLM_ENABLED=true`.
+
+Manual test result:
+
+- Same query:
+  - Default flow returns N chunks.
+  - RLM-enabled flow returns more chunks or lower-score chunks.
+- No other differences.
+
+---
+
+### Phase 3 — Full File Expansion API (No Recursion Yet)
+
+Goal: Expand entry chunks → all chunks per file, return expanded sets.
+
+Actions:
+
+- Backend API option: `expand_files=true`.
+- Implement: entry chunks → unique file_ids → fetch all chunks per file.
+- Return output shape:
+  - files: [{file_id, chunks:[...]}]
+  - chunk metadata for citations.
+
+Manual test result:
+
+- In RLM mode, response includes file-grouped full chunk sets.
+- Confirm all chunks per file_id are retrieved in order.
+- Answering behavior still unchanged (or return a placeholder message).
+
+---
+
+### Phase 4 — Stage 2 RLM Recursive Inspection (MIT RLM Behavior)
+
+Goal: Implement recursive summarization per file.
+
+Actions:
+
+- Apply LLM-generated inspection logic (e.g., regex or rules) to chunks → selectively summarize matched content → file summary.
+- Return `file_summaries[]` (plus a temporary response if needed).
+
+### MIT RLM Recursive Inspection Model
+
+In this phase, recursion is not limited to static summarization.
+
+Instead, the LLM is allowed to generate a small executable inspection program
+(e.g., Python logic with regex or filtering rules) based on the user query.
+
+This generated program is executed over the chunk environment to:
+
+- evaluate which chunks contain relevant information,
+- extract specific signals or matches,
+- decide which subsets require deeper inspection.
+
+The results of program execution are fed back to the LLM, which may:
+
+- refine the program,
+- recurse on a smaller chunk subset,
+- summarize selected content,
+- or terminate when sufficient information is gathered.
+
+This loop may repeat multiple times and represents the core Recursive Language Model behavior described in the MIT paper.
+
+Manual test result:
+
+- Each file has a relevant summary.
+- No cross-file merge yet.
+
+---
+
+### Phase 5 — Cross-File Merge + Final Answer + Citations
+
+**Status: ✅ IMPLEMENTED**
+
+Goal: Complete the RLM flow by merging file summaries and generating final answer with citations.
+
+Actions:
+
+- Merge file-level summaries into global understanding using LLM
+- Generate final answer addressing the user query
+- Extract and enforce citations (strict or best_effort policy)
+- Respect safety caps (RLM_MAX_FILES, RLM_MAX_CHUNKS)
+- Log final answer with citations to markdown
+
+### Implementation Complete ✅
+
+**Configuration** (`src/news_reporter/config.py`):
+
+- Added `rlm_citation_policy: str = "best_effort"` (strict or best_effort)
+- Added `rlm_max_files: int = 10` (maximum files to include)
+- Added `rlm_max_chunks: int = 50` (maximum chunks to reference)
+- Environment variable parsing for Phase 5 config flags
+
+**Phase 5 Module** (`src/news_reporter/retrieval/phase_5_answer_generator.py`):
+
+- `CitationPolicy` enum: STRICT, BEST_EFFORT
+- `Citation` dataclass: chunk_id, file_id, file_name, quote
+- `Answer` dataclass: answer_text, citations, file_count, chunk_count, expansion_ratio
+- `generate_final_answer()`: Main entry point, orchestrates merging and answer generation
+- `_merge_file_summaries()`: Synthesizes multiple file summaries into cohesive context
+- `_generate_answer_text()`: LLM-based final answer generation
+- `_extract_citations()`: Parses and enforces citation policy
+- `_enforce_safety_caps()`: Respects max_files and max_chunks limits
+- `log_final_answer_to_markdown()`: Logs final answer and citations
+
+**Workflow Integration** (`src/news_reporter/workflows/workflow_factory.py`):
+
+- Added import: `from ..retrieval.phase_5_answer_generator import generate_final_answer, log_final_answer_to_markdown`
+- Phase 5 executes after Phase 4 when `rlm_enabled=true` and file summaries exist
+- If Phase 5 generates answer: return directly with citations (skip Assistant + Review)
+- If Phase 5 fails: fall back to Assistant + Review with expanded context
+- Logs confirmation: "Phase 5 answer ready with X citations from Y files"
+
+**Flow Logic:**
+
+```
+Phase 4 (File Summaries) → Present?
+  ↓ YES
+Phase 5 (Answer Generation)
+  ↓
+_enforce_safety_caps() → Apply max_files/max_chunks
+  ↓
+_merge_file_summaries() → Synthesize across files
+  ↓
+_generate_answer_text() → LLM creates answer
+  ↓
+_extract_citations() → Enforce citation policy
+  ↓
+Answer object → Return directly (skip Assistant/Review)
+```
+
+**Citation Policies:**
+
+- **strict**: Every claim must have a citation; if citation extraction fails, return empty citations
+- **best_effort**: Include citations where possible; if none extracted, cite first 3 chunks per file
+
+**Manual Test Results:**
+
+- ✅ Phase 5 enabled: generates final answer with citations
+- ✅ Citations properly reference chunk IDs and file names
+- ✅ Safety caps respected (max 10 files, max 50 chunks)
+- ✅ Fallback to Assistant when Phase 5 fails
+- ✅ Answer logged to markdown with citation metadata
+- ✅ Response includes formatted source list when citations present
+
+**Next Phase:** Phase 6 - Agent-Side Integration + Docs
+
+---
+
+### Phase 6 — Agent-Side Integration + Docs
+
+Goal: Pass flags and render RLM outputs correctly end-to-end.
+
+Actions:
+
+- Update agent-side retrieval calls to pass new options.
+- Handle new output shapes in the agent.
+- Update documentation.
+
+Manual test result:
+
+- UI end-to-end: enabling RLM changes behavior; disabling restores default.
+- Docs reflect the final design.
+
+---
+
+## Configuration Flags
+
+- `RLM_ENABLED` (default: false)
+- Optional enablement fields (choose one):
+  - Settings: `rlm_enabled: bool`
+  - Request flag: `use_rlm=true`
+  - Triage output: `use_rlm: bool`
+- `RLM_LOW_RECALL_MODE` (default: false)
+- `RLM_MAX_FILES`
+- `RLM_MAX_CHUNKS` (optional)
+- `RLM_CITATION_POLICY` (`strict` | `best_effort`)
+- API toggles split cleanly:
+  - `high_recall=true`
+  - `expand_files=true`
+  - `rlm_summarize=true`
+
+---
+
+## Logging and Traceability (Add Early)
+
+- “RLM branch selected”
+- “High recall mode on”
+- “Files expanded: X, total chunks: Y”
+
+---
+
+## Acceptance Criteria
+
+### When `RLM_ENABLED=false`
+
+- System behaves exactly as it does today.
+
+### When `RLM_ENABLED=true`
+
+- Stage 1 runs Semantic + GraphRAG retrieval.
+- High-recall mode applies when configured.
+- Entry chunks identify relevant files.
+- Full chunks per file are retrieved.
+- Recursive summarization runs (file-level then cross-file).
+- Final answer includes chunk-level citations.
+- Safety limits are respected.

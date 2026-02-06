@@ -2242,7 +2242,14 @@ async def _summarize_chunks(
     # Use gpt-4o-mini if o3-mini is configured
     summary_deployment = "gpt-4o-mini" if model_deployment.startswith('o3') else model_deployment
     
-    chunks_text = "\n---\n".join(chunks)
+    # FIX #10: Cap individual chunks before joining to prevent token bloat
+    if chunks:
+        max_per_chunk = MAX_TOTAL_CHARS_FOR_SUMMARY // len(chunks)
+        capped_chunks = [chunk[:max_per_chunk] if len(chunk) > max_per_chunk else chunk for chunk in chunks]
+    else:
+        capped_chunks = chunks
+    
+    chunks_text = "\n---\n".join(capped_chunks)
 
     prompt = f"""Summarize the following chunks from "{file_name}" to answer: {query}
 

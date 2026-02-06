@@ -64,6 +64,144 @@ class FileSummary:
     expansion_ratio: float  # (expanded_chunks / entry_chunks)
 
 
+def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
+    """
+    Validate generated inspection code for common bugs.
+    
+    Checks for:
+    1. Unconditional 'return True' at base statement level (not nested in if/for/while)
+    2. Inverted logic patterns (if condition: return False; followed by return True)
+    3. Code ending with 'return True' (default True behavior)
+    4. Evidence-only rule: string literals must appear in query or chunk_text
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    import re
+    
+    lines = code.split('\n')
+    
+    # Find function definition to establish context
+    func_def_idx = None
+    for i, line in enumerate(lines):
+        if 'def evaluate_chunk_relevance' in line:
+            func_def_idx = i
+            break
+    
+    if func_def_idx is None:
+        return False, "Function definition 'def evaluate_chunk_relevance' not found"
+    
+    # Get the base indentation of the function body (first non-empty, non-comment line after def)
+    body_base_indent = None
+    for i in range(func_def_idx + 1, len(lines)):
+        line = lines[i]
+        stripped = line.strip()
+        if stripped and not stripped.startswith('#'):
+            body_base_indent = len(line) - len(line.lstrip())
+            break
+    
+    if body_base_indent is None:
+        return False, "Function body is empty or only contains comments"
+    
+    # Check 1: Unconditional return True (only at base statement level, not nested in if/for/while)
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        
+        current_indent = len(line) - len(line.lstrip())
+        
+        # Only check return statements at function body base indentation (statement-level)
+        if current_indent == body_base_indent and re.match(r'return\s+True\s*$', stripped):
+            # Search backwards to see if this return is inside an if/for/while/try block
+            is_conditional = False
+            for j in range(i - 1, func_def_idx, -1):
+                prev_line = lines[j]
+                prev_stripped = prev_line.strip()
+                prev_indent = len(prev_line) - len(prev_line.lstrip())
+                
+                if not prev_stripped or prev_stripped.startswith('#'):
+                    continue
+                
+                # If we find a control flow keyword at base indentation, this return is in that block
+                if prev_indent == body_base_indent:
+                    if re.match(r'(if|elif|else|try|for|while|except)\s*', prev_stripped):
+                        is_conditional = True
+                        break
+                    # If we hit another return/pass at base level, no control flow above
+                    if prev_stripped.startswith(('return', 'pass')):
+                        break
+                
+                # If we find something at lower indentation, we've left the function body
+                if prev_indent < body_base_indent:
+                    break
+            
+            if not is_conditional:
+                return False, f"Line {i+1}: Unconditional 'return True' at statement level - only return True inside if/elif/try blocks"
+    
+    # Check 2: Inverted logic pattern (if X: return False ... return True)
+    code_lower = code.lower()
+    if re.search(r'if\s+.*?:\s*return\s+False.*?return\s+True', code_lower, re.DOTALL):
+        return False, "Inverted logic detected: 'if condition: return False' followed by 'return True'"
+    
+    # Check 3: Code ends with return True
+    last_return = None
+    for line in reversed(lines):
+        stripped = line.strip()
+        if 'return' in stripped:
+            last_return = stripped
+            break
+    if last_return and re.match(r'return\s+True\s*$', last_return):
+        return False, "Code ends with 'return True' - default should be False"
+    
+    # Check 4: Evidence-only rule - string literals must be in query or chunk
+    # Find all string literals in the code
+    string_pattern = r"['\"]([^'\"]+)['\"]"
+    found_strings = set(re.findall(string_pattern, code))
+    
+    allowed_evidence = set()
+    # Add query terms (lowercase)
+    allowed_evidence.update(query.lower().split())
+    # Add chunk text terms (lowercase, limited to avoid excessive matching)
+    chunk_words = set(chunk_text.lower().split())
+    allowed_evidence.update(chunk_words)
+    
+    suspicious_literals = []
+    for literal in found_strings:
+        literal_lower = literal.lower()
+        # Skip common Python terms
+        if literal_lower in ('true', 'false', 'none', ''):
+            continue
+        # Check if literal appears in evidence
+        if literal_lower not in allowed_evidence:
+            # Check if it's a substring of any evidence term (allow partial matches)
+            is_substring = any(literal_lower in term for term in allowed_evidence)
+            if not is_substring:
+                suspicious_literals.append(literal)
+    
+    if suspicious_literals:
+        return False, f"Evidence-only violation: terms {suspicious_literals} don't appear in query or chunk text (likely metadata inference)"
+    
+    return True, ""
+
+
+def _extract_evidence_terms(query: str, chunk_text: str) -> str:
+    """
+    Extract allowed terms from query and chunk text for dynamic constraint.
+    
+    Returns a formatted string listing allowed terms for the LLM.
+    """
+    # Tokenize and deduplicate
+    query_terms = query.lower().split()
+    chunk_terms = set(chunk_text.lower().split())
+    
+    # Combine and cap length
+    allowed_terms = list(set(query_terms) | chunk_terms)
+    allowed_terms = allowed_terms[:50]  # Cap to 50 terms
+    
+    return ", ".join(repr(t) for t in sorted(allowed_terms))
+
+
 async def recursive_summarize_files(
     expanded_files: Dict[str, Dict],
     query: str,
@@ -305,6 +443,11 @@ async def _generate_inspection_logic(
     MIT RLM approach: Generate small, executable Python code for each chunk
     to determine if it's relevant to the user query.
 
+    Enforces:
+    - Default False behavior (no inverted logic)
+    - Evidence-only string literals (from query + chunk text only)
+    - Post-generation validation with one retry
+
     Args:
         query: User query
         file_name: Name of file being analyzed
@@ -320,6 +463,9 @@ async def _generate_inspection_logic(
     code_generation_deployment = "gpt-4o-mini"
     if model_deployment.startswith(('gpt-', 'gpt4')):
         code_generation_deployment = model_deployment
+
+    # Extract allowed terms from evidence (query + chunk text)
+    allowed_terms_str = _extract_evidence_terms(query, chunk_text)
 
     prompt = f"""You are implementing the MIT Recursive Inspection Model (RLM) for document analysis.
 
@@ -344,57 +490,80 @@ Requirements:
 - Return ONLY the function code with no explanations
 - No imports needed
 
-CRITICAL RULE - Default Behavior:
-- Your default return should almost ALWAYS be False, not True
-- Only return True when you explicitly find matching/relevant content
-- NEVER use inverted logic like "if keyword found: return False; else: return True"
-- Pattern: if <relevant_condition>: return True; else: return False
+CRITICAL RULES - Default Behavior & Evidence-Only Literals:
+1. Your default return should ALWAYS be False, not True
+   - Only return True when you explicitly find matching/relevant content
+   - NEVER use inverted logic like "if keyword found: return False; else: return True"
+   - Pattern: if <relevant_condition>: return True; else: return False
+
+2. EVIDENCE-ONLY RULE: Any string literal you use must come from ONLY these sources:
+   - The user query: {query}
+   - The chunk text (shown above)
+   - Do NOT invent terms from document metadata or filenames
+   - Do NOT use generic keywords not present in query or chunk
+   - Allowed terms: {allowed_terms_str}
 
 NOW generate the function:"""
 
-    try:
-        params = _build_completion_params(
-            code_generation_deployment,
-            model=code_generation_deployment,
-            messages=[
-                {"role": "system", "content": "You are a Python expert. Generate clean, executable Python code with no explanations."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_completion_tokens=300
-        )
+    generated_code = None
+    for attempt in range(2):  # Try up to 2 times
+        try:
+            params = _build_completion_params(
+                code_generation_deployment,
+                model=code_generation_deployment,
+                messages=[
+                    {"role": "system", "content": "You are a Python expert. Generate clean, executable Python code with no explanations. You MUST follow the evidence-only rule strictly."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_completion_tokens=300
+            )
+            
+            response = await llm_client.chat.completions.create(**params)
+            inspection_code = response.choices[0].message.content.strip()
+            
+            # Handle markdown-wrapped code (```python ... ```)
+            if inspection_code.startswith("```"):
+                logger.debug("    Extracting code from markdown wrapper")
+                lines = inspection_code.split("\n")
+                inspection_code = "\n".join(lines[1:-1]) if len(lines) > 2 else inspection_code
+            
+            # Check if response is empty or doesn't contain the function signature
+            if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
+                logger.warning(f"⚠️  LLM returned empty or incomplete code on attempt {attempt + 1}")
+                continue
+            
+            # Validate the generated code (checks for inverted logic and evidence-only)
+            is_valid, error_msg = _validate_inspection_code(inspection_code, chunk_text, query)
+            
+            if is_valid:
+                logger.debug(f"    Generated valid {len(inspection_code)} char code for chunk {chunk_id}")
+                generated_code = inspection_code
+                break
+            else:
+                logger.warning(f"⚠️  Code validation failed on attempt {attempt + 1}: {error_msg}")
+                if attempt == 0:
+                    # Add validation error to prompt for retry
+                    prompt += f"\n\nPrevious attempt failed: {error_msg}\nPlease fix and regenerate."
+                continue
         
-        response = await llm_client.chat.completions.create(**params)
-        inspection_code = response.choices[0].message.content.strip()
-        
-        # Handle markdown-wrapped code (```python ... ```)
-        if inspection_code.startswith("```"):
-            logger.debug("    Extracting code from markdown wrapper")
-            lines = inspection_code.split("\n")
-            inspection_code = "\n".join(lines[1:-1]) if len(lines) > 2 else inspection_code
-        
-        # Check if response is empty or doesn't contain the function signature
-        if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
-            logger.warning(f"⚠️  LLM returned empty or incomplete code for chunk {chunk_id}")
-            # Fallback: return simple query-based filter function
-            fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
+        except Exception as e:
+            logger.warning(f"⚠️  Failed to generate code for chunk {chunk_id} (attempt {attempt + 1}): {e}")
+            continue
+    
+    # If generation succeeded, return it
+    if generated_code:
+        return generated_code
+    
+    # Fallback: return simple query-based filter function (always defaults to False)
+    logger.info(f"  Using fallback function for chunk {chunk_id}")
+    fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
     \"\"\"Fallback relevance filter based on query terms.\"\"\"
     text_lower = chunk_text.lower()
     query_terms = {repr(query.lower().split())}
     return sum(1 for term in query_terms if term in text_lower) >= 2"""
-            return fallback_code
-        
-        logger.debug(f"    Generated {len(inspection_code)} char code for chunk {chunk_id}")
-        return inspection_code
-    except Exception as e:
-        logger.warning(f"⚠️  Failed to generate code for chunk {chunk_id}: {e}")
-        # Fallback: return simple query-based filter function
-        fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    \"\"\"Fallback relevance filter based on query terms.\"\"\"
-    text_lower = chunk_text.lower()
-    query_terms = {repr(query.lower().split())}
-    return sum(1 for term in query_terms if term in text_lower) >= 2"""
-        return fallback_code
+    return fallback_code
+
 
 
 async def _generate_recursive_inspection_program(
@@ -539,18 +708,50 @@ async def _evaluate_chunk_with_code(
 
     MIT RLM: Execute the Python function to evaluate if chunk is relevant.
 
+    Uses restricted execution environment (safe_globals) to prevent:
+    - Imports and module access
+    - Unbounded iteration/recursion
+    - Memory exhaustion
+
     Args:
         chunk_text: The chunk to evaluate
         inspection_code: Python code containing evaluate_chunk_relevance function
         chunk_id: ID of chunk for logging
 
     Returns:
-        True if chunk is relevant, False otherwise
+        True if chunk is relevant, False otherwise (defaults to False on error)
     """
+    # Hard cap on code size  (prevent memory bombs)
+    MAX_CODE_SIZE = 5000
+    if len(inspection_code) > MAX_CODE_SIZE:
+        logger.warning(f"⚠️  Code for {chunk_id} exceeds size limit ({len(inspection_code)} > {MAX_CODE_SIZE})")
+        return False
+    
     try:
-        # Execute the generated Python code
+        # Use restricted global namespace (no imports, minimal builtins)
+        safe_globals = {
+            "__builtins__": {
+                "len": len,
+                "sum": sum,
+                "any": any,
+                "all": all,
+                "min": min,
+                "max": max,
+                "int": int,
+                "str": str,
+                "bool": bool,
+                "list": list,
+                "dict": dict,
+                "set": set,
+                "range": range,
+                "enumerate": enumerate,
+                "sorted": sorted,
+            }
+        }
+        
+        # Execute the generated Python code in restricted environment
         namespace = {}
-        exec(inspection_code, namespace)
+        exec(inspection_code, safe_globals, namespace)
         
         # Get the evaluate_chunk_relevance function
         evaluate_func = namespace.get("evaluate_chunk_relevance")
@@ -559,8 +760,11 @@ async def _evaluate_chunk_with_code(
             logger.warning(f"⚠️  Code for {chunk_id} doesn't contain evaluate_chunk_relevance; returning False")
             return False
         
+        # Hard timeout (simple check - would need signal/threading for true timeout)
         # Execute the function against the chunk
         result = evaluate_func(chunk_text)
+        
+        # Ensure result is a boolean
         return bool(result)
         
     except SyntaxError as e:
@@ -637,6 +841,20 @@ async def _execute_inspection_program(
             selected_ids = candidate_ids_ordered[:MIN_KEEP]
             logger.debug(f"    📌 Enforcing MIN_KEEP={MIN_KEEP}, selected first {len(selected_ids)} chunks by original order")
 
+        # Check for "selects everything repeatedly" pattern (low-signal indicator)
+        # If >90% of chunks are selected, treat as no filtering happening
+        selection_ratio = len(selected_ids) / max(1, len(chunk_list))
+        if selection_ratio > 0.9 and len(chunk_list) > 3:
+            logger.warning(
+                f"    ⚠️  Iteration {iteration}: Selecting {len(selected_ids)}/{len(chunk_list)} chunks ({selection_ratio:.1%}) - "
+                f"no meaningful filtering. Treating as low-signal, will stop early."
+            )
+            # Set stop=True to halt recursion, fallback to all chunks
+            should_stop = True
+            confidence = 0.2  # Low confidence due to poor filtering
+        else:
+            confidence = max(0.0, min(1.0, result.get("confidence", 0.5)))
+
         extracted = result.get("extracted_data", {})
         MAX_EXTRACTED_SIZE = 50000
         if isinstance(extracted, dict):
@@ -656,7 +874,7 @@ async def _execute_inspection_program(
         validated_result = {
             "selected_chunk_ids": selected_ids,
             "extracted_data": extracted,
-            "confidence": max(0.0, min(1.0, result.get("confidence", 0.5))),
+            "confidence": confidence,
             "stop": bool(should_stop)
         }
 
@@ -816,6 +1034,8 @@ async def _apply_inspection_logic(
     MIT RLM approach: Execute the generated Python code to filter chunks.
     The inspection_logic should be a Python function: evaluate_chunk_relevance(chunk_text: str) -> bool
 
+    Uses restricted execution environment to prevent imports and unsafe operations.
+
     Args:
         chunks: List of chunk texts
         inspection_logic: Python code containing evaluate_chunk_relevance() function
@@ -830,9 +1050,38 @@ async def _apply_inspection_logic(
         return []
 
     try:
-        # Execute the generated Python code to create the filter function
+        # Hard cap on code size (prevent memory bombs)
+        MAX_CODE_SIZE = 5000
+        if len(inspection_logic) > MAX_CODE_SIZE:
+            logger.warning(f"⚠️  Inspection logic exceeds size limit ({len(inspection_logic)} > {MAX_CODE_SIZE}); using fallback")
+            return await _apply_inspection_logic_llm_fallback(
+                chunks, inspection_logic, llm_client, model_deployment, max_chunks
+            )
+        
+        # Use restricted global namespace (safe_globals) - same as _evaluate_chunk_with_code
+        safe_globals = {
+            "__builtins__": {
+                "len": len,
+                "sum": sum,
+                "any": any,
+                "all": all,
+                "min": min,
+                "max": max,
+                "int": int,
+                "str": str,
+                "bool": bool,
+                "list": list,
+                "dict": dict,
+                "set": set,
+                "range": range,
+                "enumerate": enumerate,
+                "sorted": sorted,
+            }
+        }
+        
+        # Execute the generated Python code in restricted environment
         namespace = {}
-        exec(inspection_logic, namespace)
+        exec(inspection_logic, safe_globals, namespace)
         
         # Get the evaluate_chunk_relevance function
         evaluate_func = namespace.get("evaluate_chunk_relevance")

@@ -74,132 +74,173 @@ def _normalize_text(text: str) -> str:
     return html.unescape(text)
 
 
+def _tokenize_text(text: str) -> set:
+    """
+    Tokenize text into words, handling punctuation properly.
+    
+    Example: "Where does Kevin work?" -> {"where", "does", "kevin", "work"}
+    """
+    import re
+    # Extract word characters only (removes punctuation)
+    words = re.findall(r'\b\w+\b', text.lower())
+    return set(words)
+
+
+def _extract_string_literals_via_ast(code: str) -> set:
+    """
+    Extract ALL string literals from Python code using AST parsing.
+    
+    This catches literals in:
+    - Lists: ["work", "company"]
+    - Function calls: chunk.find("term")
+    - Comparisons: "term" in chunk
+    - Anywhere else
+    
+    Excludes docstrings and dict keys.
+    
+    Returns:
+        Set of string literals found in the code
+    """
+    import ast
+    
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        # If code doesn't parse, return empty (will be caught by other validation)
+        return set()
+    
+    literals = set()
+    
+    class StringExtractor(ast.NodeVisitor):
+        def __init__(self):
+            self.strings = set()
+            self.in_dict_key = False
+        
+        def visit_Constant(self, node):
+            # Python 3.8+ uses Constant for all literals
+            if isinstance(node.value, str):
+                # Skip very short strings (likely not search terms)
+                if len(node.value) > 0 and not self.in_dict_key:
+                    self.strings.add(node.value)
+            self.generic_visit(node)
+        
+        def visit_Dict(self, node):
+            # Visit dict values but not keys
+            for value in node.values:
+                self.visit(value)
+            # Don't visit keys (they're not search terms)
+        
+        def visit_FunctionDef(self, node):
+            # Skip docstrings
+            body = node.body
+            if body and isinstance(body[0], ast.Expr):
+                expr = body[0].value
+                if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
+                    # This is the docstring, skip it
+                    for child in body[1:]:
+                        self.visit(child)
+                    return
+            # Normal function, visit all
+            self.generic_visit(node)
+    
+    extractor = StringExtractor()
+    extractor.visit(tree)
+    return extractor.strings
+
+
 def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     """
     Validate generated inspection code for common bugs.
     
-    Checks for:
-    1. No unguarded 'return True' anywhere - only inside positive-evidence conditions
+    Uses AST parsing for robust validation:
+    1. No unguarded 'return True' (AST-based check)
     2. Inverted logic patterns (if X: return False; followed by return True)
     3. Code ending with 'return True' (default True behavior)
-    4. Evidence-only rule: string literals used in matching must come from query or chunk_text
+    4. Evidence-only rule: ALL string literals must come from query or chunk_text (AST-based)
     5. Multiword literals must exist as exact phrases in evidence
     
     Returns:
         (is_valid, error_message)
     """
+    import ast
     import re
+    
+    # Try to parse the code
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as e:
+        return False, f"Syntax error: {e}"
     
     # Normalize evidence text (decode HTML entities)
     query_norm = _normalize_text(query.lower())
     chunk_norm = _normalize_text(chunk_text.lower())
     
-    lines = code.split('\n')
+    # Tokenize evidence (removes punctuation)
+    query_words = _tokenize_text(query)
+    chunk_words = _tokenize_text(chunk_text)
+    allowed_words = query_words | chunk_words
     
-    # Find function definition
-    func_def_idx = None
-    for i, line in enumerate(lines):
-        if 'def evaluate_chunk_relevance' in line:
-            func_def_idx = i
-            break
-    
-    if func_def_idx is None:
-        return False, "Function definition 'def evaluate_chunk_relevance' not found"
-    
-    # Get base indentation
-    body_base_indent = None
-    for i in range(func_def_idx + 1, len(lines)):
-        line = lines[i]
-        stripped = line.strip()
-        if stripped and not stripped.startswith('#'):
-            body_base_indent = len(line) - len(line.lstrip())
-            break
-    
-    if body_base_indent is None:
-        return False, "Function body is empty or only contains comments"
-    
-    # CRITICAL CHECK: Reject ANY return True not inside a positive-evidence if block
-    # Find all 'return True' statements and ensure they're preceded by a positive condition
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if not stripped or stripped.startswith('#'):
-            continue
+    # Check 1: AST-based check for unconditional return True
+    class ReturnChecker(ast.NodeVisitor):
+        def __init__(self):
+            self.has_unconditional_return_true = False
+            self.has_inverted_logic = False
         
-        current_indent = len(line) - len(line.lstrip())
-        
-        # If we find 'return True' at base indent level, it's unconditional - REJECT
-        if current_indent == body_base_indent and re.match(r'return\s+True\s*$', stripped):
-            return False, f"Line {i+1}: Fallback 'return True' detected - must default to False"
-        
-        # Even if 'return True' is indented, check if it's after a negative condition
-        if re.match(r'return\s+True\s*$', stripped):
-            # Look backwards to find the controlling if statement
-            found_positive_condition = False
-            for j in range(i - 1, max(func_def_idx, i - 10), -1):
-                prev_line = lines[j].strip()
-                # If we hit an 'if' with 'in' or positive matching, it's OK
-                if prev_line.startswith('if ') and (' in ' in prev_line or 'and' in prev_line or '==' in prev_line):
-                    found_positive_condition = True
-                    break
-                # If we hit 'if not' or 'if X: return False', this might be inverted logic
-                if prev_line.startswith('if ') and ('not in' in prev_line or 'return False' in lines[j:i]):
-                    return False, f"Line {i+1}: 'return True' after negative condition (inverted logic)"
+        def visit_FunctionDef(self, node):
+            # Only check the evaluate_chunk_relevance function
+            if node.name == 'evaluate_chunk_relevance':
+                # Check if function ends with return True
+                if node.body:
+                    last_stmt = node.body[-1]
+                    if isinstance(last_stmt, ast.Return):
+                        if isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is True:
+                            self.has_unconditional_return_true = True
+                
+                # Check for inverted logic: if ...: return False ... return True
+                has_return_false_in_if = False
+                for stmt in node.body:
+                    if isinstance(stmt, ast.If):
+                        # Check if any branch returns False
+                        for branch_stmt in stmt.body + stmt.orelse:
+                            if isinstance(branch_stmt, ast.Return):
+                                if isinstance(branch_stmt.value, ast.Constant) and branch_stmt.value.value is False:
+                                    has_return_false_in_if = True
+                                    break
+                    elif isinstance(stmt, ast.Return) and has_return_false_in_if:
+                        # Found return after if with return False
+                        if isinstance(stmt.value, ast.Constant) and stmt.value.value is True:
+                            self.has_inverted_logic = True
+            
+            self.generic_visit(node)
     
-    # Check 2: Inverted logic pattern
-    code_lower = code.lower()
-    if re.search(r'if\s+.*?:\s*return\s+False.*?return\s+True', code_lower, re.DOTALL):
-        return False, "Inverted logic detected: 'if condition: return False' followed by 'return True'"
+    checker = ReturnChecker()
+    checker.visit(tree)
     
-    # Check 3: Code ends with return True
-    last_return = None
-    for line in reversed(lines):
-        stripped = line.strip()
-        if 'return' in stripped:
-            last_return = stripped
-            break
-    if last_return and re.match(r'return\s+True\s*$', last_return):
-        return False, "Code ends with 'return True' - default should be False"
+    if checker.has_unconditional_return_true:
+        return False, "Function ends with unconditional 'return True' - must default to False"
     
-    # Check 4 & 5: Evidence-only rule with multiword literal validation
-    matching_patterns = [
-        r'"([^"]+)"\s+in\s+',
-        r"'([^']+)'\s+in\s+",
-        r'\.find\s*\(\s*["\']([^"\']+)["\']',
-        r'\.startswith\s*\(\s*["\']([^"\']+)["\']',
-        r'\.endswith\s*\(\s*["\']([^"\']+)["\']',
-        r'\.count\s*\(\s*["\']([^"\']+)["\']',
-    ]
+    if checker.has_inverted_logic:
+        return False, "Inverted logic detected: 'if ...: return False' followed by 'return True'"
     
-    matching_strings = set()
-    for pattern in matching_patterns:
-        matches = re.findall(pattern, code)
-        matching_strings.update(matches)
+    # Check 2: Extract ALL string literals using AST
+    all_literals = _extract_string_literals_via_ast(code)
     
-    # Exclude dict keys
-    dict_key_pattern = r'["\']([^"\']+)["\'](?:\s*:)'
-    dict_keys = set(re.findall(dict_key_pattern, code))
-    matching_strings -= dict_keys
-    
-    # Build evidence allowlist (single words)
-    allowed_words = set()
-    allowed_words.update(query_norm.split())
-    allowed_words.update(chunk_norm.split())
-    
-    # Validate: Multiword literals must exist as exact phrases
+    # Validate each literal against evidence
     suspicious_literals = []
-    for literal in matching_strings:
+    for literal in all_literals:
         literal_norm = _normalize_text(literal.lower())
+        literal_words = _tokenize_text(literal)
         
-        # If literal contains spaces, it must exist as an exact phrase in evidence
-        if ' ' in literal_norm:
+        # If literal contains multiple words, it must exist as an exact phrase
+        if ' ' in literal_norm or len(literal_words) > 1:
+            # Multiword: must exist as substring in evidence
             if literal_norm not in query_norm and literal_norm not in chunk_norm:
-                suspicious_literals.append(f"'{literal}' (multiword not in evidence)")
+                suspicious_literals.append(f"'{literal}' (multiword phrase not in evidence)")
         else:
-            # Single word: must be in allowed word set or substring of evidence
-            if literal_norm not in allowed_words:
-                in_query = literal_norm in query_norm
-                in_chunk = literal_norm in chunk_norm
-                if not (in_query or in_chunk):
+            # Single word: must be in allowed word set
+            if literal_words and not literal_words.issubset(allowed_words):
+                # Also check if it's a substring of evidence (case-insensitive)
+                if literal_norm not in query_norm and literal_norm not in chunk_norm:
                     suspicious_literals.append(f"'{literal}' (not in query/chunk)")
     
     if suspicious_literals:
@@ -239,18 +280,24 @@ def _is_current_employment_query(query: str) -> bool:
     return has_question_word and has_work_verb
 
 
-def _prioritize_current_role_chunks(chunks: List[Dict], selected_chunk_ids: List[str]) -> List[str]:
+def _prioritize_current_role_chunks(
+    chunks: List[Dict], 
+    selected_chunk_ids: List[str], 
+    force_search_all: bool = False
+) -> List[str]:
     """
     Prioritize chunks with current/present role markers.
     
-    If any selected chunk contains 'present', 'current', '- Present', etc.,
-    return only those. Otherwise, return the most recent date-range chunk.
+    CRITICAL FIX: If force_search_all=True (for current employment queries),
+    searches ALL chunks for present/current markers, not just selected ones.
+    This ensures we don't miss "Mar 2025 - Present" if the LLM filter failed.
     
     This is purely deterministic date/status logic (no hardcoded job vocab).
     
     Args:
         chunks: All chunks from the file
         selected_chunk_ids: Chunk IDs that passed relevance filter
+        force_search_all: If True, search ALL chunks for current markers (ignore selected_chunk_ids)
     
     Returns:
         Prioritized list of chunk IDs (current role chunks if found)
@@ -259,12 +306,6 @@ def _prioritize_current_role_chunks(chunks: List[Dict], selected_chunk_ids: List
     
     # Build map of chunk_id -> chunk text
     chunk_map = {c.get('chunk_id'): c.get('text', '') for c in chunks if isinstance(c, dict)}
-    
-    # Filter to selected chunks
-    selected_chunks = [(cid, chunk_map.get(cid, '')) for cid in selected_chunk_ids if cid in chunk_map]
-    
-    if not selected_chunks:
-        return selected_chunk_ids
     
     # Markers for current/present roles (case-insensitive)
     current_markers = [
@@ -276,19 +317,34 @@ def _prioritize_current_role_chunks(chunks: List[Dict], selected_chunk_ids: List
         r'to\\s+present',
     ]
     
+    # Determine search space
+    if force_search_all:
+        # FORCE SEARCH ALL CHUNKS (for current employment queries)
+        search_chunks = [(cid, text) for cid, text in chunk_map.items()]
+        logger.info("  🔍 Force-searching ALL chunks for current-role markers (current employment query)")
+    else:
+        # Only search selected chunks
+        search_chunks = [(cid, chunk_map.get(cid, '')) for cid in selected_chunk_ids if cid in chunk_map]
+    
+    if not search_chunks:
+        return selected_chunk_ids
+    
     # Find chunks with current markers
     current_chunks = []
-    for cid, text in selected_chunks:
+    for cid, text in search_chunks:
         text_lower = text.lower()
         if any(re.search(pattern, text_lower) for pattern in current_markers):
             current_chunks.append(cid)
     
     if current_chunks:
-        logger.info(f"  🎯 Prioritizing {len(current_chunks)} current-role chunks (found 'present/current' markers)")
+        logger.info(
+            f"  🎯 Found {len(current_chunks)} current-role chunks with 'present/current' markers "
+            f"({'force-searched all chunks' if force_search_all else 'from selected'})"
+        )
         return current_chunks
     
     # Fallback: No current markers found, return original selection
-    # (Could enhance this to parse dates and find most recent, but keeping it simple)
+    logger.debug("  No current-role markers found, keeping original selection")
     return selected_chunk_ids
 
 
@@ -461,9 +517,11 @@ async def recursive_summarize_files(
                 
                 # DETERMINISTIC RULE: Prioritize current-role chunks if query implies "where does X work"
                 if _is_current_employment_query(query):
+                    # FORCE SEARCH ALL CHUNKS (not just selected) - fixes Problem B
                     final_selected_chunk_ids = _prioritize_current_role_chunks(
                         chunks=chunks,
-                        selected_chunk_ids=final_selected_chunk_ids
+                        selected_chunk_ids=final_selected_chunk_ids,
+                        force_search_all=True  # Search ALL chunks for present/current
                     )
                     # Update relevant_chunks to match prioritized IDs
                     chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
@@ -1122,6 +1180,22 @@ async def _process_file_with_rlm_recursion(
         final_selected_chunk_ids = [
             chunk.get("chunk_id")
             for chunk in chunks[:min(3, len(chunks))]
+        ]
+    
+    # APPLY CURRENT-ROLE PRIORITIZATION IN ITERATIVE MODE TOO
+    # (Previously only applied in per-chunk mode)
+    if _is_current_employment_query(query):
+        final_selected_chunk_ids = _prioritize_current_role_chunks(
+            chunks=chunks,
+            selected_chunk_ids=final_selected_chunk_ids,
+            force_search_all=True  # Force search all chunks
+        )
+        # Update relevant_chunks to match
+        chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
+        relevant_chunks = [
+            chunk_id_to_text.get(cid, "")
+            for cid in final_selected_chunk_ids
+            if cid in chunk_id_to_text and chunk_id_to_text.get(cid)
         ]
 
     return {

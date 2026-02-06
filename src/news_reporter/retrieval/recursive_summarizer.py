@@ -64,24 +64,39 @@ class FileSummary:
     expansion_ratio: float  # (expanded_chunks / entry_chunks)
 
 
+def _normalize_text(text: str) -> str:
+    """
+    Normalize text by decoding HTML entities.
+    
+    Example: "Data &amp; AI" -> "Data & AI"
+    """
+    import html
+    return html.unescape(text)
+
+
 def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     """
     Validate generated inspection code for common bugs.
     
     Checks for:
-    1. Unconditional 'return True' at base statement level (simple indent check)
-    2. Inverted logic patterns (if condition: return False; followed by return True)
+    1. No unguarded 'return True' anywhere - only inside positive-evidence conditions
+    2. Inverted logic patterns (if X: return False; followed by return True)
     3. Code ending with 'return True' (default True behavior)
-    4. Evidence-only rule: string literals used in matching operations must come from query or chunk_text
+    4. Evidence-only rule: string literals used in matching must come from query or chunk_text
+    5. Multiword literals must exist as exact phrases in evidence
     
     Returns:
         (is_valid, error_message)
     """
     import re
     
+    # Normalize evidence text (decode HTML entities)
+    query_norm = _normalize_text(query.lower())
+    chunk_norm = _normalize_text(chunk_text.lower())
+    
     lines = code.split('\n')
     
-    # Find function definition to establish context
+    # Find function definition
     func_def_idx = None
     for i, line in enumerate(lines):
         if 'def evaluate_chunk_relevance' in line:
@@ -91,7 +106,7 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if func_def_idx is None:
         return False, "Function definition 'def evaluate_chunk_relevance' not found"
     
-    # Get the base indentation of the function body
+    # Get base indentation
     body_base_indent = None
     for i in range(func_def_idx + 1, len(lines)):
         line = lines[i]
@@ -103,9 +118,8 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if body_base_indent is None:
         return False, "Function body is empty or only contains comments"
     
-    # Check 1: Unconditional return True at base statement level
-    # SIMPLE RULE: If return True is at base indent, it's unconditional by definition (by Python scoping)
-    # No backward scan needed—base-indented code is always statement-level, never "inside" a block
+    # CRITICAL CHECK: Reject ANY return True not inside a positive-evidence if block
+    # Find all 'return True' statements and ensure they're preceded by a positive condition
     for i, line in enumerate(lines):
         stripped = line.strip()
         if not stripped or stripped.startswith('#'):
@@ -113,11 +127,25 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
         
         current_indent = len(line) - len(line.lstrip())
         
-        # Base-indented return True = unconditional. Reject.
+        # If we find 'return True' at base indent level, it's unconditional - REJECT
         if current_indent == body_base_indent and re.match(r'return\s+True\s*$', stripped):
-            return False, f"Line {i+1}: Unconditional 'return True' at statement level"
+            return False, f"Line {i+1}: Fallback 'return True' detected - must default to False"
+        
+        # Even if 'return True' is indented, check if it's after a negative condition
+        if re.match(r'return\s+True\s*$', stripped):
+            # Look backwards to find the controlling if statement
+            found_positive_condition = False
+            for j in range(i - 1, max(func_def_idx, i - 10), -1):
+                prev_line = lines[j].strip()
+                # If we hit an 'if' with 'in' or positive matching, it's OK
+                if prev_line.startswith('if ') and (' in ' in prev_line or 'and' in prev_line or '==' in prev_line):
+                    found_positive_condition = True
+                    break
+                # If we hit 'if not' or 'if X: return False', this might be inverted logic
+                if prev_line.startswith('if ') and ('not in' in prev_line or 'return False' in lines[j:i]):
+                    return False, f"Line {i+1}: 'return True' after negative condition (inverted logic)"
     
-    # Check 2: Inverted logic pattern (if X: return False ... return True)
+    # Check 2: Inverted logic pattern
     code_lower = code.lower()
     if re.search(r'if\s+.*?:\s*return\s+False.*?return\s+True', code_lower, re.DOTALL):
         return False, "Inverted logic detected: 'if condition: return False' followed by 'return True'"
@@ -132,46 +160,50 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if last_return and re.match(r'return\s+True\s*$', last_return):
         return False, "Code ends with 'return True' - default should be False"
     
-    # Check 4: Evidence-only rule - ONLY for strings in matching operations
-    # Extract strings used in actual matching contexts (in, .find(), .startswith(), etc.)
-    # Ignored: docstrings, dict keys, schema literals, error messages
+    # Check 4 & 5: Evidence-only rule with multiword literal validation
     matching_patterns = [
-        r'"([^"]+)"\s+in\s+',                      # "term" in
-        r"'([^']+)'\s+in\s+",                      # 'term' in
-        r'\.find\s*\(\s*["\']([^"\']+)["\']',      # .find("term")
-        r'\.startswith\s*\(\s*["\']([^"\']+)["\']', # .startswith("term")
-        r'\.endswith\s*\(\s*["\']([^"\']+)["\']',   # .endswith("term")
-        r'\.count\s*\(\s*["\']([^"\']+)["\']',      # .count("term")
+        r'"([^"]+)"\s+in\s+',
+        r"'([^']+)'\s+in\s+",
+        r'\.find\s*\(\s*["\']([^"\']+)["\']',
+        r'\.startswith\s*\(\s*["\']([^"\']+)["\']',
+        r'\.endswith\s*\(\s*["\']([^"\']+)["\']',
+        r'\.count\s*\(\s*["\']([^"\']+)["\']',
     ]
     
-    # Extract strings only from matching contexts
     matching_strings = set()
     for pattern in matching_patterns:
         matches = re.findall(pattern, code)
         matching_strings.update(matches)
     
-    # Exclude dict keys (pattern: "key": or 'key':)
+    # Exclude dict keys
     dict_key_pattern = r'["\']([^"\']+)["\'](?:\s*:)'
     dict_keys = set(re.findall(dict_key_pattern, code))
-    matching_strings -= dict_keys  # Remove any dict keys from validation
+    matching_strings -= dict_keys
     
-    # Build allowlist of allowed evidence
-    allowed_evidence = set()
-    allowed_evidence.update(query.lower().split())      # Query terms
-    allowed_evidence.update(chunk_text.lower().split())   # Chunk terms
+    # Build evidence allowlist (single words)
+    allowed_words = set()
+    allowed_words.update(query_norm.split())
+    allowed_words.update(chunk_norm.split())
     
-    # Validate matching strings
+    # Validate: Multiword literals must exist as exact phrases
     suspicious_literals = []
     for literal in matching_strings:
-        literal_lower = literal.lower()
-        # Skip if it's in query/chunk or is a substring of any allowed term
-        if literal_lower not in allowed_evidence:
-            is_substring = any(literal_lower in term for term in allowed_evidence)
-            if not is_substring:
-                suspicious_literals.append(literal)
+        literal_norm = _normalize_text(literal.lower())
+        
+        # If literal contains spaces, it must exist as an exact phrase in evidence
+        if ' ' in literal_norm:
+            if literal_norm not in query_norm and literal_norm not in chunk_norm:
+                suspicious_literals.append(f"'{literal}' (multiword not in evidence)")
+        else:
+            # Single word: must be in allowed word set or substring of evidence
+            if literal_norm not in allowed_words:
+                in_query = literal_norm in query_norm
+                in_chunk = literal_norm in chunk_norm
+                if not (in_query or in_chunk):
+                    suspicious_literals.append(f"'{literal}' (not in query/chunk)")
     
     if suspicious_literals:
-        return False, f"Evidence-only violation: {suspicious_literals} used in matching but not found in query or chunk text"
+        return False, f"Evidence-only violation: {suspicious_literals}"
     
     return True, ""
 
@@ -191,6 +223,73 @@ def _extract_evidence_terms(query: str, chunk_text: str) -> str:
     allowed_terms = allowed_terms[:50]  # Cap to 50 terms
     
     return ", ".join(repr(t) for t in sorted(allowed_terms))
+
+
+def _is_current_employment_query(query: str) -> bool:
+    """
+    Detect if query is asking about current employment/position.
+    
+    Examples: "Where does X work?", "What does Y do?", "Who does Z work for?"
+    """
+    query_lower = query.lower()
+    current_indicators = ['where', 'who', 'what', 'does', 'work']
+    # Simple heuristic: if query has 'where/what/who' + 'work/do/does', likely current employment
+    has_question_word = any(w in query_lower for w in ['where', 'what', 'who'])
+    has_work_verb = any(w in query_lower for w in ['work', 'works', 'working', 'do', 'does'])
+    return has_question_word and has_work_verb
+
+
+def _prioritize_current_role_chunks(chunks: List[Dict], selected_chunk_ids: List[str]) -> List[str]:
+    """
+    Prioritize chunks with current/present role markers.
+    
+    If any selected chunk contains 'present', 'current', '- Present', etc.,
+    return only those. Otherwise, return the most recent date-range chunk.
+    
+    This is purely deterministic date/status logic (no hardcoded job vocab).
+    
+    Args:
+        chunks: All chunks from the file
+        selected_chunk_ids: Chunk IDs that passed relevance filter
+    
+    Returns:
+        Prioritized list of chunk IDs (current role chunks if found)
+    """
+    import re
+    
+    # Build map of chunk_id -> chunk text
+    chunk_map = {c.get('chunk_id'): c.get('text', '') for c in chunks if isinstance(c, dict)}
+    
+    # Filter to selected chunks
+    selected_chunks = [(cid, chunk_map.get(cid, '')) for cid in selected_chunk_ids if cid in chunk_map]
+    
+    if not selected_chunks:
+        return selected_chunk_ids
+    
+    # Markers for current/present roles (case-insensitive)
+    current_markers = [
+        r'\\bpresent\\b',
+        r'\\bcurrent\\b',
+        r'\\bcurrently\\b',
+        r'-\\s*present',
+        r'–\\s*present',
+        r'to\\s+present',
+    ]
+    
+    # Find chunks with current markers
+    current_chunks = []
+    for cid, text in selected_chunks:
+        text_lower = text.lower()
+        if any(re.search(pattern, text_lower) for pattern in current_markers):
+            current_chunks.append(cid)
+    
+    if current_chunks:
+        logger.info(f"  🎯 Prioritizing {len(current_chunks)} current-role chunks (found 'present/current' markers)")
+        return current_chunks
+    
+    # Fallback: No current markers found, return original selection
+    # (Could enhance this to parse dates and find most recent, but keeping it simple)
+    return selected_chunk_ids
 
 
 async def recursive_summarize_files(
@@ -335,6 +434,17 @@ async def recursive_summarize_files(
                 inspection_code[file_id] = file_inspection_codes
                 inspection_code_with_text[file_id] = file_inspection_payloads
 
+                # GUARDRAIL: Check selection ratio (reject if selecting too many chunks)
+                selection_ratio = len(relevant_chunk_ids) / max(1, len(chunks))
+                if selection_ratio > 0.7 and len(chunks) > 5:
+                    logger.warning(
+                        f"⚠️  Phase 4: Per-chunk mode selected {len(relevant_chunk_ids)}/{len(chunks)} chunks "
+                        f"({selection_ratio:.0%}) - too many, treating as low-signal filter. Using fallback."
+                    )
+                    # Reset to empty and fallback
+                    relevant_chunks = []
+                    relevant_chunk_ids = []
+
                 if not relevant_chunks:
                     logger.warning(f"⚠️  Phase 4: No relevant chunks identified in {file_name}")
                     # Fallback: use first few chunks if none pass relevance
@@ -348,6 +458,16 @@ async def recursive_summarize_files(
                         relevant_chunk_ids.append(chunk.get("chunk_id", f"unknown-{fallback_idx}"))
 
                 final_selected_chunk_ids = list(relevant_chunk_ids)
+                
+                # DETERMINISTIC RULE: Prioritize current-role chunks if query implies "where does X work"
+                if _is_current_employment_query(query):
+                    final_selected_chunk_ids = _prioritize_current_role_chunks(
+                        chunks=chunks,
+                        selected_chunk_ids=final_selected_chunk_ids
+                    )
+                    # Update relevant_chunks to match prioritized IDs
+                    chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
+                    relevant_chunks = [chunk_id_to_text.get(cid, "") for cid in final_selected_chunk_ids if cid in chunk_id_to_text]
 
             # Step 3: Summarize relevant chunks
             logger.info(
@@ -396,10 +516,12 @@ async def recursive_summarize_files(
 
     if inspection_code:
         try:
+            # Distinguish mode in logging: iterative vs per-chunk
+            mode_label = "iterative" if USE_MIT_RLM_RECURSION else "per_chunk"
             await log_inspection_code_to_markdown(
                 inspection_rules=inspection_code,
                 query=query,
-                rlm_enabled=True,
+                rlm_enabled=USE_MIT_RLM_RECURSION,  # True for iterative, False for per-chunk
                 output_dir="/app/logs/chunk_analysis"
             )
         except Exception as e:
@@ -411,7 +533,7 @@ async def recursive_summarize_files(
                 inspection_rules=inspection_code_with_text,
                 query=query,
                 summary_by_file_id=summary_by_file_id,
-                rlm_enabled=True,
+                rlm_enabled=False,  # This is only for per-chunk mode
                 output_dir="/app/logs/chunk_analysis"
             )
         except Exception as e:

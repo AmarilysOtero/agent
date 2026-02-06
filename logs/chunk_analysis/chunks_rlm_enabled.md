@@ -4,14 +4,14 @@ This file contains chunk information from the latest query execution.
 
 ---
 
-## Execution: 2026-02-05T20:25:38.397591
-**Query**: Give the list of Kevin  skills
+## Execution: 2026-02-05T20:34:30.732706
+**Query**: Where does Kevin work?
 
 **Metadata**:
-- Entry Chunks: 5
+- Entry Chunks: 6
 - Expanded Chunks: 20
 - Source Files: 1
-- Expansion Ratio: 20 / 5
+- Expansion Ratio: 20 / 6
 - Files Expanded: 20250912 Kevin Ramirez DXC Resume.pdf (4/20)
 
 **Total Chunks**: 20

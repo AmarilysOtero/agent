@@ -344,6 +344,12 @@ Requirements:
 - Return ONLY the function code with no explanations
 - No imports needed
 
+CRITICAL RULE - Default Behavior:
+- Your default return should almost ALWAYS be False, not True
+- Only return True when you explicitly find matching/relevant content
+- NEVER use inverted logic like "if keyword found: return False; else: return True"
+- Pattern: if <relevant_condition>: return True; else: return False
+
 NOW generate the function:"""
 
     try:

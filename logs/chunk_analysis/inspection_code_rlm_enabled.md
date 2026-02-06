@@ -1,8 +1,8 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-05T20:26:02.035891
+**Execution Time:** 2026-02-05T20:34:58.170133
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 **Total Inspection Programs:** 20
 
@@ -33,14 +33,14 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:0
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    keywords = ["skills", "expertise", "proficient", "experience", "abilities"]
+    query_keywords = ["work", "employ", "job", "position", "company"]
     chunk_text_lower = chunk_text.lower()
     
-    if any(keyword in chunk_text_lower for keyword in keywords):
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
         return True
     if "introduction" in chunk_text_lower:
         return False
@@ -49,89 +49,109 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'software engineer', 'full-stack', 'development', 'technological challenges']
-    chunk_text_lower = chunk_text.lower()
+    chunk_text = chunk_text.lower()
+    query_keywords = ["work", "employ", "company", "organization", "job"]
+    relevant_phrases = ["software engineer", "full-stack engineer", "clients", "development solutions"]
     
-    if any(keyword in chunk_text_lower for keyword in query_keywords):
-        return True
+    if any(keyword in chunk_text for keyword in query_keywords):
+        if any(phrase in chunk_text for phrase in relevant_phrases):
+            return True
     return False
 ```
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'kevin', 'skillset', 'abilities']
+    query_keywords = ["work", "employ", "company", "job", "position"]
     chunk_text_lower = chunk_text.lower()
     
-    for keyword in query_keywords:
-        if keyword in chunk_text_lower:
-            return True
-            
-    return False
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        return False
+    
+    if "skills" in chunk_text_lower:
+        return False
+    
+    return True
 ```
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'java', 'front end development', 'html', 'css', 'javascript', 'angularjs', 'agile', 'data structures', 'reactjs']
+    query_keywords = ["work", "employed", "company", "organization", "job"]
+    relevant_indicators = ["skills", "experience", "projects", "employment", "work history"]
+    
     chunk_text_lower = chunk_text.lower()
     
     if any(keyword in chunk_text_lower for keyword in query_keywords):
-        return True
+        return False
+    if any(indicator in chunk_text_lower for indicator in relevant_indicators):
+        return False
+    
     return False
 ```
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'frontend developer', 'software engineer', 'project manager']
+    keywords = ["work", "employed", "company", "organization", "dxc"]
     return any(keyword in chunk_text for keyword in keywords)
 ```
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'experience', 'technology', 'banking', 'healthcare']
-    return any(keyword in chunk_text for keyword in keywords)
+    keywords = ["work", "employed", "experience", "industry"]
+    relevant_industries = ["technology", "banking", "healthcare"]
+    
+    if any(keyword in chunk_text for keyword in keywords):
+        if any(industry in chunk_text for industry in relevant_industries):
+            return True
+    return False
 ```
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'certifications', 'training', 'development', 'experience']
+    query_keywords = ["work", "employed", "company", "organization", "current"]
+    relevant_indicators = ["DXC", "employer", "job", "position"]
+    
     chunk_text_lower = chunk_text.lower()
     
-    return any(keyword in chunk_text_lower for keyword in query_keywords)
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        if any(indicator in chunk_text_lower for indicator in relevant_indicators):
+            return True
+            
+    return False
 ```
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ["skills", "experience", "expertise", "proficient", "competence"]
+    query_keywords = ["work", "employed", "position", "company", "organization"]
     chunk_text_lower = chunk_text.lower()
     
     if any(keyword in chunk_text_lower for keyword in query_keywords):
@@ -141,142 +161,169 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'quantum', 'analyst', 'consultant', 'research', 'frameworks', 'presentation', 'proposal', 'sales', 'business']
+    query_keywords = ["Kevin", "work", "DXC", "Technology"]
     chunk_text_lower = chunk_text.lower()
     
-    return any(keyword in chunk_text_lower for keyword in query_keywords)
+    for keyword in query_keywords:
+        if keyword.lower() in chunk_text_lower:
+            return True
+            
+    return False
 ```
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:9
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'expertise', 'proficient', 'experience', 'knowledge']
-    return any(keyword in chunk_text for keyword in keywords) and 'kevin' in chunk_text
+    query_keywords = ["kevin", "work", "dxc", "technology", "microsoft"]
+    
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text = chunk_text.lower()
-    keywords = ['skills', 'software engineer', 'java', 'testing', 'solutions', 'user experience', 'guideline']
-    return any(keyword in chunk_text for keyword in keywords)
+    chunk_text_lower = chunk_text.lower()
+    query_keywords = ["kevin", "work", "company", "employed", "position"]
+    
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        if "kraft heinz company" in chunk_text_lower:
+            return True
+    return False
 ```
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'business analyst', 'tester', 'analyze', 'collaborate', 'requirements']
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ["kevin", "work", "dxc technology", "business analyst", "network of giving"]
+    
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'develop', 'implemented', 'features', 'user authorization', 'user authentication']
+    query_keywords = ["kevin", "work", "capstone", "el mesón sándwiches", "developer"]
     
-    return any(keyword in chunk_text for keyword in keywords)
+    if any(keyword in chunk_text for keyword in query_keywords):
+        return True
+    return False
 ```
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text = chunk_text.lower()
-    keywords = ['skills', 'software', 'engineer', 'api', 'sql', 'asp.net', 'development', 'design']
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ["where", "work", "employed", "company"]
+    relevant_phrases = ["Abarca Health", "employed", "worked at", "company"]
+    
+    chunk_text_lower = chunk_text.lower()
+    
+    if any(keyword in chunk_text_lower for keyword in query_keywords):
+        if any(phrase in chunk_text_lower for phrase in relevant_phrases):
+            return True
+    return False
 ```
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ["skills", "full stack", "developer", "user experience", "mean stack"]
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ["work", "employed", "job", "company", "organization"]
+    relevant_indicators = ["webmaster", "industrial affiliates program", "full stack developer", "uprm"]
+
+    if any(keyword in chunk_text for keyword in query_keywords):
+        if any(indicator in chunk_text for indicator in relevant_indicators):
+            return True
+    return False
 ```
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:15
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'technology', 'programming', 'software', 'development', 'engineering']
-    return any(keyword in chunk_text for keyword in keywords) and 'kevin' in chunk_text
+    return "kevin" in chunk_text and "jpmorgan chase" in chunk_text
 ```
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'develop', 'ui', 'reactjs', 'data', 'ai']
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ["kevin", "work", "ibm", "company"]
+    
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17
 
-**Query:** Give the list of Kevin  skills
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ["skills", "AI", "algorithm", "agent", "backtracking", "search"]
-    chunk_text_lower = chunk_text.lower()
-    
-    return any(keyword in chunk_text_lower for keyword in query_keywords)
-```
-
-### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
-
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text = chunk_text.lower()
-    keywords = ['skills', 'quality engineer', 'python', 'dashboard', 'automation', 'test']
-    return any(keyword in chunk_text for keyword in keywords)
+    query_keywords = ["kevin", "work", "employed", "job", "company"]
+    
+    if any(keyword in chunk_text for keyword in query_keywords):
+        return False
+    
+    return True
+```
+
+### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
+
+**Query:** Where does Kevin work?
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    chunk_text = chunk_text.lower()
+    query_keywords = ["where", "kevin", "work", "company"]
+    
+    return any(keyword in chunk_text for keyword in query_keywords)
 ```
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
 
-**Query:** Give the list of Kevin  skills
+**Query:** Where does Kevin work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    query_keywords = ['skills', 'proficient', 'languages']
+    query_keywords = ["work", "employ", "job", "company"]
     chunk_text_lower = chunk_text.lower()
     
     for keyword in query_keywords:
         if keyword in chunk_text_lower:
-            return True
-            
-    return False
+            return False
+    
+    return True
 ```
 
 ---

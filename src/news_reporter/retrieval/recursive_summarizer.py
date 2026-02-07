@@ -1433,7 +1433,7 @@ async def recursive_summarize_files(
 
                 # GUARDRAIL: Check selection ratio (reject if selecting too many chunks)
                 selection_ratio = len(relevant_chunk_ids) / max(1, len(chunks))
-                if selection_ratio > 0.7 and len(chunks) > 5:
+                if selection_ratio > 0.9 and len(chunks) > 5:
                     logger.warning(
                         f"⚠️  Phase 4: Per-chunk mode selected {len(relevant_chunk_ids)}/{len(chunks)} chunks "
                         f"({selection_ratio:.0%}) - too many, treating as low-signal filter. Using fallback."

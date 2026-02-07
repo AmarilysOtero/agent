@@ -4,17 +4,17 @@ This file contains chunk information from the latest query execution.
 
 ---
 
-## Execution: 2026-02-07T04:22:23.202606
-**Query**: tell me the list of skill you  can find for Kevin
+## Execution: 2026-02-07T04:57:10.607885
+**Query**: tell me the list of skill you  can find for Alexis
 
 **Metadata**:
-- Entry Chunks: 2
-- Expanded Chunks: 20
-- Source Files: 1
-- Expansion Ratio: 20 / 2
-- Files Expanded: 20250912 Kevin Ramirez DXC Resume.pdf (1/20)
+- Entry Chunks: 3
+- Expanded Chunks: 36
+- Source Files: 2
+- Expansion Ratio: 36 / 3
+- Files Expanded: 20250912 Kevin Ramirez DXC Resume.pdf (1/20); Alexis Torres - DXC Resume.pdf (1/16)
 
-**Total Chunks**: 20
+**Total Chunks**: 36
 
 ### Chunks
 
@@ -40,6 +40,22 @@ This file contains chunk information from the latest query execution.
 | 18 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17` | N/A | Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM Oct 2018 - Dec 2018  - Created an agen... | 278 bytes |
 | 19 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18` | N/A | Junior Quality Engineer Intern, Shark Ninja Company, Boston MA Jun 2018 - Aug 2018  - Developed a da... | 458 bytes |
 | 20 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19` | N/A | Languages English - Proficient  Spanish - Proficient | 52 bytes |
+| 21 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:0` | N/A | Introduction <!-- image --> | 27 bytes |
+| 22 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1` | N/A | Alexis Torres Senior Technical Consultant Email ID:  alexis.torres@dxc.com | 74 bytes |
+| 23 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:2` | N/A | Contact no.: 787-405-1855 | 25 bytes |
+| 24 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:3` | N/A | Profile summary I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven ... | 518 bytes |
+| 25 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4` | N/A | Technical expertise \| Primary skills       \| Experience   \| \|----------------------\|--------------\| ... | 219 bytes |
+| 26 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5` | N/A | Skills Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, ... | 425 bytes |
+| 27 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:6` | N/A | Education background \| Degree   \| Qualification     \| College/university                        \|   ... | 305 bytes |
+| 28 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:7` | N/A | Professional activities, certifications, and trainings - AWS Cloud Practitioner 2022 - Software Deve... | 201 bytes |
+| 29 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:8` | N/A | Employment history | 18 bytes |
+| 30 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9` | N/A | DXC Technology Senior Technical Consultant  Isabela, PR  August 2021 -Present  - Multiple developmen... | 1020 bytes |
+| 31 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10` | N/A | Bridgewater Full Stack Developer  - Application migration from on-premises to AWS cloud. - Full  sta... | 387 bytes |
+| 32 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11` | N/A | Consultant Senior Consultant   Jan 2016 -March  2020  - Full stack developer for a WEB application (... | 1011 bytes |
+| 33 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12` | N/A | Caguas, PR Oct 2002 -Jan 2016  - Transform the  development  team  from  a  Waterfall  to  an  Agile... | 1207 bytes |
+| 34 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13` | N/A | Caguas, PR re development, documentation, testing and product market introduction. - Project managem... | 723 bytes |
+| 35 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14` | N/A | San Juan, PR Apr 1996 -Oct 2002  - Project management  for  the  implementation  of  Telecommunicati... | 867 bytes |
+| 36 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15` | N/A | Caguas, PR Aug 1990 -Apr 1996  - Research and Product Development of telecommunication products usin... | 684 bytes |
 
 ---
 

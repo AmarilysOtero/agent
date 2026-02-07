@@ -1,12 +1,12 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-07T04:22:53.791737
+**Execution Time:** 2026-02-07T04:58:00.787394
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
-**Query Hash:** `5937fe60` (use to verify artifacts match current query)
+**Query Hash:** `be009cdb` (use to verify artifacts match current query)
 
-**Total Inspection Programs:** 20
+**Total Inspection Programs:** 36
 
 **Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation
 
@@ -35,15 +35,15 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:0
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower():
         return True
-    if "kevin" in chunk_text.lower():
+    if 'list' in chunk_text.lower():
         return True
-    if "list" in chunk_text.lower():
+    if 'alexis' in chunk_text.lower():
         return True
     return False
 ```
@@ -68,15 +68,11 @@ Introduction
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
-        return True
-    if "full-stack" in chunk_text.lower() or "software engineer" in chunk_text.lower():
-        return True
-    if "help" in chunk_text.lower() and "clients" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "alexis" in chunk_text.lower():
         return True
     return False
 ```
@@ -101,11 +97,15 @@ I'm a disciplined and enthusiastic software engineer with a passionate vision of
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skills" in chunk_text.lower() or "skill" in chunk_text.lower():
+    if "skills" in chunk_text.lower():
+        return True
+    if "skill" in chunk_text.lower():
+        return True
+    if "alexis" in chunk_text.lower():
         return True
     return False
 ```
@@ -130,15 +130,15 @@ Skills
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower() and 'kevin' in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
-    if 'top skills' in chunk_text.lower():
+    if "skills" in chunk_text.lower() and "list" in chunk_text.lower():
         return True
-    if 'list' in chunk_text.lower() and 'find' in chunk_text.lower():
+    if "top" in chunk_text.lower() and "skills" in chunk_text.lower():
         return True
     return False
 ```
@@ -184,7 +184,7 @@ Top Skills (Technical/Nontechnical skills)
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -192,7 +192,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "frontend" in chunk_text.lower() or "software" in chunk_text.lower():
         return True
-    if "roles performed" in chunk_text.lower():
+    if "roles" in chunk_text.lower() and "performed" in chunk_text.lower():
         return True
     return False
 ```
@@ -223,15 +223,15 @@ Key Roles Performed
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower():
         return True
-    if "experience" in chunk_text.lower() and ("technology" in chunk_text.lower() or "banking" in chunk_text.lower() or "healthcare" in chunk_text.lower()):
+    if "experience" in chunk_text.lower() and "technology" in chunk_text.lower():
         return True
-    if "list" in chunk_text.lower() and "kevin" in chunk_text.lower():
+    if "banking" in chunk_text.lower() or "healthcare" in chunk_text.lower():
         return True
     return False
 ```
@@ -262,15 +262,15 @@ Industry Experience (if applicable)
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "find" in chunk_text.lower():
         return True
-    if "kevin" in chunk_text.lower():
+    if "backend" in chunk_text.lower() or "postgresql" in chunk_text.lower() or "python" in chunk_text.lower():
         return True
-    if "certifications" in chunk_text.lower():
+    if "azure" in chunk_text.lower() or "aws" in chunk_text.lower():
         return True
     return False
 ```
@@ -345,7 +345,7 @@ Azure AI Engineer Associate - Microsoft Training
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -375,15 +375,15 @@ Professional Work Experience
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
     if "present" in chunk_text.lower() or "currently" in chunk_text.lower():
         return True
-    if "analyst" in chunk_text.lower() or "consultant" in chunk_text.lower():
+    if "analyze" in chunk_text.lower() and "client" in chunk_text.lower():
         return True
     return False
 ```
@@ -423,15 +423,15 @@ Mar 2025 - Present
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:9
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() and 'for' in chunk_text.lower() and 'alexis' in chunk_text.lower():
         return True
-    if "engineer" in chunk_text.lower() or "implemented" in chunk_text.lower():
+    if 'ai' in chunk_text.lower() and 'engineer' in chunk_text.lower():
         return True
-    if "ai" in chunk_text.lower() or "azure" in chunk_text.lower():
+    if 'implemented' in chunk_text.lower() and 'system' in chunk_text.lower():
         return True
     return False
 ```
@@ -465,11 +465,15 @@ Apr 2025 - May 2025
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() and ("engineer" in chunk_text.lower() or "conducted" in chunk_text.lower() or "implemented" in chunk_text.lower()):
+    if 'skill' in chunk_text.lower():
+        return True
+    if 'experience' in chunk_text.lower():
+        return True
+    if 'role' in chunk_text.lower():
         return True
     return False
 ```
@@ -507,15 +511,15 @@ Jun 2024 - Dec 2024
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "find" in chunk_text.lower() or "kevin" in chunk_text.lower():
+    if "skill" in chunk_text.lower():
         return True
-    if "business analyst" in chunk_text.lower() or "developer" in chunk_text.lower():
+    if "analyst" in chunk_text.lower():
         return True
-    if "analyze" in chunk_text.lower() or "collaborate" in chunk_text.lower():
+    if "business" in chunk_text.lower():
         return True
     return False
 ```
@@ -549,15 +553,15 @@ Oct 2023 - Jan 2024
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower():
         return True
-    if "developer" in chunk_text.lower():
+    if 'developed' in chunk_text.lower() or 'designed' in chunk_text.lower():
         return True
-    if "features" in chunk_text.lower():
+    if 'lead developer' in chunk_text.lower():
         return True
     return False
 ```
@@ -594,11 +598,15 @@ Oct 2021 - Dec 2021
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "worked" in chunk_text.lower() or "software" in chunk_text.lower():
+    if "skill" in chunk_text.lower():
+        return True
+    if "software" in chunk_text.lower() and "engineer" in chunk_text.lower():
+        return True
+    if "intern" in chunk_text.lower() and "work" in chunk_text.lower():
         return True
     return False
 ```
@@ -632,15 +640,15 @@ Jun 2021 - Aug 2021
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
+    if "skill" in chunk_text.lower():
         return True
-    if "full stack developer" in chunk_text.lower() or "designing" in chunk_text.lower() or "building" in chunk_text.lower():
+    if "full stack developer" in chunk_text.lower():
         return True
-    if "enhance" in chunk_text.lower() or "user experience" in chunk_text.lower():
+    if "designing" in chunk_text.lower() and "building" in chunk_text.lower():
         return True
     return False
 ```
@@ -680,11 +688,15 @@ Aug 2017 - Mar 2021
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:15
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "software" in chunk_text.lower() or "engineer" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() and 'alexis' in chunk_text.lower():
+        return True
+    if 'software' in chunk_text.lower() and 'engineer' in chunk_text.lower():
+        return True
+    if 'design' in chunk_text.lower() and 'develop' in chunk_text.lower():
         return True
     return False
 ```
@@ -715,15 +727,15 @@ May 2020 - Aug 2020
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() and 'alexis' in chunk_text.lower():
         return True
-    if "developer" in chunk_text.lower():
+    if 'developer' in chunk_text.lower() and 'ai' in chunk_text.lower():
         return True
-    if "front end" in chunk_text.lower():
+    if 'company' in chunk_text.lower() and 'ibm' in chunk_text.lower():
         return True
     return False
 ```
@@ -754,15 +766,15 @@ Jan 2020 - May 2020
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower():
         return True
-    if 'kevin' in chunk_text.lower():
+    if "ai" in chunk_text.lower() or "algorithm" in chunk_text.lower():
         return True
-    if 'algorithm' in chunk_text.lower():
+    if "2018" in chunk_text:
         return True
     return False
 ```
@@ -793,15 +805,15 @@ Oct 2018 - Dec 2018
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
-    if "quality" in chunk_text.lower():
+    if "quality" in chunk_text.lower() and "engineer" in chunk_text.lower():
         return True
-    if "engineer" in chunk_text.lower():
+    if "python" in chunk_text.lower() and "developed" in chunk_text.lower():
         return True
     return False
 ```
@@ -835,11 +847,12 @@ Jun 2018 - Aug 2018
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
 
-**Query:** tell me the list of skill you  can find for Kevin
+**Query:** tell me the list of skill you  can find for Alexis
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "languages" in chunk_text.lower() or "proficient" in chunk_text.lower():
+    chunk_text_lower = chunk_text.lower()
+    if 'skill' in chunk_text_lower or 'languages' in chunk_text_lower or 'proficient' in chunk_text_lower:
         return True
     return False
 ```
@@ -866,6 +879,682 @@ Languages
 English - Proficient
 
 Spanish - Proficient
+```
+
+---
+
+## 2. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
+
+
+### 2.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:0
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "list" in chunk_text.lower():
+        return True
+    if "alexis" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Introduction
+<!-- image -->
+```
+
+#### First Read
+```text
+Introduction
+<!-- image -->
+```
+
+#### Recursive Text
+```text
+Introduction
+<!-- image -->
+```
+
+### 2.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "consultant" in chunk_text.lower():
+        return True
+    if "alexis" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Alexis Torres Senior Technical Consultant
+Email ID:
+
+alexis.torres@dxc.com
+```
+
+#### First Read
+```text
+Alexis Torres Senior Technical Consultant
+Email ID:
+
+alexis.torres@dxc.com
+```
+
+#### Recursive Text
+```text
+Alexis Torres Senior Technical Consultant
+Email ID:
+
+alexis.torres@dxc.com
+```
+
+### 2.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:2
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "contact" in chunk_text.lower():
+        return True
+    if "alexis" in chunk_text.lower():
+        return True
+    if "skill" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Contact no.:
+787-405-1855
+```
+
+#### First Read
+```text
+Contact no.:
+787-405-1855
+```
+
+#### Recursive Text
+```text
+Contact no.:
+787-405-1855
+```
+
+### 2.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:3
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "background" in chunk_text.lower() and "engineer" in chunk_text.lower():
+        return True
+    if "business" in chunk_text.lower() and "analyst" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to register four patents.
+```
+
+#### First Read
+```text
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
+```
+
+#### Recursive Text
+```text
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
+```
+
+### 2.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower() or "skills" in chunk_text.lower() or "experience" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
+```
+
+#### First Read
+```text
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
+```
+
+#### Recursive Text
+```text
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
+```
+
+### 2.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if 'skills' in chunk_text.lower():
+        return True
+    if 'list' in chunk_text.lower():
+        return True
+    if 'for' in chunk_text.lower() and 'alexis' in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
+```
+
+#### First Read
+```text
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
+```
+
+#### Recursive Text
+```text
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
+```
+
+### 2.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:6
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if 'skill' in chunk_text.lower():
+        return True
+    if 'degree' in chunk_text.lower() and 'bs' in chunk_text.lower():
+        return True
+    if 'education' in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
+```
+
+#### First Read
+```text
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
+```
+
+#### Recursive Text
+```text
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
+```
+
+### 2.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:7
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower() or "skills" in chunk_text.lower() or "certifications" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
+
+<!-- image -->
+```
+
+#### First Read
+```text
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
+
+<!-- image -->
+```
+
+#### Recursive Text
+```text
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
+
+<!-- image -->
+```
+
+### 2.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:8
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "employment" in chunk_text.lower():
+        return True
+    if "history" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Employment history
+```
+
+#### First Read
+```text
+Employment history
+```
+
+#### Recursive Text
+```text
+Employment history
+```
+
+### 2.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "developer" in chunk_text.lower():
+        return True
+    if "consultant" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+DXC Technology
+Senior Technical Consultant
+
+Isabela, PR
+
+August 2021 -Present
+
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V migration.
+- Full stack developer for a XML mapping application using Java, React, Redis, Spring Boot, Message Broker, Prometheus, Grafana, AMQ, Camel, OpenShift among other tools for a transportation agency.
+- Project Manager to  lead  a  new  software development  group through  the  certification process for  a Manufacturing Execution System (MES).
+- Project Manager for the development of a Front-End Application in Angular for an Internal DXC group.
+- Business Analyst for AI solution for the manufactory industry.
+```
+
+#### First Read
+```text
+DXC Technology
+Senior Technical Consultant
+
+Isabela, PR
+
+August 2021 -Present
+
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
+```
+
+#### Recursive Text
+```text
+DXC Technology
+Senior Technical Consultant
+
+Isabela, PR
+
+August 2021 -Present
+
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
+```
+
+### 2.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if 'skill' in chunk_text.lower() or 'full stack developer' in chunk_text.lower() or 'application' in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Bridgewater
+Full Stack Developer
+
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
+```
+
+#### First Read
+```text
+Bridgewater
+Full Stack Developer
+
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
+```
+
+#### Recursive Text
+```text
+Bridgewater
+Full Stack Developer
+
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
+```
+
+### 2.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "consultant" in chunk_text.lower():
+        return True
+    if "developer" in chunk_text.lower():
+        return True
+    if "skills" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Consultant
+Senior Consultant
+
+
+Jan 2016 -March  2020
+
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new Medicare EDI-837 record format for the payment process in MMM (Health Care Provider). Project Management for the implementation of an e-commerce WEB application for Triple S.
+- Business Analyst in  First Medical  (Health  Care  Provider). Increase the  efficiency of  more  than  10 departments  and  40  employees by  restructuring all  reporting processes. Coordination  with  multiple business units including compliance, finance, customer service among other departments to define the new report structure.
+```
+
+#### First Read
+```text
+Consultant
+Senior Consultant
+
+
+Jan 2016 -March  2020
+
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
+```
+
+#### Recursive Text
+```text
+Consultant
+Senior Consultant
+
+
+Jan 2016 -March  2020
+
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
+```
+
+### 2.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "development" in chunk_text.lower():
+        return True
+    if "agile" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Caguas, PR
+Oct 2002 -Jan 2016
+
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of complete data centers for Telecommunication companies, including servers, storage, networking (LAN/WAN), security, backup.
+- Project management for the implementation of Fortinet network security systems.
+- Project management for the implementation of virtual city surveillance systems including IP cameras, Wireless/LAN/WAN connection, data center and monitoring center.
+
+
+Mar 2020 -Aug 2021
+
+<!-- image -->
+
+- Solution development for a IOT system for a finance/security industry, including software and hardware development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system
+```
+
+#### First Read
+```text
+Caguas, PR
+Oct 2002 -Jan 2016
+
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
+```
+
+#### Recursive Text
+```text
+Caguas, PR
+Oct 2002 -Jan 2016
+
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
+```
+
+### 2.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "development" in chunk_text.lower() or "developer" in chunk_text.lower():
+        return True
+    if "business" in chunk_text.lower() and "analyst" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and robbery. This technology became the most advance solution in the market.
+- Author of several patents in the IOT field for finance and security industry. Responsible to analyze the market needs and develop new technologies.
+```
+
+#### First Read
+```text
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
+```
+
+#### Recursive Text
+```text
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
+```
+
+### 2.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "management" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+San Juan, PR
+Apr 1996 -Oct 2002
+
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimensioning,  TAC  support,  Resources  Coordination (Optimization, Engineering, Service, Customer, etc).
+- Provide Technical and Commercial (solution presentation, offer preparation, etc) pre-sale assistance to customers  through  Puerto  Rico,  the  Caribbean,  our  support  group  and  employees  about  new telecommunication including hardware and software requirements.
+```
+
+#### First Read
+```text
+San Juan, PR
+Apr 1996 -Oct 2002
+
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
+```
+
+#### Recursive Text
+```text
+San Juan, PR
+Apr 1996 -Oct 2002
+
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
+```
+
+### 2.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15
+
+**Query:** tell me the list of skill you  can find for Alexis
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "skill" in chunk_text.lower():
+        return True
+    if "development" in chunk_text.lower() or "management" in chunk_text.lower() or "design" in chunk_text.lower():
+        return True
+    if "list" in chunk_text.lower() and "alexis" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
+
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world leader in its field. Awarded  with the biggest worldwide  orders including  Spain, Hungary,  Argentina  among other countries.
+- Author of two patents in the telecommunication  field.
+```
+
+#### First Read
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
+
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
+```
+
+#### Recursive Text
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
+
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
 ```
 
 ---

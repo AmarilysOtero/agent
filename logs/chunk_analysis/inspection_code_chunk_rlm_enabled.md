@@ -1,12 +1,12 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-07T05:57:29.140708
+**Execution Time:** 2026-02-07T05:58:43.539466
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
-**Query Hash:** `5d92f145` (use to verify artifacts match current query)
+**Query Hash:** `83333be0` (use to verify artifacts match current query)
 
-**Total Inspection Programs:** 20
+**Total Inspection Programs:** 16
 
 **Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation
 
@@ -30,12 +30,12 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ---
 
-## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf)
+## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
 
 
-### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:0
+### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:0
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -62,129 +62,74 @@ Introduction
 <!-- image -->
 ```
 
-### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
+### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower():
-        return True
-    if "employed" in chunk_text.lower():
-        return True
-    if "current" in chunk_text.lower() or "currently" in chunk_text.lower():
+    chunk_text = chunk_text.lower()
+    if "work" in chunk_text or "dxc" in chunk_text or "employer" in chunk_text:
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Kevin J. Ramírez Pomales
-I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with great problem-solving skills looking to develop experience in cloud development.
+Alexis Torres Senior Technical Consultant
+Email ID:
+
+alexis.torres@dxc.com
 ```
 
 #### First Read
 ```text
-Kevin J. Ramírez Pomales
-I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with grea
+Alexis Torres Senior Technical Consultant
+Email ID:
+
+alexis.torres@dxc.com
 ```
 
 #### Recursive Text
 ```text
-Kevin J. Ramírez Pomales
-I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with grea
+Alexis Torres Senior Technical Consultant
+Email ID:
+
+alexis.torres@dxc.com
 ```
 
-### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
+### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:2
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower():
-        return True
-    if "kevin" in chunk_text.lower():
-        return True
-    if "skills" in chunk_text.lower():
+    if "work" in chunk_text.lower() or "where" in chunk_text.lower() or "alexis" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Skills
-## Skills
+Contact no.:
+787-405-1855
 ```
 
 #### First Read
 ```text
-Skills
-## Skills
+Contact no.:
+787-405-1855
 ```
 
 #### Recursive Text
 ```text
-Skills
-## Skills
+Contact no.:
+787-405-1855
 ```
 
-### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
+### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:3
 
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower():
-        return True
-    if "employer" in chunk_text.lower():
-        return True
-    if "position" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Top Skills (Technical/Nontechnical skills)
-- Java - (5 years)
-- Front End Development - (5 years)
-- HTML/CSS - (5 years)
-- JavaScript - (5 years)
-- AngularJS - (4 years)
-- Agile - (3 years)
-- Data Structures - (3 years)
-- ReactJS - (3 years)
-```
-
-#### First Read
-```text
-Top Skills (Technical/Nontechnical skills)
-- Java - (5 years)
-- Front End Development - (5 years)
-- HTML/CSS - (5 years)
-- JavaScript - (5 years)
-- AngularJS - (4 years)
-- Agile - (3 years)
-- Data Structures - (3 years)
-- ReactJS - (3 years)
-```
-
-#### Recursive Text
-```text
-Top Skills (Technical/Nontechnical skills)
-- Java - (5 years)
-- Front End Development - (5 years)
-- HTML/CSS - (5 years)
-- JavaScript - (5 years)
-- AngularJS - (4 years)
-- Agile - (3 years)
-- Data Structures - (3 years)
-- ReactJS - (3 years)
-```
-
-### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4
-
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -199,70 +144,25 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
 #### Chunk Text
 ```text
-Key Roles Performed
-- Frontend Developer - (5 years)
-- Software Engineer - (3 years)
-- Project Manager - (1 year)
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to register four patents.
 ```
 
 #### First Read
 ```text
-Key Roles Performed
-- Frontend Developer - (5 years)
-- Software Engineer - (3 years)
-- Project Manager - (1 year)
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
 ```
 
 #### Recursive Text
 ```text
-Key Roles Performed
-- Frontend Developer - (5 years)
-- Software Engineer - (3 years)
-- Project Manager - (1 year)
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
 ```
 
-### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5
+### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4
 
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower():
-        return True
-    if "employer" in chunk_text.lower():
-        return True
-    if "currently" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Industry Experience (if applicable)
-- Technology - 5 years
-- Banking - 3 months
-- Healthcare - 2 months
-```
-
-#### First Read
-```text
-Industry Experience (if applicable)
-- Technology - 5 years
-- Banking - 3 months
-- Healthcare - 2 months
-```
-
-#### Recursive Text
-```text
-Industry Experience (if applicable)
-- Technology - 5 years
-- Banking - 3 months
-- Healthcare - 2 months
-```
-
-### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6
-
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -270,373 +170,112 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "employed" in chunk_text.lower():
         return True
-    if "position" in chunk_text.lower():
+    if "current" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Certifications (Professional Activities, Certifications, and Training Attended)
-Azure AI Fundamentals, granted June 2025
-
-Solumina T1610 Config Basics, granted in February 2023
-
-Solumina T1511 Backend, granted in June 2022
-
-AWS Solution Architect Associate - Cantrill Training
-
-Azure AI Engineer Associate - Microsoft Training
-
-- Backend Development (3 years)
-- PostgreSQL - (3 years)
-- Node.js/Express.js - (2 years)
-- UX/UI - (1 year)
-- Artificial Intelligence - (1 year)
-- Python Flask - (6 months)
-- C# - (2 months)
-- AI-RAG - (3 months)
-- ASP.NET - (2 months)
-
-<!-- image -->
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
 #### First Read
 ```text
-Certifications (Professional Activities, Certifications, and Training Attended)
-Azure AI Fundamentals, granted June 2025
-
-Solumina T1610 Config Basics, granted in February 2023
-
-Solumina T1511 Backend, granted in June 2022
-
-AWS Solution Architect Associate - Cantrill Training
-
-Azure AI Engineer Associate - Microsoft Training
-
-- Backend Development (3 years)
-- PostgreSQL - (3 years)
-- Node.js/Express.js - (2 years)
-- UX/UI - (1 year)
-- Artificial Intelligence - (1 year)
-- Python Flask - (6 months
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
 #### Recursive Text
 ```text
-Certifications (Professional Activities, Certifications, and Training Attended)
-Azure AI Fundamentals, granted June 2025
-
-Solumina T1610 Config Basics, granted in February 2023
-
-Solumina T1511 Backend, granted in June 2022
-
-AWS Solution Architect Associate - Cantrill Training
-
-Azure AI Engineer Associate - Microsoft Training
-
-- Backend Development (3 years)
-- PostgreSQL - (3 years)
-- Node.js/Express.js - (2 years)
-- UX/UI - (1 year)
-- Artificial Intelligence - (1 year)
-- Python Flask - (6 months
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
-### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7
+### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower() or "experience" in chunk_text.lower() or "kevin" in chunk_text.lower():
+    if "work" in chunk_text.lower() or "at" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Professional Work Experience
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
 #### First Read
 ```text
-Professional Work Experience
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
 #### Recursive Text
 ```text
-Professional Work Experience
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
-### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8
+### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:6
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "dxc" in chunk_text.lower() and ("present" in chunk_text.lower() or "currently" in chunk_text.lower()):
+    if "work" in chunk_text.lower():
         return True
-    if "kevin" in chunk_text.lower() and "work" in chunk_text.lower():
+    if "employed" in chunk_text.lower():
         return True
-    if "analyst" in chunk_text.lower() and "consultant" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Quantum Computing Analyst Consultant - DXC Technology
-Mar 2025 - Present
-
-- Conduct quantum resilience research, structuring strategic findings into client-facing presentations.
-- Integrate frameworks such as CARAF and Gartner roadmaps into actionable client plans.
-- Translate quantum security concepts into actionable proposal decks and sales guides.
-- Analyze regulatory landscapes (e.g., OMB, NIS2, NSA CNSA 2.0) and market trends to develop tailored quantum-safe business cases aligned to client industries.
-```
-
-#### First Read
-```text
-Quantum Computing Analyst Consultant - DXC Technology
-Mar 2025 - Present
-
-- Conduct quantum resilience research, structuring strategic findings into client-facing presentations.
-- Integrate frameworks such as CARAF and Gartner roadmaps into actionable client plans.
-- Translate quantum security concepts into actionable proposal decks and sales guides.
-- Analyze regulatory landscapes (e.g., OMB, NIS2, NSA CNSA 2.0) and market trends to develop tailored quantum-safe business cases aligned to client
-```
-
-#### Recursive Text
-```text
-Quantum Computing Analyst Consultant - DXC Technology
-Mar 2025 - Present
-
-- Conduct quantum resilience research, structuring strategic findings into client-facing presentations.
-- Integrate frameworks such as CARAF and Gartner roadmaps into actionable client plans.
-- Translate quantum security concepts into actionable proposal decks and sales guides.
-- Analyze regulatory landscapes (e.g., OMB, NIS2, NSA CNSA 2.0) and market trends to develop tailored quantum-safe business cases aligned to client
-```
-
-### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:9
-
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "kevin" in chunk_text.lower() and "dxc" in chunk_text.lower() and "work" in chunk_text.lower():
-        return True
-    if "employer" in chunk_text.lower() and "dxc" in chunk_text.lower():
-        return True
-    if "position" in chunk_text.lower() and "ai" in chunk_text.lower():
+    if "company" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-AI Backend Engineer - Microsoft AI Hackathon, DXC Technology
-Apr 2025 - May 2025
-
-- Implemented a multi-agent Azure AI Foundry system, featuring a GPT-4o orchestrator agent that delegates user queries to specialized agents for supply chain routes, sales, media, news, and finance.
-- Enhanced agent responsiveness by optimizing prompts and integrating fallback delegation logic, improving decision support reliability across 8 specialized agents and reducing misclassification rates.
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
 #### First Read
 ```text
-AI Backend Engineer - Microsoft AI Hackathon, DXC Technology
-Apr 2025 - May 2025
-
-- Implemented a multi-agent Azure AI Foundry system, featuring a GPT-4o orchestrator agent that delegates user queries to specialized agents for supply chain routes, sales, media, news, and finance.
-- Enhanced agent responsiveness by optimizing prompts and integrating fallback delegation logic, improving decision support reliability across 8 specialized agents and reducing misclassification rates.
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
 #### Recursive Text
 ```text
-AI Backend Engineer - Microsoft AI Hackathon, DXC Technology
-Apr 2025 - May 2025
-
-- Implemented a multi-agent Azure AI Foundry system, featuring a GPT-4o orchestrator agent that delegates user queries to specialized agents for supply chain routes, sales, media, news, and finance.
-- Enhanced agent responsiveness by optimizing prompts and integrating fallback delegation logic, improving decision support reliability across 8 specialized agents and reducing misclassification rates.
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
-### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10
+### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:7
 
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "kevin" in chunk_text.lower() and "company" in chunk_text.lower():
-        return True
-    if "work" in chunk_text.lower() or "employer" in chunk_text.lower():
-        return True
-    if "kraft heinz" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Software Engineer PM, Kraft Heinz Company (KHC)
-Jun 2024 - Dec 2024
-
-- Conducted extensive testing to ensure robust and scalable solutions for BrightSign device integrations.
-- Implemented a custom JavaScript solution for BrightSign media players to automate the user login process and streamline device setup, improving access to dashboards and overall user experience.
-- Created a user guideline for a Power App's Questionnaire Form on how it streamlines the assessment of project requests and approval workflows, enhancing onboarding for new projects and fostering collaboration between internal teams and stakeholders.
-- Developed and refined presentation material to clearly communicate technical solutions and project goals to non-technical audiences, ensuring alignment across teams and leadership.
-```
-
-#### First Read
-```text
-Software Engineer PM, Kraft Heinz Company (KHC)
-Jun 2024 - Dec 2024
-
-- Conducted extensive testing to ensure robust and scalable solutions for BrightSign device integrations.
-- Implemented a custom JavaScript solution for BrightSign media players to automate the user login process and streamline device setup, improving access to dashboards and overall user experience.
-- Created a user guideline for a Power App's Questionnaire Form on how it streamlines the assessment of project requests and appr
-```
-
-#### Recursive Text
-```text
-Software Engineer PM, Kraft Heinz Company (KHC)
-Jun 2024 - Dec 2024
-
-- Conducted extensive testing to ensure robust and scalable solutions for BrightSign device integrations.
-- Implemented a custom JavaScript solution for BrightSign media players to automate the user login process and streamline device setup, improving access to dashboards and overall user experience.
-- Created a user guideline for a Power App's Questionnaire Form on how it streamlines the assessment of project requests and appr
-```
-
-### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11
-
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "where" in chunk_text.lower() and "work" in chunk_text.lower():
-        return True
-    if "kevin" in chunk_text.lower() and "dxc" in chunk_text.lower():
-        return True
-    if "analyst" in chunk_text.lower() and "position" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Business Analyst/Tester - Network of Giving, DXC Technology
-Oct 2023 - Jan 2024
-
-- Analyze and establish business requirements, process flows, user stories, and issuer processor information to automate the distribution of consumer-merchant transactions and micro donations.
-- Collaborate as a developer and BA on the architecture of a bank model system, and the development of transaction update and profile synchronizations between NOG and banks or issuer processors.
-```
-
-#### First Read
-```text
-Business Analyst/Tester - Network of Giving, DXC Technology
-Oct 2023 - Jan 2024
-
-- Analyze and establish business requirements, process flows, user stories, and issuer processor information to automate the distribution of consumer-merchant transactions and micro donations.
-- Collaborate as a developer and BA on the architecture of a bank model system, and the development of transaction update and profile synchronizations between NOG and banks or issuer processors.
-```
-
-#### Recursive Text
-```text
-Business Analyst/Tester - Network of Giving, DXC Technology
-Oct 2023 - Jan 2024
-
-- Analyze and establish business requirements, process flows, user stories, and issuer processor information to automate the distribution of consumer-merchant transactions and micro donations.
-- Collaborate as a developer and BA on the architecture of a bank model system, and the development of transaction update and profile synchronizations between NOG and banks or issuer processors.
-```
-
-### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12
-
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "kevin" in chunk_text.lower() and "work" in chunk_text.lower():
-        return True
-    if "employer" in chunk_text.lower() or "company" in chunk_text.lower():
-        return True
-    if "at" in chunk_text.lower() and "el mesón sándwiches" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Lead Developer - Capstone Project, UPRM
-Oct 2021 - Dec 2021
-
-- Designed the full-stack software architecture for MesoBoard platform with the purpose of easing manager employee internal communication of El Mesón Sándwiches in Puerto Rico.
-- Implemented user authorization with JWT or managing the features a particular user can access.
-- Developed features such as user authentication, schedule work hours, notifications, request to manager.
-```
-
-#### First Read
-```text
-Lead Developer - Capstone Project, UPRM
-Oct 2021 - Dec 2021
-
-- Designed the full-stack software architecture for MesoBoard platform with the purpose of easing manager employee internal communication of El Mesón Sándwiches in Puerto Rico.
-- Implemented user authorization with JWT or managing the features a particular user can access.
-- Developed features such as user authentication, schedule work hours, notifications, request to manager.
-```
-
-#### Recursive Text
-```text
-Lead Developer - Capstone Project, UPRM
-Oct 2021 - Dec 2021
-
-- Designed the full-stack software architecture for MesoBoard platform with the purpose of easing manager employee internal communication of El Mesón Sándwiches in Puerto Rico.
-- Implemented user authorization with JWT or managing the features a particular user can access.
-- Developed features such as user authentication, schedule work hours, notifications, request to manager.
-```
-
-### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13
-
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "where" in chunk_text.lower() and "work" in chunk_text.lower():
-        return True
-    if "employed" in chunk_text.lower() or "company" in chunk_text.lower() or "position" in chunk_text.lower():
-        return True
-    if "abarca" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Software Engineer Intern, Abarca Health, San Juan PR
-Jun 2021 - Aug 2021
-
-- Worked with the design team to develop Darwin's new homepage and navigation drawer as designed.
-- Implement API functionalities with Transact SQL and ASP.NET to search and modify Darwin modules.
-```
-
-#### First Read
-```text
-Software Engineer Intern, Abarca Health, San Juan PR
-Jun 2021 - Aug 2021
-
-- Worked with the design team to develop Darwin's new homepage and navigation drawer as designed.
-- Implement API functionalities with Transact SQL and ASP.NET to search and modify Darwin modules.
-```
-
-#### Recursive Text
-```text
-Software Engineer Intern, Abarca Health, San Juan PR
-Jun 2021 - Aug 2021
-
-- Worked with the design team to develop Darwin's new homepage and navigation drawer as designed.
-- Implement API functionalities with Transact SQL and ASP.NET to search and modify Darwin modules.
-```
-
-### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14
-
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -651,225 +290,413 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
 #### Chunk Text
 ```text
-Webmaster, Industrial Affiliates Program, UPRM
-Aug 2017 - Mar 2021
-
-- Full Stack developer designing and building features such as statistics, user authentication, purchase accounts, advance filtering, and notification schemes for the engagement of 324 users.
-- Enhance the user experience by implementing services using MEAN stack technologies, with a layered architecture pattern across 5 account perspectives: administrator, student, professor, sponsor, and guest.
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
 <!-- image -->
 ```
 
 #### First Read
 ```text
-Webmaster, Industrial Affiliates Program, UPRM
-Aug 2017 - Mar 2021
-
-- Full Stack developer designing and building features such as statistics, user authentication, purchase accounts, advance filtering, and notification schemes for the engagement of 324 users.
-- Enhance the user experience by implementing services using MEAN stack technologies, with a layered architecture pattern across 5 account perspectives: administrator, student, professor, sponsor, and guest.
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
 <!-- image -->
 ```
 
 #### Recursive Text
 ```text
-Webmaster, Industrial Affiliates Program, UPRM
-Aug 2017 - Mar 2021
-
-- Full Stack developer designing and building features such as statistics, user authentication, purchase accounts, advance filtering, and notification schemes for the engagement of 324 users.
-- Enhance the user experience by implementing services using MEAN stack technologies, with a layered architecture pattern across 5 account perspectives: administrator, student, professor, sponsor, and guest.
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
 <!-- image -->
 ```
 
-### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:15
+### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:8
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "employment" in chunk_text.lower() and "history" in chunk_text.lower():
+        return True
+    if "work" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Employment history
+```
+
+#### First Read
+```text
+Employment history
+```
+
+#### Recursive Text
+```text
+Employment history
+```
+
+### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9
+
+**Query:** Where does Alexis work?
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "DXC Technology" in chunk_text.lower():
+        return True
+    if "present" in chunk_text.lower():
+        return True
+    if "work" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+DXC Technology
+Senior Technical Consultant
+
+Isabela, PR
+
+August 2021 -Present
+
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V migration.
+- Full stack developer for a XML mapping application using Java, React, Redis, Spring Boot, Message Broker, Prometheus, Grafana, AMQ, Camel, OpenShift among other tools for a transportation agency.
+- Project Manager to  lead  a  new  software development  group through  the  certification process for  a Manufacturing Execution System (MES).
+- Project Manager for the development of a Front-End Application in Angular for an Internal DXC group.
+- Business Analyst for AI solution for the manufactory industry.
+```
+
+#### First Read
+```text
+DXC Technology
+Senior Technical Consultant
+
+Isabela, PR
+
+August 2021 -Present
+
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
+```
+
+#### Recursive Text
+```text
+DXC Technology
+Senior Technical Consultant
+
+Isabela, PR
+
+August 2021 -Present
+
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
+```
+
+### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10
+
+**Query:** Where does Alexis work?
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "where" in chunk_text.lower() and "work" in chunk_text.lower():
+        return True
+    if "company" in chunk_text.lower():
+        return True
+    if "bridgewater" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Bridgewater
+Full Stack Developer
+
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
+```
+
+#### First Read
+```text
+Bridgewater
+Full Stack Developer
+
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
+```
+
+#### Recursive Text
+```text
+Bridgewater
+Full Stack Developer
+
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
+```
+
+### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11
+
+**Query:** Where does Alexis work?
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "work" in chunk_text.lower() or "employed" in chunk_text.lower() or "consultant" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Consultant
+Senior Consultant
+
+
+Jan 2016 -March  2020
+
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new Medicare EDI-837 record format for the payment process in MMM (Health Care Provider). Project Management for the implementation of an e-commerce WEB application for Triple S.
+- Business Analyst in  First Medical  (Health  Care  Provider). Increase the  efficiency of  more  than  10 departments  and  40  employees by  restructuring all  reporting processes. Coordination  with  multiple business units including compliance, finance, customer service among other departments to define the new report structure.
+```
+
+#### First Read
+```text
+Consultant
+Senior Consultant
+
+
+Jan 2016 -March  2020
+
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
+```
+
+#### Recursive Text
+```text
+Consultant
+Senior Consultant
+
+
+Jan 2016 -March  2020
+
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
+```
+
+### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12
+
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "work" in chunk_text.lower():
         return True
-    if "jpmorgan" in chunk_text.lower() and "chase" in chunk_text.lower():
+    if "employed" in chunk_text.lower():
         return True
-    if "kevin" in chunk_text.lower():
+    if "company" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Software Engineer Intern, JPMorgan Chase, Houston TX
-May 2020 - Aug 2020
+Caguas, PR
+Oct 2002 -Jan 2016
 
-- Design and develop a website solution with ReactJS and Python Flask for a non-profit organization to improve social engagement and individual education to refugees residing in the US.
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of complete data centers for Telecommunication companies, including servers, storage, networking (LAN/WAN), security, backup.
+- Project management for the implementation of Fortinet network security systems.
+- Project management for the implementation of virtual city surveillance systems including IP cameras, Wireless/LAN/WAN connection, data center and monitoring center.
+
+
+Mar 2020 -Aug 2021
+
+<!-- image -->
+
+- Solution development for a IOT system for a finance/security industry, including software and hardware development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system
 ```
 
 #### First Read
 ```text
-Software Engineer Intern, JPMorgan Chase, Houston TX
-May 2020 - Aug 2020
+Caguas, PR
+Oct 2002 -Jan 2016
 
-- Design and develop a website solution with ReactJS and Python Flask for a non-profit organization to improve social engagement and individual education to refugees residing in the US.
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
 ```
 
 #### Recursive Text
 ```text
-Software Engineer Intern, JPMorgan Chase, Houston TX
-May 2020 - Aug 2020
+Caguas, PR
+Oct 2002 -Jan 2016
 
-- Design and develop a website solution with ReactJS and Python Flask for a non-profit organization to improve social engagement and individual education to refugees residing in the US.
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
 ```
 
-### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16
+### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13
 
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower() or "company" in chunk_text.lower() or "ibm" in chunk_text.lower():
+    if "work" in chunk_text.lower() or "employed" in chunk_text.lower() or "company" in chunk_text.lower():
+        return True
+    if "caguas" in chunk_text.lower() and "pr" in chunk_text.lower():
+        return True
+    if "business analyst" in chunk_text.lower() or "software developer" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Front End Developer (Data &amp; AI), IBM Company, Durham NC
-Jan 2020 - May 2020
-
-- Develop UI on IBM's new Financial Crime Insights platform using ReactJS with data acquired from ML analytics, supplying money laundering crime acumens to worldwide insurance companies, banks, etc.
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and robbery. This technology became the most advance solution in the market.
+- Author of several patents in the IOT field for finance and security industry. Responsible to analyze the market needs and develop new technologies.
 ```
 
 #### First Read
 ```text
-Front End Developer (Data &amp; AI), IBM Company, Durham NC
-Jan 2020 - May 2020
-
-- Develop UI on IBM's new Financial Crime Insights platform using ReactJS with data acquired from ML analytics, supplying money laundering crime acumens to worldwide insurance companies, banks, etc.
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
 ```
 
 #### Recursive Text
 ```text
-Front End Developer (Data &amp; AI), IBM Company, Durham NC
-Jan 2020 - May 2020
-
-- Develop UI on IBM's new Financial Crime Insights platform using ReactJS with data acquired from ML analytics, supplying money laundering crime acumens to worldwide insurance companies, banks, etc.
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
 ```
 
-### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17
+### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14
 
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "work" in chunk_text.lower() or "where" in chunk_text.lower() or "kevin" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM
-Oct 2018 - Dec 2018
-
-- Created an agent-based AI consisting of a combination of Backtracking and Breadth First, Depth First, and A* Search algorithms that autonomously finds a path that solves most Free Flow puzzles.
-```
-
-#### First Read
-```text
-Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM
-Oct 2018 - Dec 2018
-
-- Created an agent-based AI consisting of a combination of Backtracking and Breadth First, Depth First, and A* Search algorithms that autonomously finds a path that solves most Free Flow puzzles.
-```
-
-#### Recursive Text
-```text
-Free Flow Puzzle Game Artificial Intelligence Algorithm, UPRM
-Oct 2018 - Dec 2018
-
-- Created an agent-based AI consisting of a combination of Backtracking and Breadth First, Depth First, and A* Search algorithms that autonomously finds a path that solves most Free Flow puzzles.
-```
-
-### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
-
-**Query:** Where does Kevin work?
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "company" in chunk_text.lower() and "kevin" in chunk_text.lower():
-        return True
-    if "shark ninja" in chunk_text.lower() and "work" in chunk_text.lower():
-        return True
-    if "boston" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-```text
-Junior Quality Engineer Intern, Shark Ninja Company, Boston MA
-Jun 2018 - Aug 2018
-
-- Developed a dashboard in Jav a displaying important system properties of the model CP307 Ninja Cold Brew to further assist quality engineers to observe and identify failures within its architecture.
-- Designed the initial implementation of an embedded automation test in Python to instantly evaluate the correctness of the Ninja Cold Brew unit's state machine transitions.
-```
-
-#### First Read
-```text
-Junior Quality Engineer Intern, Shark Ninja Company, Boston MA
-Jun 2018 - Aug 2018
-
-- Developed a dashboard in Jav a displaying important system properties of the model CP307 Ninja Cold Brew to further assist quality engineers to observe and identify failures within its architecture.
-- Designed the initial implementation of an embedded automation test in Python to instantly evaluate the correctness of the Ninja Cold Brew unit's state machine transitions.
-```
-
-#### Recursive Text
-```text
-Junior Quality Engineer Intern, Shark Ninja Company, Boston MA
-Jun 2018 - Aug 2018
-
-- Developed a dashboard in Jav a displaying important system properties of the model CP307 Ninja Cold Brew to further assist quality engineers to observe and identify failures within its architecture.
-- Designed the initial implementation of an embedded automation test in Python to instantly evaluate the correctness of the Ninja Cold Brew unit's state machine transitions.
-```
-
-### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
-
-**Query:** Where does Kevin work?
+**Query:** Where does Alexis work?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "work" in chunk_text.lower():
         return True
-    if "kevin" in chunk_text.lower():
+    if "employer" in chunk_text.lower():
         return True
-    if "languages" in chunk_text.lower():
+    if "company" in chunk_text.lower():
         return True
     return False
 ```
 
 #### Chunk Text
 ```text
-Languages
-English - Proficient
+San Juan, PR
+Apr 1996 -Oct 2002
 
-Spanish - Proficient
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimensioning,  TAC  support,  Resources  Coordination (Optimization, Engineering, Service, Customer, etc).
+- Provide Technical and Commercial (solution presentation, offer preparation, etc) pre-sale assistance to customers  through  Puerto  Rico,  the  Caribbean,  our  support  group  and  employees  about  new telecommunication including hardware and software requirements.
 ```
 
 #### First Read
 ```text
-Languages
-English - Proficient
+San Juan, PR
+Apr 1996 -Oct 2002
 
-Spanish - Proficient
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
 ```
 
 #### Recursive Text
 ```text
-Languages
-English - Proficient
+San Juan, PR
+Apr 1996 -Oct 2002
 
-Spanish - Proficient
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
+```
+
+### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15
+
+**Query:** Where does Alexis work?
+
+```python
+def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    if "work" in chunk_text.lower() or "employer" in chunk_text.lower() or "company" in chunk_text.lower():
+        return True
+    if "caguas" in chunk_text.lower() and "pr" in chunk_text.lower():
+        return True
+    if "management" in chunk_text.lower() and "projects" in chunk_text.lower():
+        return True
+    return False
+```
+
+#### Chunk Text
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
+
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world leader in its field. Awarded  with the biggest worldwide  orders including  Spain, Hungary,  Argentina  among other countries.
+- Author of two patents in the telecommunication  field.
+```
+
+#### First Read
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
+
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
+```
+
+#### Recursive Text
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
+
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
 ```
 
 ---

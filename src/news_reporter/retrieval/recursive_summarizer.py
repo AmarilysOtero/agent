@@ -39,14 +39,14 @@ MAX_EXEC_STRING_LENGTH = 100000  # Prevent memory bombs
 # even when the chunk text doesn't literally contain query verbs like "work".
 # Keeps the no-hardcoding spirit while fixing the evidence-only constraint
 # that was too strict for structural-intent queries.
-STRUCTURAL_WHITELIST = {
-    # Employment / time markers
-    "present", "current", "currently", "to present",
-    "- present", "– present", "— present",
-    # Date / delimiter tokens
-    " - ", " – ", " — ", " to ",
-    # Role / org delimiters
-    " at ", "@",
+#
+# Split into two tiers:
+#   SEMANTIC  – terms that carry query *intent* (e.g. "work", "skills")
+#   STRUCTURAL – pure delimiters / time markers that are NOT enough alone
+#
+# A function that returns True using ONLY structural tokens (no semantic
+# or evidence tokens) is rejected by _validate_inspection_code.
+SEMANTIC_WHITELIST = {
     # Generic verbs for matching query intent (not domain-specific)
     "work", "works", "working", "worked",
     "employ", "employed", "employer", "employment",
@@ -56,10 +56,40 @@ STRUCTURAL_WHITELIST = {
     "university", "college", "school", "degree",
     # Location markers
     "located", "based",
+    # Skill / experience markers
+    "skill", "skills", "experience", "expertise",
+    "certification", "certifications",
 }
+
+STRUCTURAL_ONLY_WHITELIST = {
+    # Employment / time markers (supporting signals only)
+    "present", "current", "currently", "to present",
+    "- present", "– present", "— present",
+    # Date / delimiter tokens
+    " - ", " – ", " — ", " to ",
+    # Role / org delimiters
+    " at ", "@",
+}
+
+# Combined whitelist for evidence-only validation (backward compat)
+STRUCTURAL_WHITELIST = SEMANTIC_WHITELIST | STRUCTURAL_ONLY_WHITELIST
 
 logger.info(f"🔧 MIT RLM Recursion: {'ENABLED' if USE_MIT_RLM_RECURSION else 'DISABLED'}")
 logger.info(f"📊 Selection Budgets: max_chunks={MAX_SELECTED_CHUNKS_PER_FILE}, max_chars={MAX_TOTAL_CHARS_FOR_SUMMARY}")
+
+# Query-scoped Phase 4 invalidation: track the query that generated
+# the current set of inspection programs.  If a new query arrives, all
+# prior artifacts (code, programs, logs) are stale and must be regenerated.
+# This is enforced inside recursive_summarize_files() itself (stateless per
+# call), but the hash is also written into log filenames so analysts can
+# distinguish artifacts from different queries.
+_last_phase4_query_hash: Optional[str] = None
+
+
+def _query_fingerprint(query: str) -> str:
+    """Return a short hex fingerprint for a query (for log file disambiguation)."""
+    import hashlib
+    return hashlib.sha256(query.strip().lower().encode()).hexdigest()[:8]
 
 
 def _safe_range(*args):
@@ -96,9 +126,64 @@ def _build_safe_globals() -> dict:
             # NOTE: sorted() intentionally omitted – can be O(n log n) on
             # attacker-chosen data.  enumerate is bounded by input size.
         },
-        "_exec_counter": 0,
-        "_MAX_ITERATIONS": MAX_EXEC_ITERATIONS,
+        # NOTE: _exec_counter / _MAX_ITERATIONS are NOT enforced at runtime.
+        # They exist as documentation of intent.  True protection comes from
+        # _safe_range (caps iterations) and _detect_multiplication_bombs (caps
+        # memory).  Full sandboxing requires subprocess isolation (TODO).
     }
+
+
+def _detect_multiplication_bombs(tree) -> tuple:
+    """Detect `x * N` and `[val] * N` patterns where N is dangerously large.
+
+    Catches:
+        "a" * 10**8
+        [0] * 100_000_000
+        x = "b" * N   where N is a large int literal or power expression
+
+    Returns:
+        (is_safe, error_message)
+    """
+    import ast
+
+    MAX_MULT_CONST = 10_000  # Any multiplication by a constant > 10k is suspicious
+
+    def _const_value(node) -> int | None:
+        """Try to resolve a node to an int constant (handles 10**N)."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return node.value
+        # Handle 10**N pattern
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
+            base = _const_value(node.left)
+            exp = _const_value(node.right)
+            if base is not None and exp is not None:
+                try:
+                    val = base ** exp
+                    return val
+                except (OverflowError, ValueError):
+                    return 10**18  # Treat overflow as huge
+        return None
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+            # Check both sides: const * expr  or  expr * const
+            for side in (node.left, node.right):
+                val = _const_value(side)
+                if val is not None and val > MAX_MULT_CONST:
+                    return False, (
+                        f"Multiplication bomb detected: operand value {val:,} "
+                        f"exceeds safety limit ({MAX_MULT_CONST:,})"
+                    )
+            # Also flag string/list literal * large-ish number
+            # e.g. "a" * 500 is fine, "a" * 50000 is not
+            left_val = _const_value(node.left)
+            right_val = _const_value(node.right)
+            if left_val is not None and left_val > MAX_MULT_CONST:
+                return False, f"Multiplication bomb: left operand {left_val:,} > {MAX_MULT_CONST:,}"
+            if right_val is not None and right_val > MAX_MULT_CONST:
+                return False, f"Multiplication bomb: right operand {right_val:,} > {MAX_MULT_CONST:,}"
+
+    return True, ""
 
 
 def _build_completion_params(model_deployment: str, **kwargs) -> dict:
@@ -272,6 +357,8 @@ def _validate_inspection_program(program: str, query: str, chunk_count: int) -> 
             self.hardcoded_all_chunk_ids = False
             self._in_function = False
             self._return_statements = []
+            # Track variables that derive from chunk text access
+            self._chunk_text_vars = set()
             
         def visit_FunctionDef(self, node):
             if node.name == 'inspect_iteration':
@@ -302,6 +389,39 @@ def _validate_inspection_program(program: str, query: str, chunk_count: int) -> 
             
             self.generic_visit(node)
         
+        def _is_chunk_text_derived(self, node) -> bool:
+            """Check if an expression derives from chunk text access."""
+            # Direct: chunk.get('text'), chunk['text']
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if node.func.attr == 'get':
+                    if node.args and isinstance(node.args[0], ast.Constant):
+                        if node.args[0].value == 'text':
+                            return True
+            if isinstance(node, ast.Subscript):
+                if isinstance(node.slice, ast.Constant) and node.slice.value == 'text':
+                    return True
+            # Variable known to derive from chunk text
+            if isinstance(node, ast.Name) and node.id in self._chunk_text_vars:
+                return True
+            # Method call on chunk-text-derived var: text_lower.lower() etc
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if isinstance(node.func.value, ast.Name) and node.func.value.id in self._chunk_text_vars:
+                    return True
+            return False
+
+        def visit_Assign(self, node):
+            if not self._in_function:
+                return
+            # Track: text_lower = chunk.get('text', '').lower()
+            # or: text = chunk['text']
+            for sub in ast.walk(node.value):
+                if self._is_chunk_text_derived(sub):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            self._chunk_text_vars.add(target.id)
+                    break
+            self.generic_visit(node)
+
         def visit_Call(self, node):
             # Check for chunk text access patterns: chunk.get('text'), chunk['text']
             if isinstance(node.func, ast.Attribute):
@@ -320,10 +440,15 @@ def _validate_inspection_program(program: str, query: str, chunk_count: int) -> 
             self.generic_visit(node)
         
         def visit_Compare(self, node):
-            # Check for 'in' operations (evidence checking)
-            for op in node.ops:
+            # Only count 'in' / 'not in' as evidence check if the comparator
+            # is derived from chunk text (not arbitrary strings/lists)
+            for op, comparator in zip(node.ops, node.comparators):
                 if isinstance(op, (ast.In, ast.NotIn)):
-                    self.checks_chunk_text = True
+                    if self._is_chunk_text_derived(comparator):
+                        self.checks_chunk_text = True
+                    # Also check left side (e.g. term in text_lower)
+                    if self._is_chunk_text_derived(node.left):
+                        self.checks_chunk_text = True
             self.generic_visit(node)
     
     validator = InspectionProgramValidator()
@@ -603,29 +728,63 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if not checker.has_evidence_check:
         return False, "Function must perform at least one evidence check (e.g., 'term' in text, .find(), .count(), .startswith(), .endswith())"
     
-    # PRODUCTION WARNING: This exec() validation doesn't prevent:
-    # - CPU/memory bombs (for i in range(10**9))
-    # - Pathological string operations
-    # TODO: Run generated code in separate process with resource limits
+    # PRODUCTION WARNING: This exec() validation doesn't prevent all CPU/memory
+    # bombs.  _safe_range + _detect_multiplication_bombs cover the most common
+    # vectors; full safety requires subprocess isolation.
     
-    # NEW CHECK: Last statement in evaluate_chunk_relevance must be 'return False'
-    # This kills patterns like "return True unless ..." that sneak through AST checks.
+    # CHECK: Detect multiplication bombs  ("a" * 10**8, [0] * 10**8)
+    bomb_ok, bomb_msg = _detect_multiplication_bombs(tree)
+    if not bomb_ok:
+        return False, bomb_msg
+    
+    # CHECK: evaluate_chunk_relevance must contain at least one explicit
+    # `return False` anywhere in its body (proves not-always-true intent)
+    # AND the last top-level statement must be `return False` (safe default).
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == 'evaluate_chunk_relevance':
-            if node.body:
-                last_stmt = node.body[-1]
-                # Allow: bare return False, or if/elif chain that doesn't end with return True
-                if isinstance(last_stmt, ast.Return):
-                    if isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is True:
-                        return False, "Last statement is 'return True' — function must default to False (last statement must be 'return False')"
-                    # Also catch 'return <expression>' that isn't False
-                    # Allow: return False, return any(...), return <variable>
-                elif isinstance(last_stmt, ast.If):
-                    # If block at end is fine (it's conditional)
-                    pass
-                elif isinstance(last_stmt, ast.Expr):
-                    # Expression statement at end (rare but ok)
-                    pass
+            if not node.body:
+                return False, "Function body is empty"
+            
+            # 1) Require at least one `return False` in function body
+            has_return_false = False
+            for child in ast.walk(node):
+                if isinstance(child, ast.Return) and isinstance(getattr(child, 'value', None), ast.Constant):
+                    if child.value.value is False:
+                        has_return_false = True
+                        break
+            if not has_return_false:
+                return False, "Function must contain at least one 'return False' statement (safe default path)"
+            
+            # NEW GUARDRAIL: Reject degenerate inspectors with no possible True outcome.
+            # This does NOT force the current chunk to be selected; it only ensures the
+            # function is capable of selecting a chunk when criteria match.
+            has_return_true = False
+            for child in ast.walk(node):
+                if isinstance(child, ast.Return) and isinstance(getattr(child, 'value', None), ast.Constant):
+                    if child.value.value is True:
+                        has_return_true = True
+                        break
+            if not has_return_true:
+                return False, "Degenerate inspector: function has no 'return True' path"
+            
+            # 2) Last top-level statement must be `return False`
+            last_stmt = node.body[-1]
+            if isinstance(last_stmt, ast.Return):
+                if not (isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is False):
+                    return False, (
+                        f"Last statement must be 'return False' (safe default). "
+                        f"Got: return {ast.dump(last_stmt.value) if last_stmt.value else 'None'}"
+                    )
+            elif isinstance(last_stmt, ast.If):
+                # If block at end is fine only if there is a bare `return False`
+                # AFTER or at the end of the else branch.  We already verified
+                # has_return_false above, so this is acceptable.
+                pass
+            else:
+                return False, (
+                    f"Last statement in function must be 'return False', "
+                    f"got {type(last_stmt).__name__}"
+                )
             break
 
     # Check 2: Extract ALL string literals using AST
@@ -666,6 +825,34 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     
     if suspicious_literals:
         return False, f"Evidence-only violation: {suspicious_literals}"
+    
+    # CHECK: Reject functions whose ONLY matching tokens come from
+    # STRUCTURAL_ONLY_WHITELIST (delimiters / time markers).
+    # These are supporting signals — a function must also use at least one
+    # semantic token (from query, chunk, or SEMANTIC_WHITELIST) to return True.
+    non_harmless_literals = all_literals - harmless_literals
+    if non_harmless_literals:
+        has_semantic_signal = False
+        for literal in non_harmless_literals:
+            lit_norm = _normalize_text(literal.lower())
+            lit_words = _tokenize_text(literal)
+            # Check if literal is in evidence (query or chunk)
+            if lit_words and lit_words.issubset(allowed_words):
+                has_semantic_signal = True
+                break
+            # Check if literal is in semantic whitelist
+            if lit_norm in SEMANTIC_WHITELIST:
+                has_semantic_signal = True
+                break
+            if lit_words and lit_words.issubset(SEMANTIC_WHITELIST):
+                has_semantic_signal = True
+                break
+        
+        if not has_semantic_signal:
+            return False, (
+                "Function uses only structural/delimiter tokens (e.g. 'present', '- ', '@ '). "
+                "Must include at least one semantic token from query, chunk, or semantic whitelist."
+            )
     
     return True, ""
 
@@ -950,7 +1137,8 @@ async def recursive_summarize_files(
     expanded_files: Dict[str, Dict],
     query: str,
     llm_client: Optional[Any] = None,
-    model_deployment: Optional[str] = None
+    model_deployment: Optional[str] = None,
+    rlm_enabled: bool = False
 ) -> List[FileSummary]:
     """
     Apply LLM-based recursive summarization to expanded file chunks.
@@ -966,6 +1154,7 @@ async def recursive_summarize_files(
         query: User query for context
         llm_client: Optional Azure OpenAI client (created if not provided)
         model_deployment: Azure OpenAI deployment name (reads from AZURE_OPENAI_CHAT_DEPLOYMENT if not provided)
+        rlm_enabled: Whether the overall workflow RLM mode is enabled (for logging)
 
     Returns:
         List of FileSummary objects with file-level summaries
@@ -999,7 +1188,20 @@ async def recursive_summarize_files(
     if model_deployment is None:
         model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
     
-    logger.info(f"🔄 Phase 4: Starting recursive summarization for {len(expanded_files)} files (deployment: {model_deployment})")
+    # Query-scoped invalidation: detect when query changes between calls
+    global _last_phase4_query_hash
+    current_hash = _query_fingerprint(query)
+    if _last_phase4_query_hash is not None and _last_phase4_query_hash != current_hash:
+        logger.info(
+            f"🔄 Phase 4: Query changed (hash {_last_phase4_query_hash} → {current_hash}). "
+            f"All prior Phase 4 artifacts are invalidated; regenerating from scratch."
+        )
+    _last_phase4_query_hash = current_hash
+    
+    logger.info(
+        f"🔄 Phase 4: Starting recursive summarization for {len(expanded_files)} files "
+        f"(deployment: {model_deployment}, query_hash: {current_hash})"
+    )
 
     summaries = []
     inspection_code = {}  # Store LLM-generated inspection logic per file
@@ -1211,6 +1413,17 @@ async def recursive_summarize_files(
     # Log inspection code for debugging and analysis
     summary_by_file_id = {summary.file_id: summary.summary_text for summary in summaries}
 
+    # FIX: Use environment variable for logs directory, fallback to local path
+    logs_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+    # If running locally (Windows), adjust path
+    if not os.path.isabs(logs_dir) or logs_dir.startswith("/app"):
+        # Check if we're in a Docker container by looking for /.dockerenv
+        if not os.path.exists("/.dockerenv") and os.name == "nt":
+            # Windows local environment
+            logs_dir = os.path.join(os.getcwd(), "..", "..", "logs", "chunk_analysis")
+            if not os.path.exists(logs_dir):
+                logs_dir = "./logs/chunk_analysis"
+
     if inspection_code:
         try:
             # FIX #3: Distinguish mode in logging: iterative vs per-chunk
@@ -1218,12 +1431,12 @@ async def recursive_summarize_files(
             await log_inspection_code_to_markdown(
                 inspection_rules=inspection_code,
                 query=query,
-                rlm_enabled=USE_MIT_RLM_RECURSION,  # True for iterative, False for per-chunk
-                output_dir="/app/logs/chunk_analysis",
+                rlm_enabled=rlm_enabled,
+                output_dir=logs_dir,
                 mode=mode_label  # Pass mode explicitly
             )
         except Exception as e:
-            logger.warning(f"⚠️  Failed to log inspection code: {e}")
+            logger.warning(f"⚠️  Failed to log inspection code: {e}", exc_info=True)
 
     if inspection_code_with_text:
         try:
@@ -1231,11 +1444,11 @@ async def recursive_summarize_files(
                 inspection_rules=inspection_code_with_text,
                 query=query,
                 summary_by_file_id=summary_by_file_id,
-                rlm_enabled=False,  # This is only for per-chunk mode
-                output_dir="/app/logs/chunk_analysis"
+                rlm_enabled=rlm_enabled,
+                output_dir=logs_dir
             )
         except Exception as e:
-            logger.warning(f"⚠️  Failed to log inspection code with text: {e}")
+            logger.warning(f"⚠️  Failed to log inspection code with text: {e}", exc_info=True)
 
     return summaries
 
@@ -1457,13 +1670,27 @@ NOW generate the function:"""
     # Fallback: return simple query-based filter function (always defaults to False)
     if not generated_code:
         logger.info(f"  🔄 Using fallback for chunk {chunk_id} (code generation/validation failed)")
-        # Remove stopwords to reduce false positives
-        STOPWORDS = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
-                     "is", "are", "was", "were", "where", "who", "what", "does", "do", "did",
-                     "work", "works", "working", "at", "from", "by", "be", "been"}
-        query_terms = [t for t in _tokenize_text(query) if t not in STOPWORDS and len(t) >= 3]
-        fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    \"\"\"Fallback relevance filter based on query terms (stopwords removed).\"\"\"
+        # Intent-aware stopword list: don't remove query-intent words
+        # Base stopwords (pure grammar, never carry query intent)
+        BASE_STOPWORDS = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
+                          "is", "are", "was", "were", "who", "what", "does", "do", "did",
+                          "at", "from", "by", "be", "been", "me", "tell", "can", "you",
+                          "find", "list", "give", "show", "get", "about"}
+        # Intent words that SHOULD be kept if they appear in the query
+        # (these carry semantic meaning for filtering)
+        INTENT_WORDS = {"work", "works", "working", "where", "skill", "skills",
+                        "experience", "employed", "company", "position", "role",
+                        "education", "degree", "certification", "project", "projects"}
+        # Only remove intent words if they are NOT query-relevant
+        # (i.e., keep "work" for "Where does Kevin work?")
+        stopwords = BASE_STOPWORDS.copy()
+        # Don't add intent words to stopwords — keep them as search terms
+        query_terms = [t for t in _tokenize_text(query) if t not in stopwords and len(t) >= 3]
+        # Ensure at least some terms remain even if query is mostly stopwords
+        if not query_terms:
+            query_terms = [t for t in _tokenize_text(query) if t not in BASE_STOPWORDS and len(t) >= 2]
+        fallback_code = f'''def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
@@ -1471,7 +1698,7 @@ NOW generate the function:"""
     if not query_terms:
         return False
     # Require at least one content token match
-    return any(term in text_lower for term in query_terms)"""
+    return any(term in text_lower for term in query_terms)'''
         return fallback_code
     
     # FIX #1: Return the successfully generated code
@@ -2298,7 +2525,7 @@ async def log_file_summaries_to_markdown(
     file_summaries: List[FileSummary],
     query: str,
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: Optional[str] = None
 ) -> None:
     """
     Log Phase 4 file summaries to markdown file.
@@ -2307,10 +2534,16 @@ async def log_file_summaries_to_markdown(
         file_summaries: List of FileSummary objects
         query: User query
         rlm_enabled: Whether RLM is enabled
-        output_dir: Output directory for logs
+        output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
     """
     from pathlib import Path
     from datetime import datetime
+
+    # Handle output_dir with fallback logic
+    if output_dir is None:
+        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
+            output_dir = "./logs/chunk_analysis"
 
     try:
         # Determine output file
@@ -2322,10 +2555,12 @@ async def log_file_summaries_to_markdown(
 
         # Build markdown content
         timestamp = datetime.now().isoformat()
+        query_hash = _query_fingerprint(query)
         lines = [
             f"# Phase 4: Recursive Summarization (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
+            f"\n**Query Hash:** `{query_hash}` (use to verify artifacts match current query)",
             f"\n**Total Summaries:** {len(file_summaries)}",
             "\n---\n",
         ]
@@ -2362,7 +2597,7 @@ async def log_inspection_code_to_markdown(
     inspection_rules: Dict[str, Dict[str, str]],
     query: str,
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis",
+    output_dir: Optional[str] = None,
     mode: str = "per_chunk"
 ) -> None:
     """
@@ -2376,11 +2611,17 @@ async def log_inspection_code_to_markdown(
         inspection_rules: Dict mapping file_id to dict of chunk_id -> code (MIT RLM per-chunk approach)
         query: User query that drove the analysis
         rlm_enabled: Whether RLM is enabled
-        output_dir: Output directory for logs
+        output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
         mode: Either "iterative" or "per_chunk" to label correctly
     """
     from pathlib import Path
     from datetime import datetime
+
+    # Handle output_dir with fallback logic
+    if output_dir is None:
+        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
+            output_dir = "./logs/chunk_analysis"
 
     try:
         # FIX #7: Use different filenames and suffix for iterative vs per-chunk
@@ -2410,10 +2651,12 @@ async def log_inspection_code_to_markdown(
 
         # Build markdown content
         timestamp = datetime.now().isoformat()
+        query_hash = _query_fingerprint(query)
         lines = [
             f"# Phase 4: LLM-Generated Inspection Logic (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
+            f"\n**Query Hash:** `{query_hash}` (use to verify artifacts match current query)",
             f"\n**Total Inspection Programs:** {total_programs}",
             f"\n**Implementation:** {impl_description}",
             f"\n**Mode:** {mode}",
@@ -2475,7 +2718,7 @@ async def log_inspection_code_with_text_to_markdown(
     query: str,
     summary_by_file_id: Dict[str, str],
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: Optional[str] = None
 ) -> None:
     """
     Log inspection code with chunk text, first read, and recursive text.
@@ -2486,10 +2729,16 @@ async def log_inspection_code_with_text_to_markdown(
         query: User query that drove the analysis
         summary_by_file_id: Dict mapping file_id to recursive summary text
         rlm_enabled: Whether RLM is enabled
-        output_dir: Output directory for logs
+        output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
     """
     from pathlib import Path
     from datetime import datetime
+
+    # Handle output_dir with fallback logic
+    if output_dir is None:
+        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
+            output_dir = "./logs/chunk_analysis"
 
     try:
         # FIX #7: Use consistent suffix (enabled/disabled, not enable/disable)
@@ -2501,10 +2750,12 @@ async def log_inspection_code_with_text_to_markdown(
         total_programs = sum(len(chunk_payloads) for chunk_payloads in inspection_rules.values())
 
         timestamp = datetime.now().isoformat()
+        query_hash = _query_fingerprint(query)
         lines = [
             f"# Phase 4: LLM-Generated Inspection Logic (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
+            f"\n**Query Hash:** `{query_hash}` (use to verify artifacts match current query)",
             f"\n**Total Inspection Programs:** {total_programs}",
             f"\n**Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation",
             "\n---\n",

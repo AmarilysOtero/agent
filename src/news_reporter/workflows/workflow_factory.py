@@ -382,7 +382,8 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                             expanded_files=expanded_files,
                             query=goal,
                             llm_client=llm_client,
-                            model_deployment=model_deployment
+                            model_deployment=model_deployment,
+                            rlm_enabled=high_recall_mode
                         )
 
                         # Log Phase 4 file summaries to markdown

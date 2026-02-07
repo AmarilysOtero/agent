@@ -152,10 +152,10 @@ class CodeExecutionTracer:
                 f.write('from typing import Dict, List, Any, Optional\n')
                 f.write('from collections import deque\n')
                 f.write('import asyncio\n')
-                f.write('from news_reporter.workflows.workflow_state import WorkflowState\n')
-                f.write('from news_reporter.workflows.node_result import NodeResult, NodeStatus\n')
-                f.write('from news_reporter.workflows.execution_context import ExecutionContext\n')
-                f.write('from news_reporter.workflows.condition_evaluator import ConditionEvaluator\n\n')
+                f.write('from .workflow_state import WorkflowState\n')
+                f.write('from .node_result import NodeResult, NodeStatus\n')
+                f.write('from .execution_context import ExecutionContext\n')
+                f.write('from .condition_evaluator import ConditionEvaluator\n\n')
                 
                 # Write initial state
                 f.write('# Initial State\n')

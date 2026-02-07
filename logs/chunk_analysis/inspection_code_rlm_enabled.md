@@ -1,10 +1,10 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-07T02:35:16.689864
+**Execution Time:** 2026-02-07T04:03:19.105720
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
-**Query Hash:** `34d27598` (use to verify artifacts match current query)
+**Query Hash:** `74c51947` (use to verify artifacts match current query)
 
 **Total Inspection Programs:** 20
 
@@ -36,33 +36,29 @@ These functions (evaluate_chunk_relevance(chunk_text: str) -> bool) are executed
 
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:0
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "kevin" in chunk_text.lower() or "list" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() or 'kevin' in chunk_text.lower() or 'list' in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
-        return True
-    if "full-stack" in chunk_text.lower() or "software engineer" in chunk_text.lower():
-        return True
-    if "help" in chunk_text.lower() or "identify" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -70,71 +66,74 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "skill" in chunk_text.lower():
         return True
-    if "list" in chunk_text.lower() and "skills" in chunk_text.lower():
+    if "list" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower() and 'kevin' in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "list" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if 'top skills' in chunk_text.lower():
+    if "top skills" in chunk_text.lower():
         return True
-    if 'list' in chunk_text.lower() and 'can' in chunk_text.lower():
+    if "technical" in chunk_text.lower() or "nontechnical" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:4
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() or 'list' in chunk_text.lower() or 'kevin' in chunk_text.lower():
         return True
-    if "developer" in chunk_text.lower() or "engineer" in chunk_text.lower() or "manager" in chunk_text.lower():
+    if 'frontend' in chunk_text.lower() or 'software' in chunk_text.lower() or 'developer' in chunk_text.lower():
         return True
-    if "list" in chunk_text.lower() and "kevin" in chunk_text.lower():
+    if 'engineer' in chunk_text.lower() or 'manager' in chunk_text.lower() or 'project' in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:5
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "experience" in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if "technology" in chunk_text.lower() or "banking" in chunk_text.lower() or "healthcare" in chunk_text.lower():
+    if "experience" in chunk_text.lower() and "technology" in chunk_text.lower():
         return True
-    if "kevin" in chunk_text.lower():
+    if "banking" in chunk_text.lower() or "healthcare" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:6
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
-        if "backend" in chunk_text.lower() or "postgresql" in chunk_text.lower() or "node.js" in chunk_text.lower() or "azure" in chunk_text.lower() or "python" in chunk_text.lower():
-            return True
+    if "list" in chunk_text.lower() and "skill" in chunk_text.lower():
+        return True
+    if "kevin" in chunk_text.lower() and "certifications" in chunk_text.lower():
+        return True
+    if "backend" in chunk_text.lower() and "development" in chunk_text.lower():
+        return True
     return False
 ```
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:7
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -142,14 +141,14 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "experience" in chunk_text.lower():
         return True
-    if "professional" in chunk_text.lower():
+    if "kevin" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:8
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -164,124 +163,121 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:9
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if "list" in chunk_text.lower() and "for" in chunk_text.lower():
+    if "list" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if "engineer" in chunk_text.lower() and "dxc" in chunk_text.lower():
+    if "ai" in chunk_text.lower() and "engineer" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:10
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "kevin" in chunk_text.lower() or "company" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "experience" in chunk_text.lower() or "engineer" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:11
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if "analyst" in chunk_text.lower() or "developer" in chunk_text.lower():
+    if "list" in chunk_text.lower() and "can" in chunk_text.lower():
         return True
-    if "business" in chunk_text.lower() and "requirements" in chunk_text.lower():
+    if "analyze" in chunk_text.lower() or "business" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:12
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
+    if "skill" in chunk_text.lower():
         return True
     if "developer" in chunk_text.lower() or "designed" in chunk_text.lower() or "developed" in chunk_text.lower():
+        return True
+    if "kevin" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:13
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "skills" in chunk_text.lower():
-        return True
-    if "worked" in chunk_text.lower() and "develop" in chunk_text.lower():
-        return True
-    if "software" in chunk_text.lower() and "engineer" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:14
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "kevin" in chunk_text.lower() or "list" in chunk_text.lower():
+    if "skill" in chunk_text.lower():
+        return True
+    if "kevin" in chunk_text.lower():
+        return True
+    if "list" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:15
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if "design" in chunk_text.lower() or "develop" in chunk_text.lower():
+    if "software" in chunk_text.lower() and "engineer" in chunk_text.lower():
         return True
-    if "software engineer intern" in chunk_text.lower():
+    if "develop" in chunk_text.lower() and "design" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:16
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text = chunk_text.lower()
-    if "skill" in chunk_text or "skills" in chunk_text:
-        return True
-    if "kevin" in chunk_text:
-        return True
-    if "developer" in chunk_text:
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "kevin" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:17
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "kevin" in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if "algorithm" in chunk_text.lower() or "ai" in chunk_text.lower():
+    if "ai" in chunk_text.lower() and "algorithm" in chunk_text.lower():
         return True
     if "created" in chunk_text.lower() and "agent" in chunk_text.lower():
         return True
@@ -290,27 +286,26 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:18
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower() and 'kevin' in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "kevin" in chunk_text.lower():
         return True
-    if 'quality' in chunk_text.lower() and 'engineer' in chunk_text.lower():
+    if "developed" in chunk_text.lower() or "designed" in chunk_text.lower():
         return True
-    if 'intern' in chunk_text.lower() and 'company' in chunk_text.lower():
+    if "quality" in chunk_text.lower() and "engineer" in chunk_text.lower():
         return True
     return False
 ```
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:19
 
-**Query:** tell me the       list of skill you     can find for Kevin
+**Query:** tell me      the list of skill you  can find for Kevin
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text_lower = chunk_text.lower()
-    if 'skill' in chunk_text_lower or 'languages' in chunk_text_lower or 'proficient' in chunk_text_lower:
+    if any(keyword in chunk_text.lower() for keyword in ['skill', 'languages', 'proficient', 'kevin']):
         return True
     return False
 ```

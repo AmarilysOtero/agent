@@ -1157,16 +1157,24 @@ def _apply_selection_budget(
     
     # Apply budgets
     selected = []
+    excluded = []
     total_chars = 0
     
     for chunk_id, score, char_len in chunk_scores:
         if len(selected) >= max_chunks:
-            break
+            excluded.append((chunk_id, "max_chunks_exceeded", score, char_len))
+            continue
         if total_chars + char_len > max_chars:
-            break
+            excluded.append((chunk_id, "max_chars_exceeded", score, char_len))
+            continue
         
         selected.append(chunk_id)
         total_chars += char_len
+        logger.debug(f"    ✓ Selected {chunk_id.split(':')[-1]}: score={score:.1f}, chars={char_len}")
+    
+    # Log exclusions
+    for chunk_id, reason, score, char_len in excluded:
+        logger.debug(f"    ✗ Excluded {chunk_id.split(':')[-1]}: {reason} (score={score:.1f}, chars={char_len})")
     
     if len(selected) < len(selected_chunk_ids):
         logger.info(
@@ -1403,12 +1411,13 @@ async def recursive_summarize_files(
                             chunk_id=chunk_id
                         )
 
+                        chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
                         if is_relevant:
                             relevant_chunks.append(chunk_text)
                             relevant_chunk_ids.append(chunk_id)
-                            logger.debug(f"    ✓ Chunk {idx} is relevant")
+                            logger.debug(f"    ✓ {chunk_short_id} passed inspection")
                         else:
-                            logger.debug(f"    ✗ Chunk {idx} is not relevant")
+                            logger.debug(f"    ✗ {chunk_short_id} failed inspection")
                 
                 # PRODUCTION NOTE: Per-chunk mode is expensive (N LLM calls for N chunks)
                 # For large chunk sets, iterative mode is more efficient
@@ -1446,6 +1455,10 @@ async def recursive_summarize_files(
                         relevant_chunk_ids.append(chunk.get("chunk_id", f"unknown-{fallback_idx}"))
 
                 final_selected_chunk_ids = list(relevant_chunk_ids)
+                logger.info(
+                    f"  📋 Post-inspection: {len(final_selected_chunk_ids)} chunks passed "
+                    f"(IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})"
+                )
                 
                 # DISABLED: Deduplication was too aggressive and filtered out relevant chunks
                 # like certifications (chunk 6) as near-duplicates of top skills (chunk 3).
@@ -1458,12 +1471,25 @@ async def recursive_summarize_files(
                 # )
                 
                 # Apply selection budget (prevent excessive summary length)
+                pre_budget_count = len(final_selected_chunk_ids)
+                pre_budget_ids = list(final_selected_chunk_ids)
                 final_selected_chunk_ids = _apply_selection_budget(
                     chunks=chunks,
                     selected_chunk_ids=final_selected_chunk_ids,
                     max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
                     max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
                 )
+                post_budget_count = len(final_selected_chunk_ids)
+                
+                # Log budget impact
+                if post_budget_count < pre_budget_count:
+                    excluded_by_budget = set(pre_budget_ids) - set(final_selected_chunk_ids)
+                    logger.info(
+                        f"  📉 Budget filter: {pre_budget_count} → {post_budget_count} chunks "
+                        f"(excluded: {[cid.split(':')[-1] for cid in excluded_by_budget]})"
+                    )
+                else:
+                    logger.debug(f"  ✅ Budget filter: all {post_budget_count} chunks survived")
                 
                 # DETERMINISTIC RULE: Prioritize current-role chunks if query implies "where does X work"
                 if _is_current_employment_query(query):
@@ -2429,6 +2455,11 @@ async def _process_file_with_rlm_recursion(
             for chunk in chunks[:min(3, len(chunks))]
         ]
     
+    logger.info(
+        f"  📋 Post-RLM-recursion: {len(final_selected_chunk_ids)} chunks selected "
+        f"(IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})"
+    )
+    
     # DISABLED: Deduplication was too aggressive and filtered out relevant chunks
     # like certifications (chunk 6) as near-duplicates of top skills (chunk 3).
     # Selection budget (next step) will still limit to MAX_SELECTED_CHUNKS_PER_FILE
@@ -2440,12 +2471,25 @@ async def _process_file_with_rlm_recursion(
     # )
     
     # Apply selection budget
+    pre_budget_count = len(final_selected_chunk_ids)
+    pre_budget_ids = list(final_selected_chunk_ids)
     final_selected_chunk_ids = _apply_selection_budget(
         chunks=chunks,
         selected_chunk_ids=final_selected_chunk_ids,
         max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
         max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
     )
+    post_budget_count = len(final_selected_chunk_ids)
+    
+    # Log budget impact
+    if post_budget_count < pre_budget_count:
+        excluded_by_budget = set(pre_budget_ids) - set(final_selected_chunk_ids)
+        logger.info(
+            f"  📉 Budget filter: {pre_budget_count} → {post_budget_count} chunks "
+            f"(excluded: {[cid.split(':')[-1] for cid in excluded_by_budget]})"
+        )
+    else:
+        logger.debug(f"  ✅ Budget filter: all {post_budget_count} chunks survived")
     
     # APPLY CURRENT-ROLE PRIORITIZATION IN ITERATIVE MODE TOO
     # (Previously only applied in per-chunk mode)

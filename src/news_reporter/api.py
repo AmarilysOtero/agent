@@ -165,6 +165,18 @@ except ImportError as e:
 except Exception as e:
     logging.error(f"Failed to mount workflows router: {e}", exc_info=True)
 
+# Include tool webhook router (for Foundry to execute code-defined tools)
+try:
+    logging.info("Attempting to import tool webhook router...")
+    from .routers.tool_webhook import router as tool_webhook_router
+    logging.info(f"Tool webhook router imported successfully. Prefix: {tool_webhook_router.prefix}, Routes: {len(tool_webhook_router.routes)}")
+    app.include_router(tool_webhook_router)
+    logging.info("Tool webhook router mounted successfully")
+except ImportError as e:
+    logging.warning(f"Tool webhook router not available (ImportError): {e}", exc_info=True)
+except Exception as e:
+    logging.error(f"Failed to mount tool webhook router: {e}", exc_info=True)
+
 @app.get("/", response_class=HTMLResponse)
 def upload_form():
     return """

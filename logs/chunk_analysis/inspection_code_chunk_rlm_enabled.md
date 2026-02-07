@@ -1,6 +1,6 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-07T04:58:00.787394
+**Execution Time:** 2026-02-07T05:29:33.351303
 
 **Query:** tell me the list of skill you  can find for Alexis
 
@@ -39,11 +39,11 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower():
+    if "skill" in chunk_text.lower():
         return True
-    if 'list' in chunk_text.lower():
+    if "list" in chunk_text.lower():
         return True
-    if 'alexis' in chunk_text.lower():
+    if "alexis" in chunk_text.lower():
         return True
     return False
 ```
@@ -101,11 +101,11 @@ I'm a disciplined and enthusiastic software engineer with a passionate vision of
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skills" in chunk_text.lower():
+    if 'skills' in chunk_text.lower():
         return True
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower():
         return True
-    if "alexis" in chunk_text.lower():
+    if 'alexis' in chunk_text.lower():
         return True
     return False
 ```
@@ -134,11 +134,11 @@ Skills
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() and 'alexis' in chunk_text.lower():
         return True
-    if "skills" in chunk_text.lower() and "list" in chunk_text.lower():
+    if 'skills' in chunk_text.lower() and 'list' in chunk_text.lower():
         return True
-    if "top" in chunk_text.lower() and "skills" in chunk_text.lower():
+    if 'top' in chunk_text.lower() and 'skills' in chunk_text.lower():
         return True
     return False
 ```
@@ -188,11 +188,8 @@ Top Skills (Technical/Nontechnical skills)
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
-        return True
-    if "frontend" in chunk_text.lower() or "software" in chunk_text.lower():
-        return True
-    if "roles" in chunk_text.lower() and "performed" in chunk_text.lower():
+    chunk_text_lower = chunk_text.lower()
+    if "skill" in chunk_text_lower or "frontend" in chunk_text_lower or "software" in chunk_text_lower:
         return True
     return False
 ```
@@ -227,11 +224,11 @@ Key Roles Performed
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
-    if "experience" in chunk_text.lower() and "technology" in chunk_text.lower():
+    if "experience" in chunk_text.lower() and ("technology" in chunk_text.lower() or "banking" in chunk_text.lower() or "healthcare" in chunk_text.lower()):
         return True
-    if "banking" in chunk_text.lower() or "healthcare" in chunk_text.lower():
+    if "list" in chunk_text.lower() and "can" in chunk_text.lower():
         return True
     return False
 ```
@@ -266,11 +263,7 @@ Industry Experience (if applicable)
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "find" in chunk_text.lower():
-        return True
-    if "backend" in chunk_text.lower() or "postgresql" in chunk_text.lower() or "python" in chunk_text.lower():
-        return True
-    if "azure" in chunk_text.lower() or "aws" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "skills" in chunk_text.lower() or "backend" in chunk_text.lower():
         return True
     return False
 ```
@@ -349,11 +342,8 @@ Azure AI Engineer Associate - Microsoft Training
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
-        return True
-    if "experience" in chunk_text.lower():
-        return True
-    if "professional" in chunk_text.lower():
+    chunk_text_lower = chunk_text.lower()
+    if "skill" in chunk_text_lower or "experience" in chunk_text_lower or "professional" in chunk_text_lower:
         return True
     return False
 ```
@@ -381,9 +371,9 @@ Professional Work Experience
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
-    if "present" in chunk_text.lower() or "currently" in chunk_text.lower():
+    if "present" in chunk_text.lower():
         return True
-    if "analyze" in chunk_text.lower() and "client" in chunk_text.lower():
+    if "consultant" in chunk_text.lower():
         return True
     return False
 ```
@@ -427,11 +417,11 @@ Mar 2025 - Present
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower() and 'for' in chunk_text.lower() and 'alexis' in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "for" in chunk_text.lower():
         return True
-    if 'ai' in chunk_text.lower() and 'engineer' in chunk_text.lower():
+    if "ai" in chunk_text.lower() and "engineer" in chunk_text.lower():
         return True
-    if 'implemented' in chunk_text.lower() and 'system' in chunk_text.lower():
+    if "dxc" in chunk_text.lower() and "implemented" in chunk_text.lower():
         return True
     return False
 ```
@@ -469,11 +459,11 @@ Apr 2025 - May 2025
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower():
+    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
-    if 'experience' in chunk_text.lower():
+    if "engineer" in chunk_text.lower() or "company" in chunk_text.lower():
         return True
-    if 'role' in chunk_text.lower():
+    if "conducted" in chunk_text.lower() or "created" in chunk_text.lower():
         return True
     return False
 ```
@@ -515,11 +505,11 @@ Jun 2024 - Dec 2024
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower():
         return True
-    if "analyst" in chunk_text.lower():
+    if 'analyst' in chunk_text.lower():
         return True
-    if "business" in chunk_text.lower():
+    if 'business' in chunk_text.lower():
         return True
     return False
 ```
@@ -559,9 +549,9 @@ Oct 2023 - Jan 2024
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if 'skill' in chunk_text.lower():
         return True
-    if 'developed' in chunk_text.lower() or 'designed' in chunk_text.lower():
+    if 'developer' in chunk_text.lower():
         return True
-    if 'lead developer' in chunk_text.lower():
+    if 'features' in chunk_text.lower():
         return True
     return False
 ```
@@ -602,11 +592,11 @@ Oct 2021 - Dec 2021
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if 'skill' in chunk_text.lower() and 'alexis' in chunk_text.lower():
         return True
-    if "software" in chunk_text.lower() and "engineer" in chunk_text.lower():
+    if 'worked' in chunk_text.lower() and 'software' in chunk_text.lower():
         return True
-    if "intern" in chunk_text.lower() and "work" in chunk_text.lower():
+    if 'intern' in chunk_text.lower() and 'design' in chunk_text.lower():
         return True
     return False
 ```
@@ -644,7 +634,7 @@ Jun 2021 - Aug 2021
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "skills" in chunk_text.lower():
         return True
     if "full stack developer" in chunk_text.lower():
         return True
@@ -696,7 +686,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if 'software' in chunk_text.lower() and 'engineer' in chunk_text.lower():
         return True
-    if 'design' in chunk_text.lower() and 'develop' in chunk_text.lower():
+    if 'develop' in chunk_text.lower() and 'design' in chunk_text.lower():
         return True
     return False
 ```
@@ -731,11 +721,11 @@ May 2020 - Aug 2020
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower() and 'alexis' in chunk_text.lower():
+    if 'skill' in chunk_text.lower() or 'alexis' in chunk_text.lower():
         return True
-    if 'developer' in chunk_text.lower() and 'ai' in chunk_text.lower():
+    if 'developer' in chunk_text.lower() or 'front end' in chunk_text.lower():
         return True
-    if 'company' in chunk_text.lower() and 'ibm' in chunk_text.lower():
+    if 'company' in chunk_text.lower():
         return True
     return False
 ```
@@ -772,9 +762,9 @@ Jan 2020 - May 2020
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() or "list" in chunk_text.lower():
         return True
-    if "ai" in chunk_text.lower() or "algorithm" in chunk_text.lower():
+    if "ai" in chunk_text.lower() and "algorithm" in chunk_text.lower():
         return True
-    if "2018" in chunk_text:
+    if "created" in chunk_text.lower() and "agent" in chunk_text.lower():
         return True
     return False
 ```
@@ -809,11 +799,11 @@ Oct 2018 - Dec 2018
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() and "alexis" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "alexis" in chunk_text.lower():
         return True
-    if "quality" in chunk_text.lower() and "engineer" in chunk_text.lower():
+    if "engineer" in chunk_text.lower() or "intern" in chunk_text.lower() or "python" in chunk_text.lower():
         return True
-    if "python" in chunk_text.lower() and "developed" in chunk_text.lower():
+    if "company" in chunk_text.lower() or "developed" in chunk_text.lower() or "designed" in chunk_text.lower():
         return True
     return False
 ```
@@ -852,7 +842,11 @@ Jun 2018 - Aug 2018
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     chunk_text_lower = chunk_text.lower()
-    if 'skill' in chunk_text_lower or 'languages' in chunk_text_lower or 'proficient' in chunk_text_lower:
+    if 'skill' in chunk_text_lower or 'languages' in chunk_text_lower:
+        return True
+    if 'proficient' in chunk_text_lower:
+        return True
+    if 'alexis' in chunk_text_lower:
         return True
     return False
 ```
@@ -929,7 +923,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "consultant" in chunk_text.lower():
         return True
-    if "alexis" in chunk_text.lower():
+    if "senior" in chunk_text.lower():
         return True
     return False
 ```
@@ -964,11 +958,11 @@ alexis.torres@dxc.com
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "contact" in chunk_text.lower():
-        return True
     if "alexis" in chunk_text.lower():
         return True
     if "skill" in chunk_text.lower():
+        return True
+    if "contact" in chunk_text.lower():
         return True
     return False
 ```
@@ -997,11 +991,12 @@ Contact no.:
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
+    chunk_text = chunk_text.lower()
+    if "skills" in chunk_text or "skill" in chunk_text or "list" in chunk_text:
         return True
-    if "background" in chunk_text.lower() and "engineer" in chunk_text.lower():
+    if "background" in chunk_text and "engineer" in chunk_text:
         return True
-    if "business" in chunk_text.lower() and "analyst" in chunk_text.lower():
+    if "business" in chunk_text and "analyst" in chunk_text:
         return True
     return False
 ```
@@ -1073,9 +1068,9 @@ Technical expertise
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if 'skills' in chunk_text.lower():
         return True
-    if 'list' in chunk_text.lower():
+    if 'list' in chunk_text.lower() and 'find' in chunk_text.lower():
         return True
-    if 'for' in chunk_text.lower() and 'alexis' in chunk_text.lower():
+    if 'alexis' in chunk_text.lower():
         return True
     return False
 ```
@@ -1106,9 +1101,9 @@ Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScr
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if 'skill' in chunk_text.lower():
         return True
-    if 'degree' in chunk_text.lower() and 'bs' in chunk_text.lower():
+    if 'degree' in chunk_text.lower():
         return True
-    if 'education' in chunk_text.lower():
+    if 'qualification' in chunk_text.lower():
         return True
     return False
 ```
@@ -1144,6 +1139,10 @@ Education background
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower() or "skills" in chunk_text.lower() or "certifications" in chunk_text.lower():
+        return True
+    if "aws" in chunk_text.lower() or "python" in chunk_text.lower() or "java" in chunk_text.lower():
+        return True
+    if "list" in chunk_text.lower() and "alexis" in chunk_text.lower():
         return True
     return False
 ```
@@ -1187,11 +1186,11 @@ Professional activities, certifications, and trainings
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
-        return True
     if "employment" in chunk_text.lower():
         return True
     if "history" in chunk_text.lower():
+        return True
+    if "skill" in chunk_text.lower():
         return True
     return False
 ```
@@ -1219,9 +1218,9 @@ Employment history
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower():
         return True
-    if "developer" in chunk_text.lower():
+    if "developer" in chunk_text.lower() or "consultant" in chunk_text.lower():
         return True
-    if "consultant" in chunk_text.lower():
+    if "present" in chunk_text.lower():
         return True
     return False
 ```
@@ -1284,7 +1283,7 @@ August 2021 -Present
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'skill' in chunk_text.lower() or 'full stack developer' in chunk_text.lower() or 'application' in chunk_text.lower():
+    if 'skill' in chunk_text.lower() or 'full stack developer' in chunk_text.lower():
         return True
     return False
 ```
@@ -1325,11 +1324,11 @@ Full Stack Developer
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "consultant" in chunk_text.lower():
+    if "consultant" in chunk_text.lower() or "developer" in chunk_text.lower():
         return True
-    if "developer" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "skills" in chunk_text.lower():
         return True
-    if "skills" in chunk_text.lower():
+    if "full stack" in chunk_text.lower():
         return True
     return False
 ```
@@ -1435,11 +1434,7 @@ Oct 2002 -Jan 2016
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower():
-        return True
-    if "development" in chunk_text.lower() or "developer" in chunk_text.lower():
-        return True
-    if "business" in chunk_text.lower() and "analyst" in chunk_text.lower():
+    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "develop" in chunk_text.lower():
         return True
     return False
 ```
@@ -1475,7 +1470,11 @@ re development, documentation, testing and product market introduction.
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "skill" in chunk_text.lower() or "list" in chunk_text.lower() or "management" in chunk_text.lower():
+    if "skill" in chunk_text.lower():
+        return True
+    if "management" in chunk_text.lower():
+        return True
+    if "implementation" in chunk_text.lower():
         return True
     return False
 ```
@@ -1519,9 +1518,9 @@ Apr 1996 -Oct 2002
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "skill" in chunk_text.lower():
         return True
-    if "development" in chunk_text.lower() or "management" in chunk_text.lower() or "design" in chunk_text.lower():
+    if "development" in chunk_text.lower() or "management" in chunk_text.lower():
         return True
-    if "list" in chunk_text.lower() and "alexis" in chunk_text.lower():
+    if "design" in chunk_text.lower():
         return True
     return False
 ```

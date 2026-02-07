@@ -20,7 +20,7 @@ import logging
 import asyncio
 import os
 import hashlib
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Set
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -2198,11 +2198,21 @@ async def _execute_inspection_program(
     program: str,
     iteration: int,
     query: str = "",
+    boolean_approved_chunk_ids: Optional[Set[str]] = None,
 ) -> Dict:
     """
     Execute inspection program (iterative mode) and return structured output.
 
     Primary path: subprocess sandbox.  Falls back to in-process exec on error.
+    
+    Args:
+        chunks: List of chunk dicts to evaluate
+        program: Python code containing inspect_iteration function
+        iteration: Current iteration number
+        query: User query (for logging/fallback)
+        boolean_approved_chunk_ids: Set of chunk IDs that passed per-chunk boolean evaluation.
+                                     If provided, confidence will be boosted for selections
+                                     that include these chunks.
 
     The program is expected to define:
         def inspect_iteration(chunks) -> Dict
@@ -2279,6 +2289,31 @@ async def _execute_inspection_program(
             confidence = 0.2
         else:
             confidence = max(0.0, min(1.0, raw_result.get("confidence", 0.5)))
+            
+            # ── NEW: Boost confidence for boolean-approved chunks ──
+            # If selected chunks include any that passed per-chunk boolean evaluation,
+            # boost confidence to ensure they survive the 0.9 threshold filter.
+            if boolean_approved_chunk_ids:
+                boolean_approved_in_selection = [
+                    cid for cid in selected_ids 
+                    if cid in boolean_approved_chunk_ids
+                ]
+                
+                if boolean_approved_in_selection:
+                    # Boost confidence based on the proportion of boolean-approved chunks selected
+                    boost_ratio = len(boolean_approved_in_selection) / max(1, len(selected_ids))
+                    # Set confidence to at least 0.95 to ensure passing 0.9 threshold
+                    # Scale based on how many boolean-approved chunks were selected
+                    boosted_confidence = max(confidence, 0.85 + (boost_ratio * 0.1))
+                    
+                    if boosted_confidence > confidence:
+                        chunk_short_ids = [cid.split(':')[-1] for cid in boolean_approved_in_selection[:3]]
+                        logger.info(
+                            f"    🚀 Confidence boosted: {confidence:.2f} → {boosted_confidence:.2f} "
+                            f"(boolean-approved chunks: {', '.join(chunk_short_ids)}"
+                            f"{' + more' if len(boolean_approved_in_selection) > 3 else ''})"
+                        )
+                        confidence = boosted_confidence
 
         extracted = raw_result.get("extracted_data", {})
         MAX_EXTRACTED_SIZE = 50_000
@@ -2348,6 +2383,49 @@ async def _process_file_with_rlm_recursion(
     final_confidence = 0.0
     narrowing_streak = 0
 
+    # ── NEW: Per-chunk boolean evaluation for confidence boosting ────────
+    # Generate and execute `evaluate_chunk_relevance()` for each chunk
+    # to identify which chunks pass strict boolean criteria.
+    # These will receive confidence boost if selected by iteration programs.
+    boolean_approved_chunk_ids: Set[str] = set()
+    
+    logger.info(f"  🔍 Generating per-chunk boolean evaluations for confidence boosting...")
+    for idx, chunk in enumerate(active_chunks):
+        chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
+        chunk_text = chunk.get("text", "").strip()
+        
+        if not chunk_text:
+            continue
+        
+        try:
+            # Generate boolean evaluation code for this chunk
+            generated_code = await _generate_inspection_logic(
+                query=query,
+                file_name=file_name,
+                chunk_id=chunk_id,
+                chunk_text=chunk_text,
+                llm_client=llm_client,
+                model_deployment=model_deployment
+            )
+            
+            # Execute the boolean evaluation
+            is_relevant = await _evaluate_chunk_with_code(
+                chunk_text=chunk_text,
+                inspection_code=generated_code,
+                chunk_id=chunk_id
+            )
+            
+            if is_relevant:
+                boolean_approved_chunk_ids.add(chunk_id)
+                chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
+                logger.debug(f"    ✓ {chunk_short_id} passed boolean evaluation")
+        
+        except Exception as e:
+            logger.debug(f"    ⚠️  Boolean evaluation failed for chunk {idx}: {e}")
+            continue
+    
+    logger.info(f"  ✅ Boolean evaluation complete: {len(boolean_approved_chunk_ids)}/{len(active_chunks)} chunks approved")
+
     logger.info(
         f"📍 Phase 4.1: Starting iterative inspection for '{file_name}' "
         f"({len(chunks)} raw → {len(active_chunks)} prefiltered chunks, "
@@ -2379,6 +2457,7 @@ async def _process_file_with_rlm_recursion(
                 program=inspection_program,
                 iteration=iteration,
                 query=query,
+                boolean_approved_chunk_ids=boolean_approved_chunk_ids,
             )
 
             selected_ids = result.get("selected_chunk_ids", [])

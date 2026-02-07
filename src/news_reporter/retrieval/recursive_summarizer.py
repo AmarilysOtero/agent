@@ -1540,7 +1540,7 @@ async def recursive_summarize_files(
                 summary_text=summary_text,
                 source_chunk_ids=source_chunk_ids,
                 chunk_count=total_chunks,
-                summarized_chunk_count=len(relevant_chunks),
+                summarized_chunk_count=len(source_chunk_ids),
                 expansion_ratio=total_chunks / max(1, entry_chunk_count),
                 chunk_metadata=chunk_metadata,
                 file_path=file_data.get("file_path"),

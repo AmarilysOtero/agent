@@ -1,23 +1,23 @@
 # Phase 5: Final Answer with Citations
 
-**Execution Time:** 2026-02-07T05:58:45.694224
+**Execution Time:** 2026-02-07T23:17:43.798565
 
-**Query:** Where does Alexis work?
+**Query:** What is VectorCypher Retrieval
 
 **Files Used:** 1
-**Total Chunks Cited:** 8
-**Average Expansion Ratio:** 16.00x
+**Total Chunks Cited:** 3
+**Average Expansion Ratio:** 26.50x
 
 ---
 
 ## Answer
 
-Alexis Torres currently works at DXC Technology as a Senior Technical Consultant in Isabela, PR, since August 2021. In this role, they have been involved in multiple development efforts for the Solumina application and project management for various migrations, utilizing technologies such as Java, React, and Spring Boot [source: document_name, chunks: chunk_ids].
+VectorCypher Retrieval is a feature within the GraphRAG framework that enhances the retrieval process by utilizing graph-based structures. It emphasizes context-aware responses and ensures traceability and explainability in information retrieval. By integrating both structured and unstructured data, this feature allows users to access relevant information more effectively, thereby improving the overall performance of the GraphRAG system [source: merged context, chunks: 1].
 
 ---
 
 ## Citations
 
-### Alexis Torres - DXC Resume.pdf
-- Chunks: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10
+### Developers-Guide-GraphRAG.pdf
+- Chunks: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
 

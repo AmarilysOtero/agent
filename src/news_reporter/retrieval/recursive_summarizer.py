@@ -2109,10 +2109,14 @@ Requirements:
 4. Be specific to this iteration and previous findings
 5. Narrow focus each iteration (select fewer chunks than input)
 6. selected_chunk_ids MUST be a subset of provided chunk IDs (validate before returning)
-7. Return at least 2 selected_chunk_ids unless stop=True
-8. confidence MUST be a float in range [0.0, 1.0]
-9. NEVER select ALL chunks unless high confidence AND stop=True
+7. ALWAYS set stop=False (framework iteration loop handles stopping logic)
+8. confidence MUST be a float in range [0.0, 1.0] (measures answer completeness)
+9. NEVER select ALL chunks - always narrow focus to relevant subset
 10. Return ONLY function code with no markdown or explanations
+
+⚠️  CRITICAL: Do NOT implement early stopping logic. The framework recursion loop 
+handles all stopping decisions (narrowing_streak, confidence thresholds, max iterations).
+Your job is ONLY to select relevant chunks and estimate confidence, then return stop=False.
 
 CRITICAL: Do NOT blindly select all chunks. Each iteration should narrow the focus.
 
@@ -2201,7 +2205,7 @@ def _get_fallback_inspection_program(query: str, iteration: int) -> str:
         "            selected_ids.append(chunk.get('chunk_id'))\n"
         "\n"
         "    confidence = min(1.0, len(selected_ids) / max(1, len(chunks)))\n"
-        f"    stop = ({it} >= 3) or (confidence > 0.8)\n"
+        "    stop = False\n"
         "\n"
         "    return {\n"
         '        "selected_chunk_ids": [cid for cid in selected_ids if cid],\n'

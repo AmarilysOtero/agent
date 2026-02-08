@@ -1,12 +1,12 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-08T01:29:17.174423
+**Execution Time:** 2026-02-08T02:23:30.077784
 
-**Query:** Where does Alexis work?
+**Query:** What is VectorCypher Retrieva
 
-**Query Hash:** `83333be0` (use to verify artifacts match current query)
+**Query Hash:** `729ee660` (use to verify artifacts match current query)
 
-**Total Inspection Programs:** 3
+**Total Inspection Programs:** 1
 
 **Implementation:** MIT Recursive Inspection Model (RLM) - Iterative Refinement
 
@@ -31,78 +31,27 @@ These functions (inspect_iteration(chunks) -> dict) are executed by the recursiv
 
 ---
 
-## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
+## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf)
 
 
 ### 1.1 Chunk: iteration_0
 
-**Query:** Where does Alexis work?
+**Query:** What is VectorCypher Retrieva
 
 ```python
 def inspect_iteration(chunks):
-    selected_chunk_ids = []
+    relevant_chunk_ids = []
     extracted_data = {}
     
     for chunk in chunks:
-        if "DXC Technology" in chunk['text']:
-            selected_chunk_ids.append(chunk['chunk_id'])
-            extracted_data['workplace'] = "DXC Technology"
+        if "VectorCypher" in chunk['text']:
+            relevant_chunk_ids.append(chunk['chunk_id'])
+            extracted_data['VectorCypher'] = chunk['text']
     
-    confidence = 0.8
-    stop = False
+    confidence = len(relevant_chunk_ids) / len(chunks)
     
     return {
-        "selected_chunk_ids": selected_chunk_ids,
-        "extracted_data": extracted_data,
-        "confidence": confidence,
-        "stop": stop
-    }
-```
-
-### 1.2 Chunk: iteration_1
-
-**Query:** Where does Alexis work?
-
-```python
-def inspect_iteration(chunks):
-    selected_chunk_ids = []
-    extracted_data = {}
-    confidence = 0.0
-
-    for chunk in chunks:
-        if 'DXC' in chunk['text'] or 'work' in chunk['text']:
-            selected_chunk_ids.append(chunk['chunk_id'])
-            if 'DXC Technology' in chunk['text']:
-                extracted_data['workplace'] = 'DXC Technology'
-                confidence = 1.0
-
-    return {
-        "selected_chunk_ids": selected_chunk_ids,
-        "extracted_data": extracted_data,
-        "confidence": confidence,
-        "stop": False
-    }
-```
-
-### 1.3 Chunk: iteration_2
-
-**Query:** Where does Alexis work?
-
-```python
-def inspect_iteration(chunks):
-    selected_chunk_ids = []
-    extracted_data = {}
-    confidence = 0.0
-
-    for chunk in chunks:
-        if "DXC" in chunk['text'] or "work" in chunk['text']:
-            selected_chunk_ids.append(chunk['chunk_id'])
-            if "DXC Technology" in chunk['text']:
-                extracted_data['workplace'] = 'DXC Technology'
-                confidence = 1.0
-
-    return {
-        "selected_chunk_ids": selected_chunk_ids,
+        "selected_chunk_ids": relevant_chunk_ids,
         "extracted_data": extracted_data,
         "confidence": confidence,
         "stop": False

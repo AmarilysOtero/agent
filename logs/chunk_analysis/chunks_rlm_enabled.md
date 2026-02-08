@@ -4,38 +4,128 @@ This file contains chunk information from the latest query execution.
 
 ---
 
-## Execution: 2026-02-08T01:28:52.012856
-**Query**: Where does Alexis work?
+## Execution: 2026-02-08T02:22:13.830682
+**Query**: What is VectorCypher Retrieva
 
 **Metadata**:
-- Entry Chunks: 2
-- Expanded Chunks: 16
+- Entry Chunks: 4
+- Expanded Chunks: 106
 - Source Files: 1
-- Expansion Ratio: 16 / 2
-- Files Expanded: Alexis Torres - DXC Resume.pdf (1/16)
+- Expansion Ratio: 106 / 4
+- Files Expanded: Developers-Guide-GraphRAG.pdf (4/106)
 
-**Total Chunks**: 16
+**Total Chunks**: 106
 
 ### Chunks
 
 | # | Chunk ID | File | Text Preview | Size |
 |---|----------|------|--------------|------|
-| 1 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:0` | N/A | Introduction <!-- image --> | 27 bytes |
-| 2 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1` | N/A | Alexis Torres Senior Technical Consultant Email ID:  alexis.torres@dxc.com | 74 bytes |
-| 3 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:2` | N/A | Contact no.: 787-405-1855 | 25 bytes |
-| 4 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:3` | N/A | Profile summary I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven ... | 518 bytes |
-| 5 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4` | N/A | Technical expertise \| Primary skills       \| Experience   \| \|----------------------\|--------------\| ... | 219 bytes |
-| 6 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5` | N/A | Skills Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, ... | 425 bytes |
-| 7 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:6` | N/A | Education background \| Degree   \| Qualification     \| College/university                        \|   ... | 305 bytes |
-| 8 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:7` | N/A | Professional activities, certifications, and trainings - AWS Cloud Practitioner 2022 - Software Deve... | 201 bytes |
-| 9 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:8` | N/A | Employment history | 18 bytes |
-| 10 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9` | N/A | DXC Technology Senior Technical Consultant  Isabela, PR  August 2021 -Present  - Multiple developmen... | 1020 bytes |
-| 11 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10` | N/A | Bridgewater Full Stack Developer  - Application migration from on-premises to AWS cloud. - Full  sta... | 387 bytes |
-| 12 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11` | N/A | Consultant Senior Consultant   Jan 2016 -March  2020  - Full stack developer for a WEB application (... | 1011 bytes |
-| 13 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12` | N/A | Caguas, PR Oct 2002 -Jan 2016  - Transform the  development  team  from  a  Waterfall  to  an  Agile... | 1207 bytes |
-| 14 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13` | N/A | Caguas, PR re development, documentation, testing and product market introduction. - Project managem... | 723 bytes |
-| 15 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14` | N/A | San Juan, PR Apr 1996 -Oct 2002  - Project management  for  the  implementation  of  Telecommunicati... | 867 bytes |
-| 16 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15` | N/A | Caguas, PR Aug 1990 -Apr 1996  - Research and Product Development of telecommunication products usin... | 684 bytes |
+| 1 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0` | N/A | THE DEVELOPER'S GUIDE TO GraphRAG Alison Cossette Zach Blumenfeld Damaso Sanoja | 79 bytes |
+| 2 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1` | N/A | Table of Contents \| PART I: The Problem With Current RAG............................................... | 1136 bytes |
+| 3 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2` | N/A | Table of Contents ......                                 \|   6 \| \| 3, Access to Structured and Unstr... | 1176 bytes |
+| 4 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3` | N/A | Table of Contents .................................             \|  10 \| \| Key Features of Neo4j Grap... | 1203 bytes |
+| 5 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4` | N/A | Table of Contents \|  12 \| \| Ingest Structured Data..................................................... | 715 bytes |
+| 6 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5` | N/A | Table of Contents (continued) \| PART IV: Implementing GraphRAG Retrieval Patterns ..................... | 1176 bytes |
+| 7 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6` | N/A | Table of Contents (continued) \|   20 \| \| VectorCypher Retriever in Practice............................ | 1210 bytes |
+| 8 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7` | N/A | Table of Contents (continued) 've built a retrieval-augmented generation (RAG) system. You embedded ... | 331 bytes |
+| 9 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8` | N/A | PART I: The Problem With Current RAG Why chunk-based RAG hits a ceiling - and why developers need mo... | 431 bytes |
+| 10 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9` | N/A | Then reality hit. The system works - but only under the most forgiving conditions. The moment you as... | 423 bytes |
+| 11 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:10` | N/A | RAG retrieves semantically similar text, but it doesn't know how the pieces fit together. It has no ... | 1289 bytes |
+| 12 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11` | N/A | RAG retrieves semantically similar text, but it doesn't know how the pieces fit together. nd timelin... | 1283 bytes |
+| 13 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12` | N/A | RAG retrieves semantically similar text, but it doesn't know how the pieces fit together. ng. Consid... | 1289 bytes |
+| 14 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13` | N/A | RAG retrieves semantically similar text, but it doesn't know how the pieces fit together. And that's... | 1281 bytes |
+| 15 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:14` | N/A | RAG retrieves semantically similar text, but it doesn't know how the pieces fit together. , and you ... | 365 bytes |
+| 16 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15` | N/A | Here's the core issue: RAG retrieves based on similarity, not understanding. You give it a query, it... | 1271 bytes |
+| 17 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16` | N/A | Here's the core issue: RAG retrieves based on similarity, not understanding. problematic is that the... | 1272 bytes |
+| 18 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17` | N/A | Here's the core issue: RAG retrieves based on similarity, not understanding. want the RAG system to:... | 1272 bytes |
+| 19 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18` | N/A | Here's the core issue: RAG retrieves based on similarity, not understanding. playbook. We're going t... | 879 bytes |
+| 20 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19` | N/A | The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text. Even ... | 1294 bytes |
+| 21 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20` | N/A | The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text. might... | 1291 bytes |
+| 22 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21` | N/A | The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text. self ... | 902 bytes |
+| 23 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:22` | N/A | PART II: What Makes It GraphRAG - Structure, Logic, and Meaning To understand GraphRAG, let's explor... | 194 bytes |
+| 24 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23` | N/A | What Is RAG? Let's start with the well-known problems of large language models (LLMs), which power c... | 1204 bytes |
+| 25 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24` | N/A | What Is RAG? al responses. -  Recommendation systems can incorporate real-time data for more persona... | 495 bytes |
+| 26 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25` | N/A | The quality of a RAG response depends heavily on the database type the information is retrieved from... | 821 bytes |
+| 27 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:26` | N/A | What Is GraphRAG? In GraphRAG, the knowledge base used for retrieval is a knowledge graph. A knowled... | 1211 bytes |
+| 28 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27` | N/A | What Is GraphRAG? er isn't working. \| [.234, .789, .123……] \|  But that's all the RAG system would su... | 625 bytes |
+| 29 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28` | N/A | 1.  Context-Aware Responses Unlike traditional RAG, which retrieves isolated chunks of text based on... | 469 bytes |
+| 30 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29` | N/A | 2.  Traceability and Explainability LLMs and even standard RAG approaches operate as black boxes, ma... | 432 bytes |
+| 31 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30` | N/A | 3.  Access to Structured and Unstructured Data GraphRAG overcomes a key limitation of vector-only RA... | 320 bytes |
+| 32 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:31` | N/A | How GraphRAG Works GraphRAG works by using a knowledge graph to retrieve and connect relevant inform... | 592 bytes |
+| 33 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32` | N/A | Preparing a knowledge graph for GraphRAG -  Documents and unstructured text ingestion -  Structured ... | 118 bytes |
+| 34 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:33` | N/A | Implementing GraphRAG retrieval patterns Figure 3. Implementing GraphRAG retrieval patterns flow   T... | 164 bytes |
+| 35 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34` | N/A | Prepare a Knowledge Graph for GraphRAG Effective retrieval in GraphRAG starts with a wellstructured ... | 413 bytes |
+| 36 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35` | N/A | The relationships between documents - or how your content is organized and related: -  How chunks co... | 212 bytes |
+| 37 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36` | N/A | Business entities and logic: -  The core entities (i.e., Customers, Products, Companies) - How these... | 974 bytes |
+| 38 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37` | N/A | Ground With Unstructured and Structured Data If you've worked with RAG systems, you're already famil... | 1237 bytes |
+| 39 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38` | N/A | Ground With Unstructured and Structured Data ontext usually lives. Think financial disclosures, lega... | 1244 bytes |
+| 40 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39` | N/A | Ground With Unstructured and Structured Data ta Importer (Neo4j Aura Platform) for structured data -... | 1243 bytes |
+| 41 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40` | N/A | Ground With Unstructured and Structured Data Guide             \| \| Boundary's Annotation Modeling La... | 1241 bytes |
+| 42 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41` | N/A | Ground With Unstructured and Structured Data Neo4j's Data Importer to load structured datasets - the... | 631 bytes |
+| 43 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42` | N/A | Create a Neo4j Database Begin by choosing a Neo4j database solution that fits your needs. Options in... | 1223 bytes |
+| 44 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43` | N/A | Create a Neo4j Database Figure 6. New instance tiers   If you're just getting started, you'll do wel... | 308 bytes |
+| 45 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44` | N/A | Ingest Unstructured Data As you begin to build your knowledge graph, you can use the Neo4j GraphRAG ... | 392 bytes |
+| 46 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45` | N/A | Key Features of Neo4j GraphRAG Package -  Knowledge Graph Construction Pipeline: Automates the extra... | 1235 bytes |
+| 47 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:46` | N/A | Key Features of Neo4j GraphRAG Package ic search in Neo4j. - ERExtractionTemplate: Supplies prompt t... | 311 bytes |
+| 48 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47` | N/A | Neo4j Connection You'll use GraphDatabase from the Neo4j Python driver to connect to Neo4j Graph Dat... | 408 bytes |
+| 49 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:48` | N/A | Initialize the LLM and Embeddings - llm: Uses GPT-4o to extract entities, relationships, and summari... | 201 bytes |
+| 50 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49` | N/A | Define Node Labels and Relationship Types ``` entities = [ {'label': 'Executive', 'properties': [{'n... | 1231 bytes |
+| 51 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50` | N/A | Define Node Labels and Relationship Types key moment in the knowledge graph construction process. Th... | 368 bytes |
+| 52 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:51` | N/A | Entities = Nouns What are the real-world concepts you're trying to capture?  Company, Executive, Ris... | 149 bytes |
+| 53 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52` | N/A | Relationships = Verbs or Connectors How do those concepts relate?  Perhaps a Company  FACES\_RISK ... | 629 bytes |
+| 54 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53` | N/A | Initialize and Run the Pipeline The SimpleKGPipeline sets up a structured pipeline for extracting an... | 977 bytes |
+| 55 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54` | N/A | Process the PDF Document Running the pipeline involves I/O-heavy operations:  -  Calling the LLM to ... | 1218 bytes |
+| 56 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55` | N/A | Process the PDF Document nside an async context.  for pdf\_file in pdf\_files:  asyncio.run(run\_pip... | 540 bytes |
+| 57 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56` | N/A | Create the Vector Index A vector index is a type of database index that enables fast similarity sear... | 420 bytes |
+| 58 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:57` | N/A | This capability is essential for semantic search, question answering, and other AI-powered applicati... | 283 bytes |
+| 59 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58` | N/A | Getting Started With Data Importer Neo4j Data Importer provides a streamlined process for bringing s... | 428 bytes |
+| 60 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59` | N/A | Create a new graph model. 3.  A graph data model has been provided for your convenience. Note: Due t... | 197 bytes |
+| 61 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60` | N/A | Once you've loaded the provided data model, click Browse and navigate to the data folder in your rep... | 367 bytes |
+| 62 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61` | N/A | Once the files are connected, you'll see that the data model has check marks for each entity and rel... | 188 bytes |
+| 63 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62` | N/A | Mapping Your Data to Graph Structures To get you started, we've given you a full, completed data mod... | 1234 bytes |
+| 64 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63` | N/A | Mapping Your Data to Graph Structures es.  Figure 17.  Node parameters options screen   Label refers... | 347 bytes |
+| 65 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:64` | N/A | Company Node Label:  Company  Table:  Company\_Filings.csv  Properties: name,  ticker  ID(key): name... | 339 bytes |
+| 66 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65` | N/A | Document Node Label:  Document  Table:  Company\_Filings.csv  Properties:  path (this must match exa... | 837 bytes |
+| 67 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:66` | N/A | Asset Manager Node Label:  AssetManager  Table: Asset\_Manager\_Holdings.csv  Properties: managerNam... | 162 bytes |
+| 68 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:67` | N/A | Mapping Relationships Relationships are created with the following criteria:  - Relationship Label: ... | 1215 bytes |
+| 69 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68` | N/A | Mapping Relationships 35993 \| \| ALLIANCEBERNSTEINL.P. \| MCDONALDS CORP \| MCD      \|  1201960 \| \| ALL... | 451 bytes |
+| 70 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:69` | N/A | Hover over the outline until it turns gray: Figure 21. AssetManager blue outline    Figure 22. Asset... | 120 bytes |
+| 71 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:70` | N/A | Drag the outline of the AssetManager node to cover the Company node. When you release, you'll see a ... | 265 bytes |
+| 72 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71` | N/A | OWNS Relationship Relationship Type:  OWNS  Table:  Asset\_Manager\_Holdings.csv  Node ID Mapping  F... | 782 bytes |
+| 73 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72` | N/A | FILED Relationship Note that the relationship between Company and Document is the linchpin that conn... | 1215 bytes |
+| 74 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:73` | N/A | FILED Relationship ta modeling, see The Developer's Guide: How to Build a Knowledge Graph.  ## PART ... | 388 bytes |
+| 75 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:74` | N/A | PART IV: Implementing GraphRAG Retrieval Patterns GraphRAG retrieval patterns are practical mechanis... | 292 bytes |
+| 76 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75` | N/A | Import Libraries This notebook imports the core libraries required for building and querying RAG pip... | 1190 bytes |
+| 77 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76` | N/A | Load Environment Variables and Initialize Neo4j Driver Here, you load sensitive configuration values... | 883 bytes |
+| 78 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77` | N/A | Initialize the LLM and Embedder Just as you selected a specific LLM and embedding model when process... | 607 bytes |
+| 79 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78` | N/A | The Basic Retriever Pattern The basic retriever uses vector embeddings to find nodes that are semant... | 1227 bytes |
+| 80 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79` | N/A | The Basic Retriever Pattern uestion) against the indexed text embeddings of the chunks. Vector simil... | 1211 bytes |
+| 81 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:80` | N/A | The Basic Retriever Pattern 4 \| \| 0.908264 \| agencyofferings could subject us to additional regulati... | 1221 bytes |
+| 82 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81` | N/A | The Basic Retriever Pattern the results, or at least check the number of returned items. If there's ... | 1226 bytes |
+| 83 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:82` | N/A | The Basic Retriever Pattern gh a third-party custodian are susceptible to various risks, such as ina... | 1223 bytes |
+| 84 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:83` | N/A | The Basic Retriever Pattern , it did not answer deeper, more actionable questions, such as:  -  Whic... | 943 bytes |
+| 85 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84` | N/A | The Graph-Enhanced Vector Search Pattern The basic retriever pattern typically relies on textbased e... | 1058 bytes |
+| 86 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85` | N/A | Executes a Cypher query to traverse the graph based on these nodes. To set up this particular query,... | 928 bytes |
+| 87 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86` | N/A | VectorCypherRetriever parameters: - Driver : The Neo4j database connection - Index\_name : The name ... | 662 bytes |
+| 88 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87` | N/A | VectorCypher Retriever in Practice The power of the Graph-Enhanced Vector Search Pattern lies in its... | 1229 bytes |
+| 89 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88` | N/A | VectorCypher Retriever in Practice eports (text) with the graph relationships between vulnerabilitie... | 1234 bytes |
+| 90 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89` | N/A | VectorCypher Retriever in Practice structural search.  The result: You can ask complex, context-awar... | 905 bytes |
+| 91 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90` | N/A | VectorCypher Retrieval: A Working Example Which Asset Managers are most affected by reseller concern... | 522 bytes |
+| 92 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91` | N/A | VectorCypherRetriever parameters: - Driver : The Neo4j database connection - Index\_name: The name o... | 509 bytes |
+| 93 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:92` | N/A | Let's look at the results: - &lt;Record company='APPLE INC' AssetManager='BlackRock Inc.' shares=103... | 1057 bytes |
+| 94 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:93` | N/A | WELLS FARGO &amp; COMPANY/MN This is where GraphRAG really shines. You may be wondering how to const... | 365 bytes |
+| 95 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:94` | N/A | Text2CypherRetriever You can use Text2CypherRetriever to seamlessly generate Cypher queries from nat... | 1216 bytes |
+| 96 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95` | N/A | Text2CypherRetriever ompany {id: STRING, name: STRING, chunk_ index: INTEGER, ticker: STRING} Produc... | 1215 bytes |
+| 97 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96` | N/A | Text2CypherRetriever ery directly to the driver to get the results:  ``` result = driver.execute_que... | 1216 bytes |
+| 98 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97` | N/A | Text2CypherRetriever y optimization remains an important factor. While LLMs are capable of generatin... | 1214 bytes |
+| 99 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:98` | N/A | Text2CypherRetriever ll help you integrate Text2Cypher effectively while ensuring that it is used in... | 285 bytes |
+| 100 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99` | N/A | Community Summary Pattern You may have heard the term GraphRAG and thought of the pattern popularize... | 571 bytes |
+| 101 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100` | N/A | Concluding Thoughts and Next Steps Integrating a knowledge graph with RAG gives GenAI systems struct... | 1232 bytes |
+| 102 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:101` | N/A | Concluding Thoughts and Next Steps embeddings and graph neural networks, promises to enhance the sem... | 562 bytes |
+| 103 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102` | N/A | Explore GenAI With Neo4j Neo4j uncovers hidden relationships and patterns across billions of data co... | 579 bytes |
+| 104 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103` | N/A | Technical Resources in Workflow Order \| Stage                            \| Resource                 ... | 1235 bytes |
+| 105 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104` | N/A | Technical Resources in Workflow Order Data Importer Tool                            \| Visual UI for ... | 1231 bytes |
+| 106 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:105` | N/A | Technical Resources in Workflow Order \| Augment vector search with traversal logic to im- prove cont... | 903 bytes |
 
 ---
 

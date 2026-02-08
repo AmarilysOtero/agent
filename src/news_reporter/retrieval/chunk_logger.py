@@ -1,6 +1,7 @@
 """Chunk logging utility for Phase 3 - writes chunk information to markdown files."""
 
 import logging
+import os
 from typing import List, Dict, Optional
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +14,107 @@ CHUNK_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 CHUNKS_RLM_DISABLED_FILE = CHUNK_LOGS_DIR / "chunks_rlm_disabled.md"
 CHUNKS_RLM_ENABLED_FILE = CHUNK_LOGS_DIR / "chunks_rlm_enabled.md"
+AGGREGATE_RAW_FILE_NAME = "aggregate_final_answer_raw.md"
+
+
+def _resolve_chunk_logs_dir(output_dir: Optional[str] = None) -> Path:
+    """Resolve chunk logs directory with local fallback."""
+    if output_dir:
+        target_dir = Path(output_dir)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        return target_dir
+
+    logs_dir = os.getenv("LOGS_DIR", str(CHUNK_LOGS_DIR))
+    target_dir = Path(logs_dir)
+
+    if not target_dir.is_absolute() or str(target_dir).startswith("/app"):
+        if os.name == "nt" and not Path("/.dockerenv").exists():
+            candidate = (Path(os.getcwd()) / ".." / ".." / "logs" / "chunk_analysis").resolve()
+            target_dir = candidate if candidate.exists() else Path("./logs/chunk_analysis")
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir
+
+
+def init_aggregate_raw_log(query: Optional[str] = None, output_dir: Optional[str] = None) -> Path:
+    """Initialize the aggregate raw log (overwrite per query)."""
+    target_dir = _resolve_chunk_logs_dir(output_dir)
+    output_path = target_dir / AGGREGATE_RAW_FILE_NAME
+
+    content = [
+        "# Aggregate Final Answer - Raw Chunks (Pre-LLM)\n",
+        "This file captures raw chunks before LLM summarization.\n",
+        "(File overwrites with each new query)\n\n",
+        "---\n\n",
+        f"## Execution: {datetime.now().isoformat()}\n",
+    ]
+    if query:
+        content.append(f"**Query**: {query}\n\n")
+    content.append("---\n\n")
+    content.append("## Passing Chunks (Append Log)\n\n")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("".join(content))
+
+    logger.info(f"📝 Initialized aggregate raw log: {output_path}")
+    return output_path
+
+
+def append_aggregate_raw_chunk(
+    chunk_id: str,
+    file_id: str,
+    file_name: str,
+    chunk_text: str,
+    phase: str,
+    output_dir: Optional[str] = None
+) -> None:
+    """Append a passing chunk to the aggregate raw log."""
+    output_path = _resolve_chunk_logs_dir(output_dir) / AGGREGATE_RAW_FILE_NAME
+
+    entry = [
+        f"### Chunk: {chunk_id}\n",
+        f"**File ID:** {file_id}\n",
+        f"**File Name:** {file_name}\n",
+        f"**Phase:** {phase}\n",
+        f"**Captured:** {datetime.now().isoformat()}\n\n",
+        "```text\n",
+        f"{chunk_text}\n",
+        "```\n\n",
+    ]
+
+    with open(output_path, "a", encoding="utf-8") as f:
+        f.write("".join(entry))
+
+
+def log_aggregate_raw_final_set(
+    file_id: str,
+    file_name: str,
+    selected_chunks: List[Dict],
+    output_dir: Optional[str] = None
+) -> None:
+    """Append the final selected chunks before summarization."""
+    output_path = _resolve_chunk_logs_dir(output_dir) / AGGREGATE_RAW_FILE_NAME
+
+    header = [
+        "## Final Selected Chunks\n\n",
+        f"### File: {file_name} (ID: {file_id})\n\n",
+    ]
+
+    total_chars = sum(len(chunk.get("text", "")) for chunk in selected_chunks)
+
+    with open(output_path, "a", encoding="utf-8") as f:
+        f.write("".join(header))
+        for chunk in selected_chunks:
+            chunk_id = chunk.get("chunk_id", "unknown")
+            chunk_text = chunk.get("text", "")
+            f.write(f"#### Chunk: {chunk_id}\n\n")
+            f.write("```text\n")
+            f.write(f"{chunk_text}\n")
+            f.write("```\n\n")
+
+        f.write("**Summary:**\n")
+        f.write(f"- Selected chunks: {len(selected_chunks)}\n")
+        f.write(f"- Total chars: {total_chars}\n\n")
 
 
 async def log_chunks_to_markdown(

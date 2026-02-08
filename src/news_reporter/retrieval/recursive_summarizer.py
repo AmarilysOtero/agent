@@ -27,6 +27,11 @@ logger = logging.getLogger(__name__)
 
 # Subprocess sandbox for all exec() calls
 from .sandbox_runner import sandbox_exec  # noqa: E402
+from .chunk_logger import (
+    init_aggregate_raw_log,
+    append_aggregate_raw_chunk,
+    log_aggregate_raw_final_set,
+)
 
 # Phase 4 feature flag: iterative inspection programs vs per-chunk inspectors
 USE_MIT_RLM_RECURSION = os.getenv("USE_MIT_RLM_RECURSION", "false").lower() == "true"
@@ -1417,6 +1422,9 @@ async def recursive_summarize_files(
         f"(deployment: {model_deployment}, query_hash: {current_hash})"
     )
 
+    # Initialize raw aggregate log (overwrite per query)
+    init_aggregate_raw_log(query=query)
+
     summaries = []
     inspection_code = {}  # Store LLM-generated inspection logic per file
     inspection_code_with_text = {}  # Store inspection code with chunk text details
@@ -1497,6 +1505,13 @@ async def recursive_summarize_files(
                         if is_relevant:
                             relevant_chunks.append(chunk_text)
                             relevant_chunk_ids.append(chunk_id)
+                            append_aggregate_raw_chunk(
+                                chunk_id=chunk_id,
+                                file_id=file_id,
+                                file_name=file_name,
+                                chunk_text=chunk_text,
+                                phase="per_chunk_inspector"
+                            )
                             logger.debug(f"    ✓ {chunk_short_id} passed inspection")
                         else:
                             logger.debug(f"    ✗ {chunk_short_id} failed inspection")
@@ -1585,6 +1600,20 @@ async def recursive_summarize_files(
                     # Update relevant_chunks to match prioritized IDs
                     chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
                     relevant_chunks = [chunk_id_to_text.get(cid, "") for cid in final_selected_chunk_ids if cid in chunk_id_to_text]
+
+            # Log final selected chunks before summarization
+            chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
+            selected_chunks_for_log = [
+                {"chunk_id": cid, "text": chunk_id_to_text.get(cid, "")}
+                for cid in final_selected_chunk_ids
+                if chunk_id_to_text.get(cid, "")
+            ]
+            if selected_chunks_for_log:
+                log_aggregate_raw_final_set(
+                    file_id=file_id,
+                    file_name=file_name,
+                    selected_chunks=selected_chunks_for_log
+                )
 
             # Step 3: Summarize relevant chunks
             logger.info(
@@ -2517,6 +2546,13 @@ async def _process_file_with_rlm_recursion(
             
             if is_relevant:
                 boolean_approved_chunk_ids.add(chunk_id)
+                append_aggregate_raw_chunk(
+                    chunk_id=chunk_id,
+                    file_id=file_id,
+                    file_name=file_name,
+                    chunk_text=chunk_text,
+                    phase="iterative_boolean_eval"
+                )
                 chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
                 logger.debug(f"    ✓ {chunk_short_id} passed boolean evaluation")
         

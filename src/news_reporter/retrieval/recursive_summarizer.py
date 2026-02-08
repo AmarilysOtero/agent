@@ -1100,7 +1100,8 @@ def _apply_selection_budget(
     chunks: List[Dict],
     selected_chunk_ids: List[str],
     max_chunks: int,
-    max_chars: int
+    max_chars: int,
+    query: str = ""
 ) -> List[str]:
     """
     Apply selection budget to prevent excessive token usage in summarization.
@@ -1110,62 +1111,122 @@ def _apply_selection_budget(
     2. Hard cap on total characters (max_chars)
     
     Prioritizes chunks by:
+    - Semantic relevance (query term matching)
     - Current/recent markers ("present", dates)
-    - Keyword density (query-relevant terms)
+    - Content density vs navigational text
     
     Args:
         chunks: All chunks from the file
         selected_chunk_ids: Chunk IDs to trim
         max_chunks: Maximum chunks to keep
         max_chars: Maximum total characters
+        query: User query for semantic scoring
     
     Returns:
         Trimmed list of chunk IDs
     """
+    logger.debug(f"[DEBUG] _apply_selection_budget ENTER: input_chunks={len(selected_chunk_ids)}, query='{query}', max_chunks={max_chunks}, max_chars={max_chars:,}")
+    
     if len(selected_chunk_ids) <= max_chunks:
         # Check char limit even if under chunk limit
         chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
         total_chars = sum(len(chunk_map.get(cid, "")) for cid in selected_chunk_ids)
+        logger.debug(f"[DEBUG]   Under chunk limit ({len(selected_chunk_ids)} <= {max_chunks}), checking char limit: {total_chars:,} / {max_chars:,}")
         
         if total_chars <= max_chars:
+            logger.debug(f"[DEBUG]   EARLY RETURN: all {len(selected_chunk_ids)} chunks fit within budget")
             return selected_chunk_ids
     
-    # Need to trim - prioritize by recency markers
+    # Need to trim - prioritize by semantic relevance and recency markers
     import re
     chunk_scores = []
     chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
     
+    # Extract query keywords for semantic matching
+    query_keywords = set()
+    if query:
+        # Remove common stop words and extract meaningful terms
+        stop_words = {'what', 'is', 'the', 'a', 'an', 'are', 'how', 'does', 'do', 'where', 'when', 'why', 'which'}
+        words = re.findall(r'\b\w+\b', query.lower())
+        query_keywords = {w for w in words if w not in stop_words and len(w) > 2}
+    
+    logger.debug(f"[DEBUG]   Query keywords extracted: {query_keywords}")
+    
     for chunk_id in selected_chunk_ids:
         text = chunk_map.get(chunk_id, "")
+        text_lower = text.lower()
         score = 0
+        chunk_num = chunk_id.split(':')[-1]
         
-        # Boost for current/present markers
-        if re.search(r'\b(present|current|currently)\b', text.lower()):
-            score += 10
+        # PRIMARY: Semantic relevance - query keyword matching (most important)
+        semantic_score = 0
+        if query_keywords:
+            # Count keyword occurrences
+            keyword_count = sum(text_lower.count(kw) for kw in query_keywords)
+            semantic_score += keyword_count * 15  # Strong boost for query term matches
+            
+            # Extra boost if chunk contains multiple unique keywords
+            unique_keywords_found = sum(1 for kw in query_keywords if kw in text_lower)
+            semantic_score += unique_keywords_found * 10
+            score += semantic_score
+        
+        # SECONDARY: Penalize Table of Contents / navigational chunks
+        # These often mention terms but don't explain them
+        toc_patterns = [
+            r'table of contents',
+            r'^\s*[\|\-]+\s*$',  # Table borders
+            r'^\.+\s+\d+\s*$',   # Dotted lines with page numbers
+            r'^[A-Z][^.!?]{3,50}\.+\s+\d+\s*$',  # "Title........ 42" format
+        ]
+        toc_penalty = 0
+        if any(re.search(pattern, text_lower, re.MULTILINE) for pattern in toc_patterns):
+            toc_penalty = -20  # Penalty for TOC-like content
+            score += toc_penalty
+        
+        # TERTIARY: Boost for current/present markers (employment queries)
+        current_boost = 0
+        if re.search(r'\b(present|current|currently)\b', text_lower):
+            current_boost = 10
+            score += current_boost
         
         # Boost for recent years (2024, 2025, etc.)
+        year_boost = 0
         if re.search(r'\b202[3-9]\b', text):
-            score += 5
+            year_boost = 5
+            score += year_boost
         
         # Slight boost for longer chunks (more context)
-        score += min(len(text) / 1000, 3)
+        length_boost = min(len(text) / 1000, 3)
+        score += length_boost
+        
+        text_preview = text[:60].replace('\n', ' ')
+        logger.debug(f"[DEBUG]   Chunk {chunk_num}: semantic={semantic_score:.1f}, toc={toc_penalty}, current={current_boost}, year={year_boost}, len={length_boost:.1f} → TOTAL={score:.1f} | {text_preview}...")
         
         chunk_scores.append((chunk_id, score, len(text)))
     
     # Sort by score (descending)
+    logger.debug(f"[DEBUG]   Sorting {len(chunk_scores)} chunks by score...")
     chunk_scores.sort(key=lambda x: x[1], reverse=True)
+    
+    logger.debug(f"[DEBUG]   Top 5 chunks after sorting:")
+    for i, (cid, score, char_len) in enumerate(chunk_scores[:5]):
+        chunk_text_preview = chunk_map.get(cid, "")[:50].replace('\n', ' ')
+        logger.debug(f"[DEBUG]     {i+1}. Chunk {cid.split(':')[-1]}: score={score:.1f}, chars={char_len} | {chunk_text_preview}...")
     
     # Apply budgets
     selected = []
     excluded = []
     total_chars = 0
     
+    logger.debug(f"[DEBUG]   Applying budgets: max_chunks={max_chunks}, max_chars={max_chars:,}")
     for chunk_id, score, char_len in chunk_scores:
         if len(selected) >= max_chunks:
             excluded.append((chunk_id, "max_chunks_exceeded", score, char_len))
+            logger.debug(f"[DEBUG]     ✗ Chunk {chunk_id.split(':')[-1]}: max_chunks_exceeded (already have {len(selected)})")
             continue
         if total_chars + char_len > max_chars:
             excluded.append((chunk_id, "max_chars_exceeded", score, char_len))
+            logger.debug(f"[DEBUG]     ✗ Chunk {chunk_id.split(':')[-1]}: max_chars_exceeded ({total_chars + char_len:,} > {max_chars:,})")
             continue
         
         selected.append(chunk_id)
@@ -1182,6 +1243,7 @@ def _apply_selection_budget(
             f"({total_chars:,} chars, limit={max_chars:,})"
         )
     
+    logger.debug(f"[DEBUG] _apply_selection_budget EXIT: final_selection={[cid.split(':')[-1] for cid in selected]}")
     return selected
 
 
@@ -1215,6 +1277,7 @@ def _select_top_k_chunks(
     import re
 
     query_tokens = _tokenize_text(query)
+    logger.debug(f"[DEBUG] _select_top_k_chunks: query='{query}', tokens={query_tokens}, k={k}")
 
     scored: list[tuple[str, float]] = []
     for chunk in chunks:
@@ -1226,26 +1289,45 @@ def _select_top_k_chunks(
         score = 0.0
 
         # Employment / current-role boost
+        current_boost = 0.0
         if employment_mode and re.search(r'\b(present|current|currently)\b', text_lower):
-            score += 10
+            current_boost = 10
+            score += current_boost
 
         # Recent-year boost
+        year_boost = 0.0
         if re.search(r'\b202[3-9]\b', text):
-            score += 5
+            year_boost = 5
+            score += year_boost
 
         # Query-token match count (capped)
+        # Simple substring search - "vectorcypher" will match in "vectorcyphertriever"
         matches = sum(1 for t in query_tokens if t in text_lower)
-        score += min(matches, 5)
+        token_boost = min(matches, 5)
+        score += token_boost
 
         # Penalise very short fragments
+        length_penalty = 0.0
         if len(text.strip()) < 50:
-            score -= 1
+            length_penalty = -1
+            score += length_penalty
 
+        chunk_num = cid.split(':')[-1]
+        text_preview = text[:50].replace('\n', ' ')
+        logger.debug(f"[DEBUG]   Chunk {chunk_num}: current={current_boost}, year={year_boost}, tokens({matches})={token_boost}, len={length_penalty} → TOTAL={score:.1f} | {text_preview}...")
+        
         scored.append((cid, score))
 
     # Sort descending by score, stable (preserves original order on ties)
     scored.sort(key=lambda x: x[1], reverse=True)
-    return [cid for cid, _ in scored[:k]]
+    logger.debug(f"[DEBUG] Top {min(k, len(scored))} after sorting:")
+    for i, (cid, score) in enumerate(scored[:min(k, 10)]):
+        chunk_text = next((c.get("text", "")[:50] for c in chunks if isinstance(c, dict) and c.get("chunk_id") == cid), "")
+        logger.debug(f"[DEBUG]   {i+1}. Chunk {cid.split(':')[-1]}: score={score:.1f} | {chunk_text}...")
+    
+    result = [cid for cid, _ in scored[:k]]
+    logger.debug(f"[DEBUG] Returning top {k}: {[cid.split(':')[-1] for cid in result]}")
+    return result
 
 
 def _exact_dedup_chunks(chunks: List[Dict]) -> List[Dict]:
@@ -1477,7 +1559,8 @@ async def recursive_summarize_files(
                     chunks=chunks,
                     selected_chunk_ids=final_selected_chunk_ids,
                     max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
-                    max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
+                    max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY,
+                    query=query
                 )
                 post_budget_count = len(final_selected_chunk_ids)
                 
@@ -2233,10 +2316,12 @@ async def _execute_inspection_program(
     raw_result: dict | None = None
     if sandbox_result["ok"] and isinstance(sandbox_result.get("result"), dict):
         raw_result = sandbox_result["result"]
+        logger.debug(f"[DEBUG] Sandbox execution succeeded for iteration {iteration}")
     else:
         # Fallback: in-process exec
+        sandbox_error = sandbox_result.get('error', 'Unknown error')
         logger.warning(
-            f"⚠️  Sandbox failed for iteration {iteration}: {sandbox_result.get('error')}; "
+            f"⚠️  Sandbox failed for iteration {iteration}: {sandbox_error}; "
             f"falling back to in-process exec"
         )
         try:
@@ -2245,9 +2330,11 @@ async def _execute_inspection_program(
             exec(program, safe_globals, namespace)
             inspect_func = namespace.get("inspect_iteration")
             if inspect_func is None:
+                logger.warning(f"⚠️  inspect_iteration function not found in namespace for iteration {iteration}")
                 return _get_fallback_result(chunks, iteration)
             raw_result = inspect_func(chunk_list)
             if not isinstance(raw_result, dict):
+                logger.warning(f"⚠️  inspect_iteration returned non-dict: {type(raw_result)} for iteration {iteration}")
                 return _get_fallback_result(chunks, iteration)
         except Exception as e:
             logger.warning(f"⚠️  In-process exec failed for iteration {iteration}: {e}")
@@ -2261,6 +2348,8 @@ async def _execute_inspection_program(
         MIN_KEEP = 2
         selected_ids = raw_result.get("selected_chunk_ids", [])
         should_stop = raw_result.get("stop", False)
+        
+        logger.debug(f"[DEBUG] Raw RLM selection (iteration {iteration}): {len(selected_ids)} chunks = {[cid.split(':')[-1] for cid in selected_ids[:10]]}")
 
         if isinstance(selected_ids, list):
             selected_ids = [cid for cid in selected_ids if cid in valid_chunk_ids]
@@ -2274,6 +2363,8 @@ async def _execute_inspection_program(
 
         # ── Broad selection guard: deterministic top-K fallback ──
         selection_ratio = len(selected_ids) / max(1, len(chunk_list))
+        logger.debug(f"[DEBUG] Selection ratio: {len(selected_ids)}/{len(chunk_list)} = {selection_ratio:.1%} (threshold=90%)")
+        
         if selection_ratio > 0.9 and len(chunk_list) > 3:
             employment_mode = _is_current_employment_query(query) if query else False
             top_k_ids = _select_top_k_chunks(
@@ -2284,6 +2375,7 @@ async def _execute_inspection_program(
                 f"    ⚠️  Iteration {iteration}: Selected {len(selected_ids)}/{len(chunk_list)} ({selection_ratio:.1%}) "
                 f"→ replaced with deterministic top-{len(top_k_ids)} (fallback_broad_selection)"
             )
+            logger.debug(f"[DEBUG] Fallback _select_top_k_chunks returned: {[cid.split(':')[-1] for cid in top_k_ids]}")
             selected_ids = top_k_ids
             should_stop = True
             confidence = 0.2
@@ -2346,9 +2438,13 @@ async def _execute_inspection_program(
 def _get_fallback_result(chunks: List[Dict], iteration: int) -> Dict:
     """Generate safe fallback result when program execution fails."""
     chunk_ids = [chunk.get("chunk_id", f"unknown-{i}") for i, chunk in enumerate(chunks)]
+    selected = chunk_ids[:min(MAX_SELECTED_CHUNKS_PER_FILE, len(chunk_ids))]
+    
+    logger.warning(f"[DEBUG] FALLBACK _get_fallback_result called for iteration {iteration}")
+    logger.debug(f"[DEBUG]   Total chunks: {len(chunks)}, Fallback selected: {[cid.split(':')[-1] for cid in selected]}")
 
     return {
-        "selected_chunk_ids": chunk_ids[:min(MAX_SELECTED_CHUNKS_PER_FILE, len(chunk_ids))],
+        "selected_chunk_ids": selected,
         "extracted_data": {"fallback": True, "iteration": iteration},
         "confidence": 0.3,
         "stop": iteration >= 3
@@ -2438,7 +2534,8 @@ async def _process_file_with_rlm_recursion(
             break
 
         logger.info(f"  → Iteration {iteration + 1}: Evaluating {len(active_chunks)} chunks")
-
+        logger.debug(f"[DEBUG] Iteration {iteration + 1}: Available chunk IDs = {[c.get('chunk_id', '').split(':')[-1] for c in active_chunks]}")
+        
         inspection_program = await _generate_recursive_inspection_program(
             query=query,
             file_name=file_name,
@@ -2464,11 +2561,15 @@ async def _process_file_with_rlm_recursion(
             extracted = result.get("extracted_data", {})
             confidence = result.get("confidence", 0.0)
             should_stop = result.get("stop", False)
+            approved_ids_raw = result.get("approved_chunk_ids", [])  # Log raw approvals
 
+            logger.debug(f"[DEBUG] Iteration {iteration + 1}: Raw approved from program: {[cid.split(':')[-1] if isinstance(cid, str) else cid for cid in approved_ids_raw[:10]]}")
+            
             logger.info(
                 f"    ✓ Iteration {iteration + 1}: "
                 f"Selected {len(selected_ids)}/{len(active_chunks)} chunks, "
-                f"confidence={confidence:.2f}, stop={should_stop}"
+                f"confidence={confidence:.2f}, stop={should_stop} "
+                f"[IDs: {[cid.split(':')[-1] for cid in selected_ids]}]"
             )
 
             accumulated_data.update(extracted)
@@ -2522,8 +2623,95 @@ async def _process_file_with_rlm_recursion(
         and chunk.get("text", "").strip()
     ]
 
+    logger.debug(f"[DEBUG] RLM iteration loop complete. Final selection: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]}")
+    logger.debug(f"[DEBUG] RLM selected {len(final_selected_chunk_ids)} chunks, extracted {len(accumulated_data)} data points, confidence={final_confidence:.2f}")
+
+    # Fallback: If RLM selection is dominated by TOC/navigation chunks, rerank by query relevance.
+    if final_selected_chunk_ids:
+        import re
+
+        toc_patterns = [
+            r'table of contents',
+            r'^\s*[\|\-]+\s*$',
+            r'^\.+\s+\d+\s*$',
+            r'^[A-Z][^.!?]{3,50}\.+\s+\d+\s*$',
+        ]
+
+        def _is_toc_like(text: str) -> bool:
+            text_lower = text.lower()
+            return any(re.search(pattern, text_lower, re.MULTILINE) for pattern in toc_patterns)
+
+        # Count TOC-like chunks in current selection
+        chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
+        toc_like_count = 0
+        toc_chunk_ids = []
+        for cid in final_selected_chunk_ids:
+            if _is_toc_like(chunk_map.get(cid, "")):
+                toc_like_count += 1
+                toc_chunk_ids.append(cid.split(':')[-1])
+        
+        logger.debug(f"[DEBUG] RLM post-check: {toc_like_count}/{len(final_selected_chunk_ids)} chunks are TOC-like (IDs: {toc_chunk_ids})")
+
+        # Only intervene if selection is mostly TOC-like and query has meaningful keywords
+        toc_threshold = max(1, len(final_selected_chunk_ids) // 2)
+        logger.debug(f"[DEBUG]   TOC threshold: {toc_like_count} >= {toc_threshold}? Intervene={toc_like_count >= toc_threshold}")
+        
+        if toc_like_count >= toc_threshold:
+            stop_words = {'what', 'is', 'the', 'a', 'an', 'are', 'how', 'does', 'do', 'where', 'when', 'why', 'which'}
+            query_words = re.findall(r'\b\w+\b', query.lower())
+            query_keywords = {w for w in query_words if w not in stop_words and len(w) > 2}
+
+            if query_keywords:
+                logger.debug(f"[DEBUG]   Reranking all {len(chunks)} chunks for query: {query_keywords}")
+                scored: list[tuple[str, float]] = []
+                for chunk in chunks:
+                    if not isinstance(chunk, dict):
+                        continue
+                    cid = chunk.get("chunk_id", "")
+                    text = chunk.get("text", "")
+                    text_lower = text.lower()
+                    score = 0.0
+
+                    # Keyword relevance
+                    keyword_count = sum(text_lower.count(kw) for kw in query_keywords)
+                    score += keyword_count * 15
+                    unique_keywords = sum(1 for kw in query_keywords if kw in text_lower)
+                    score += unique_keywords * 10
+
+                    # Penalize TOC-like content
+                    if _is_toc_like(text):
+                        score -= 20
+
+                    # Slight boost for longer chunks
+                    score += min(len(text) / 1000, 3)
+
+                    scored.append((cid, score))
+
+                scored.sort(key=lambda x: x[1], reverse=True)
+                logger.debug(f"[DEBUG]   Top 10 reranked chunks:")
+                for i, (cid, score) in enumerate(scored[:10]):
+                    text_preview = chunk_map.get(cid, "")[:50].replace('\n', ' ')
+                    logger.debug(f"[DEBUG]     {i+1}. Chunk {cid.split(':')[-1]}: score={score:.1f} | {text_preview}...")
+                
+                reranked_ids = [cid for cid, _ in scored[:MAX_SELECTED_CHUNKS_PER_FILE] if cid]
+
+                if reranked_ids and set(reranked_ids) != set(final_selected_chunk_ids):
+                    before_ids = [cid.split(':')[-1] for cid in final_selected_chunk_ids]
+                    after_ids = [cid.split(':')[-1] for cid in reranked_ids]
+                    logger.info(
+                        f"  🔁 RLM selection dominated by TOC-like chunks; reranking by query relevance"
+                        f" ({before_ids} → {after_ids})"
+                    )
+                    final_selected_chunk_ids = reranked_ids
+                    relevant_chunks = [
+                        chunk_map.get(cid, "").strip()
+                        for cid in final_selected_chunk_ids
+                        if chunk_map.get(cid, "").strip()
+                    ]
+
     if not relevant_chunks:
         logger.warning(f"⚠️  Phase 4: No chunks selected after {iteration + 1} iterations, using fallback")
+        logger.debug(f"[DEBUG] FALLBACK TRIGGERED: final_selected_chunk_ids was empty or all were empty text")
         relevant_chunks = [
             chunk.get("text", "").strip()
             for chunk in chunks[:min(3, len(chunks))]
@@ -2533,11 +2721,14 @@ async def _process_file_with_rlm_recursion(
             chunk.get("chunk_id")
             for chunk in chunks[:min(3, len(chunks))]
         ]
+        logger.debug(f"[DEBUG] FALLBACK RESULT: selected first {len(final_selected_chunk_ids)} chunks (IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})")
     
     logger.info(
         f"  📋 Post-RLM-recursion: {len(final_selected_chunk_ids)} chunks selected "
         f"(IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})"
     )
+    
+    logger.debug(f"[DEBUG] About to apply selection budget with these chunks: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]}")
     
     # DISABLED: Deduplication was too aggressive and filtered out relevant chunks
     # like certifications (chunk 6) as near-duplicates of top skills (chunk 3).
@@ -2552,13 +2743,16 @@ async def _process_file_with_rlm_recursion(
     # Apply selection budget
     pre_budget_count = len(final_selected_chunk_ids)
     pre_budget_ids = list(final_selected_chunk_ids)
+    logger.debug(f"[DEBUG] BEFORE budget: {pre_budget_count} chunks = {[cid.split(':')[-1] for cid in pre_budget_ids]}")
     final_selected_chunk_ids = _apply_selection_budget(
         chunks=chunks,
         selected_chunk_ids=final_selected_chunk_ids,
         max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
-        max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
+        max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY,
+        query=query
     )
     post_budget_count = len(final_selected_chunk_ids)
+    logger.debug(f"[DEBUG] AFTER budget: {post_budget_count} chunks = {[cid.split(':')[-1] for cid in final_selected_chunk_ids]}")
     
     # Log budget impact
     if post_budget_count < pre_budget_count:

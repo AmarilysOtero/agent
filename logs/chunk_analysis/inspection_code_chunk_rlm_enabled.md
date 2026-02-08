@@ -1,6 +1,6 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-07T23:17:41.360438
+**Execution Time:** 2026-02-08T00:51:27.336836
 
 **Query:** What is VectorCypher Retrieval
 
@@ -119,11 +119,11 @@ Table of Contents
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
     if "how" in chunk_text.lower() and "works" in chunk_text.lower():
+        return True
+    if "access" in chunk_text.lower() and "data" in chunk_text.lower():
         return True
     return False
 ```
@@ -169,11 +169,7 @@ Table of Contents
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
     return False
 ```
@@ -219,11 +215,11 @@ Table of Contents
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
+    if 'vectorcypher' in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower():
+    if 'retrieval' in chunk_text.lower():
         return True
-    if "data" in chunk_text.lower() and "import" in chunk_text.lower():
+    if 'data' in chunk_text.lower() and 'structured' in chunk_text.lower():
         return True
     return False
 ```
@@ -364,11 +360,11 @@ Table of Contents (continued)
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower():
+    if "rag" in chunk_text.lower() and "system" in chunk_text.lower():
         return True
-    if "rag" in chunk_text.lower():
+    if "embedded" in chunk_text.lower() and "docs" in chunk_text.lower():
         return True
     return False
 ```
@@ -475,11 +471,11 @@ Your RAG system isn't broken. It's just blind.
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "what" in chunk_text.lower() and "architecture" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
-    if "vectorcypher" in chunk_text.lower():
+    if "architecture" in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower():
+    if "retrieve" in chunk_text.lower() and "semantically" in chunk_text.lower():
         return True
     return False
 ```
@@ -533,8 +529,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "RAG" in chunk_text and "retrieves" in chunk_text:
         return True
-    if "semantically" in chunk_text and "similar" in chunk_text:
-        return True
     return False
 ```
 
@@ -582,9 +576,9 @@ Traditional RAG doesn't have shared context across documents. That's because it 
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "how" in chunk_text.lower() and "fit" in chunk_text.lower():
         return True
-    if "context" in chunk_text.lower():
+    if "context" in chunk_text.lower() and "customer" in chunk_text.lower():
         return True
-    if "customer" in chunk_text.lower():
+    if "retrieve" in chunk_text.lower() and "text" in chunk_text.lower():
         return True
     return False
 ```
@@ -626,11 +620,11 @@ You want your RAG application to do what humans do naturall
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
     if "cypher" in chunk_text.lower():
         return True
-    if "semantically" in chunk_text.lower() and "similar" in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
+        return True
+    if "vector" in chunk_text.lower():
         return True
     return False
 ```
@@ -672,7 +666,11 @@ And that's the problem: Your RAG system has none of that. Sure, it has some docu
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower() or "rag" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+        return True
+    if "rag" in chunk_text.lower() and "retrieves" in chunk_text.lower():
+        return True
+    if "guide" in chunk_text.lower() and "further" in chunk_text.lower():
         return True
     return False
 ```
@@ -713,11 +711,7 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieves" in chunk_text.lower():
-        return True
-    if "query" in chunk_text.lower() and "similarity" in chunk_text.lower():
-        return True
-    if "answer" in chunk_text.lower() and "context" in chunk_text.lower():
+    if "vectorizes" in chunk_text.lower() or "similarity" in chunk_text.lower() or "retrieves" in chunk_text.lower():
         return True
     return False
 ```
@@ -767,11 +761,11 @@ the meaning depends on a sales addendum from three weeks earlier. Or maybe they 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
+    if "retrieves" in chunk_text.lower() and "understanding" in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower():
+    if "core issue" in chunk_text.lower() and "customer" in chunk_text.lower():
         return True
-    if "retrieve" in chunk_text.lower():
+    if "mental model" in chunk_text.lower() and "business" in chunk_text.lower():
         return True
     return False
 ```
@@ -817,11 +811,11 @@ You already know what y
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "answer" in chunk_text.lower():
+    if "answer" in chunk_text.lower() and "support" in chunk_text.lower():
         return True
-    if "explain" in chunk_text.lower():
+    if "explain" in chunk_text.lower() and "contract" in chunk_text.lower():
         return True
-    if "context" in chunk_text.lower():
+    if "interpret" in chunk_text.lower() and "customer" in chunk_text.lower():
         return True
     return False
 ```
@@ -879,9 +873,9 @@ These shouldn't feel like advanced use cases they're
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "cypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
-    if "vector" in chunk_text.lower() and "query" in chunk_text.lower():
+    if "dynamic" in chunk_text.lower() and "query" in chunk_text.lower():
         return True
-    if "dynamic" in chunk_text.lower() and "cypher" in chunk_text.lower():
+    if "information" in chunk_text.lower() and "pull" in chunk_text.lower():
         return True
     return False
 ```
@@ -935,11 +929,11 @@ And we're going to do it
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if "VectorCypher" in chunk_text or "Retrieval" in chunk_text:
         return True
-    if "cannot" in chunk_text.lower() or "reason" in chunk_text.lower():
+    if "RAG" in chunk_text and "retrieve" in chunk_text:
         return True
-    if "business" in chunk_text.lower():
+    if "business" in chunk_text and "customer" in chunk_text:
         return True
     return False
 ```
@@ -981,11 +975,11 @@ Without it, RAG can't reason. It can only retrieve, and that isn't enou
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "Retrieval" in chunk_text:
+    if "vectorcypher" in chunk_text.lower():
         return True
-    if "answer" in chunk_text or "explain" in chunk_text:
+    if "retrieval" in chunk_text.lower():
         return True
-    if "context" in chunk_text:
+    if "support question" in chunk_text.lower():
         return True
     return False
 ```
@@ -1099,7 +1093,11 @@ An
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower() or "rag" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+        return True
+    if "rag" in chunk_text.lower() or "graphs" in chunk_text.lower():
+        return True
+    if "understand" in chunk_text.lower() and "what" in chunk_text.lower():
         return True
     return False
 ```
@@ -1128,11 +1126,7 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "accuracy" in chunk_text.lower():
-        return True
-    if "chatbots" in chunk_text.lower():
-        return True
-    if "business" in chunk_text.lower():
+    if "accuracy" in chunk_text.lower() or "chatbots" in chunk_text.lower() or "generates" in chunk_text.lower():
         return True
     return False
 ```
@@ -1244,7 +1238,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "query" in chunk_text.lower() and "database" in chunk_text.lower():
         return True
-    if "semantic" in chunk_text.lower() and "similarity" in chunk_text.lower():
+    if "semantic" in chunk_text.lower() and "similar" in chunk_text.lower():
         return True
     return False
 ```
@@ -1275,7 +1269,11 @@ If you use a vector store (as in traditional RAG), the process goes like this: T
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower() or "knowledge graph" in chunk_text.lower():
+    if "graphrag" in chunk_text.lower():
+        return True
+    if "knowledge graph" in chunk_text.lower():
+        return True
+    if "information" in chunk_text.lower():
         return True
     return False
 ```
@@ -1328,7 +1326,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "knowledge graph" in chunk_text.lower():
         return True
-    if "documentation" in chunk_text.lower():
+    if "information" in chunk_text.lower() and "data" in chunk_text.lower():
         return True
     return False
 ```
@@ -1402,6 +1400,8 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "context" in chunk_text.lower() and "relevant" in chunk_text.lower():
         return True
+    if "accurate" in chunk_text.lower() and "information" in chunk_text.lower():
+        return True
     return False
 ```
 
@@ -1431,7 +1431,7 @@ Unlike traditional RAG, which retrieves isolated chunks of text based on similar
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "retrieval" in chunk_text.lower():
         return True
-    if "graph" in chunk_text.lower():
+    if "graphrag" in chunk_text.lower():
         return True
     if "explainability" in chunk_text.lower():
         return True
@@ -1495,11 +1495,11 @@ GraphRAG overcomes a key limitation of vector-only RAG by integrating both struc
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
         return True
-    if 'how' in chunk_text.lower() and 'works' in chunk_text.lower():
+    if "graph" in chunk_text.lower() and "vector" in chunk_text.lower():
         return True
-    if 'graph' in chunk_text.lower() and 'knowledge' in chunk_text.lower():
+    if "how" in chunk_text.lower() and "works" in chunk_text.lower():
         return True
     return False
 ```
@@ -1572,6 +1572,10 @@ Preparing a knowledge graph for GraphRAG
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
+    if "implementing" in chunk_text.lower() and "retrieval" in chunk_text.lower():
+        return True
+    if "what" in chunk_text.lower():
+        return True
     return False
 ```
 
@@ -1608,11 +1612,11 @@ The rest of this book walks you through these two critical steps.
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower() and 'vectorcypher' in chunk_text.lower():
+    if "retrieval" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
         return True
-    if 'effective' in chunk_text.lower() and 'retrieval' in chunk_text.lower():
+    if "effective" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
-    if 'knowledge graph' in chunk_text.lower():
+    if "knowledge graph" in chunk_text.lower():
         return True
     return False
 ```
@@ -1647,11 +1651,11 @@ There are two aspects to consider when you're modeling a knowledge graph for AI 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
+    if 'retrieval' in chunk_text.lower():
         return True
-    if "vectorcypher" in chunk_text.lower():
+    if 'vectorcypher' in chunk_text.lower():
         return True
-    if "how" in chunk_text.lower() and "is" in chunk_text.lower():
+    if 'how' in chunk_text.lower() and 'organized' in chunk_text.lower():
         return True
     return False
 ```
@@ -1686,11 +1690,11 @@ The relationships between documents - or how your content is organized and relat
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "context" in chunk_text.lower() and "business" in chunk_text.lower():
+    if "graphrag" in chunk_text.lower():
         return True
-    if "customers" in chunk_text.lower() and "entities" in chunk_text.lower():
+    if "business" in chunk_text.lower():
         return True
-    if "documents" in chunk_text.lower() and "retrieving" in chunk_text.lower():
+    if "context" in chunk_text.lower():
         return True
     return False
 ```
@@ -1735,9 +1739,9 @@ These two layers - the document structure and the business domain - work togethe
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vector" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if "data" in chunk_text.lower() and "unstructured" in chunk_text.lower():
+    if "unstructured" in chunk_text.lower() and "structured" in chunk_text.lower():
         return True
-    if "context" in chunk_text.lower() and "answers" in chunk_text.lower():
+    if "data" in chunk_text.lower() and "content" in chunk_text.lower():
         return True
     return False
 ```
@@ -1774,11 +1778,11 @@ To buil
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "data" in chunk_text.lower() and "context" in chunk_text.lower():
+    if "data" in chunk_text.lower() and "documents" in chunk_text.lower():
         return True
     if "structured" in chunk_text.lower() and "unstructured" in chunk_text.lower():
         return True
-    if "documents" in chunk_text.lower() and "business" in chunk_text.lower():
+    if "context" in chunk_text.lower():
         return True
     return False
 ```
@@ -1841,11 +1845,11 @@ At one end, you've got relational databases and clean CSV, where entities and re
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower():
         return True
-    if "data" in chunk_text.lower() or "knowledge" in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
         return True
-    if "extracting" in chunk_text.lower():
+    if "knowledge graph" in chunk_text.lower():
         return True
     return False
 ```
@@ -1982,11 +1986,11 @@ Finally, you'll test retrieval strategies, from vector search to graph-enhanced 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "create" in chunk_text.lower() and "database" in chunk_text.lower():
+    if "database" in chunk_text.lower():
         return True
-    if "neo4j" in chunk_text.lower():
+    if "create" in chunk_text.lower():
         return True
-    if "auraDB" in chunk_text.lower():
+    if "free" in chunk_text.lower():
         return True
     return False
 ```
@@ -2040,7 +2044,11 @@ Tip: Download your AuraDB credentials (URI, username, password) immediately afte
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if 'vectorcypher' in chunk_text.lower():
+        return True
+    if 'retrieval' in chunk_text.lower():
+        return True
+    if 'database' in chunk_text.lower():
         return True
     return False
 ```
@@ -2095,9 +2103,9 @@ Figure 7. Credential download and continue screen
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
-    if "knowledge graph" in chunk_text.lower():
+    if "ingest" in chunk_text.lower() and "unstructured" in chunk_text.lower():
         return True
-    if "unstructured data" in chunk_text.lower():
+    if "knowledge" in chunk_text.lower() and "graph" in chunk_text.lower():
         return True
     return False
 ```
@@ -2189,7 +2197,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "search" in chunk_text.lower() and "neo4j" in chunk_text.lower():
         return True
-    if "extracting" in chunk_text.lower() and "meaningful" in chunk_text.lower():
+    if "extraction" in chunk_text.lower() and "entity" in chunk_text.lower():
         return True
     return False
 ```
@@ -2236,11 +2244,11 @@ The LLM does the thinking by extracting meaningful concepts from text. The embed
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if 'vectorcypher' in chunk_text.lower():
         return True
-    if "connect" in chunk_text.lower() or "connection" in chunk_text.lower():
+    if 'retrieval' in chunk_text.lower():
         return True
-    if "database" in chunk_text.lower() or "credentials" in chunk_text.lower():
+    if 'connect' in chunk_text.lower() and 'database' in chunk_text.lower():
         return True
     return False
 ```
@@ -2298,9 +2306,9 @@ Figure 9. Credentials from .txt file
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if "initialize" in chunk_text.lower() and "llm" in chunk_text.lower():
+    if "gpt" in chunk_text.lower() and "embeddings" in chunk_text.lower():
         return True
-    if "embeddings" in chunk_text.lower() and "semantic" in chunk_text.lower():
+    if "semantic" in chunk_text.lower() and "search" in chunk_text.lower():
         return True
     return False
 ```
@@ -2332,11 +2340,11 @@ Initialize the LLM and Embeddings
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
+    if 'retrieval' in chunk_text.lower():
         return True
-    if "define" in chunk_text.lower() and "node" in chunk_text.lower():
+    if 'define' in chunk_text.lower() or 'defining' in chunk_text.lower():
         return True
-    if "entities" in chunk_text.lower():
+    if 'entities' in chunk_text.lower():
         return True
     return False
 ```
@@ -2405,11 +2413,11 @@ key moment in the knowledge graph construction process. This is when you determi
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower():
         return True
-    if 'retrieval' in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
         return True
-    if 'what' in chunk_text.lower() and 'are' in chunk_text.lower():
+    if "what" in chunk_text.lower():
         return True
     return False
 ```
@@ -2444,11 +2452,11 @@ Company, Executive, RiskFactor, Product whatever matters to your domain.
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "what" in chunk_text.lower() and "is" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
+    if 'how' in chunk_text.lower() and 'relate' in chunk_text.lower():
         return True
-    if "relationships" in chunk_text.lower() and "connects" in chunk_text.lower():
+    if 'company' in chunk_text.lower() and 'risk' in chunk_text.lower():
         return True
-    if "information" in chunk_text.lower() and "help" in chunk_text.lower():
+    if 'information' in chunk_text.lower() and 'answer' in chunk_text.lower():
         return True
     return False
 ```
@@ -2491,7 +2499,7 @@ If you aren't sure which entities and relationships to include in your first pro
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
-    if "embedding" in chunk_text.lower() and "similarity" in chunk_text.lower():
+    if "similarity-based" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
     if "knowledge" in chunk_text.lower() and "extracting" in chunk_text.lower():
         return True
@@ -2530,11 +2538,7 @@ model used to vectorize text, which supports similarity-based retrieval
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower():
-        return True
-    if 'asynchronous' in chunk_text.lower() or 'async' in chunk_text.lower():
-        return True
-    if 'pipeline' in chunk_text.lower():
+    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower() or 'asynchronous' in chunk_text.lower():
         return True
     return False
 ```
@@ -2696,12 +2700,11 @@ In the context of Neo4j and RAG, here's what you need to know:
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text = chunk_text.lower()
-    if "vectorcypher" in chunk_text or "retrieval" in chunk_text:
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if "semantic" in chunk_text and "search" in chunk_text:
+    if "semantic" in chunk_text.lower() and "search" in chunk_text.lower():
         return True
-    if "question" in chunk_text and "answering" in chunk_text:
+    if "question" in chunk_text.lower() and "answering" in chunk_text.lower():
         return True
     return False
 ```
@@ -2730,12 +2733,11 @@ By using a vector index, Neo4j enables scalable, realtime retrieval of relevant 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    chunk_text_lower = chunk_text.lower()
-    if 'vectorcypher' in chunk_text_lower or 'retrieval' in chunk_text_lower:
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if 'data importer' in chunk_text_lower or 'neo4j' in chunk_text_lower:
+    if "data" in chunk_text.lower() and "importer" in chunk_text.lower():
         return True
-    if 'graph' in chunk_text_lower:
+    if "neo4j" in chunk_text.lower() and "graph" in chunk_text.lower():
         return True
     return False
 ```
@@ -2860,7 +2862,7 @@ Figure 14.  Browse to .csv files screen
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
         return True
     return False
 ```
@@ -2890,10 +2892,6 @@ Figure 15. Run import screen
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "cypher" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "model" in chunk_text.lower():
-        return True
-    if "console" in chunk_text.lower() and "manage" in chunk_text.lower():
         return True
     return False
 ```
@@ -2945,11 +2943,11 @@ If you'd like to work with your own dataset, here's how to get started.The Aura 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
+        return True
+    if "vectorcypher" in chunk_text.lower():
         return True
     if "data" in chunk_text.lower() and "mapping" in chunk_text.lower():
-        return True
-    if "company" in chunk_text.lower() and "filings" in chunk_text.lower():
         return True
     return False
 ```
@@ -2993,11 +2991,11 @@ Label refers to the type of node. Table points to the data source where the info
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower():
+    if 'vectorcypher' in chunk_text.lower():
+        return True
+    if 'retrieval' in chunk_text.lower():
         return True
     if 'company' in chunk_text.lower():
-        return True
-    if 'id' in chunk_text.lower() and 'key' in chunk_text.lower():
         return True
     return False
 ```
@@ -3071,11 +3069,11 @@ Figure 18.  Company node screen
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
     if "document" in chunk_text.lower():
+        return True
+    if "path" in chunk_text.lower():
+        return True
+    if "companies" in chunk_text.lower():
         return True
     return False
 ```
@@ -3185,7 +3183,7 @@ Figure 19.  Path property screen
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if "asset" in chunk_text.lower() or "manager" in chunk_text.lower():
+    if "assetmanager" in chunk_text.lower() or "manager" in chunk_text.lower():
         return True
     if "what" in chunk_text.lower():
         return True
@@ -3252,11 +3250,9 @@ Figure 20.  AssetManager node screen
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "relationship" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
+    if "relationship" in chunk_text.lower() and "connect" in chunk_text.lower():
         return True
-    if "mapping" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "entities" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
+    if "entities" in chunk_text.lower() and "mapping" in chunk_text.lower():
         return True
     return False
 ```
@@ -3317,7 +3313,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if 'retrieval' in chunk_text.lower():
         return True
-    if 'mapping' in chunk_text.lower() and 'relationships' in chunk_text.lower():
+    if 'mapping' in chunk_text.lower():
         return True
     return False
 ```
@@ -3358,7 +3354,7 @@ In a knowledge graph, we want to map the domain knowledge of structured data, wh
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
     return False
 ```
@@ -3399,11 +3395,11 @@ Figure 22. AssetManager gray outline
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
-    if "what" in chunk_text.lower():
+    if "company" in chunk_text.lower() or "relationship" in chunk_text.lower():
         return True
-    if "relationship" in chunk_text.lower():
+    if "edit" in chunk_text.lower() or "parameters" in chunk_text.lower():
         return True
     return False
 ```
@@ -3445,7 +3441,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "assetmanager" in chunk_text.lower():
         return True
-    if "shares" in chunk_text.lower():
+    if "additional" in chunk_text.lower():
         return True
     return False
 ```
@@ -3812,11 +3808,11 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
         return True
     if "what" in chunk_text.lower() and "is" in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower():
+    if "accesses" in chunk_text.lower() and "context" in chunk_text.lower():
         return True
     return False
 ```
@@ -3907,7 +3903,7 @@ This notebook imports the core libraries required for building and querying RAG 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "api" in chunk_text.lower() or "credentials" in chunk_text.lower() or "database" in chunk_text.lower():
+    if 'api' in chunk_text.lower() or 'credentials' in chunk_text.lower() or 'database' in chunk_text.lower():
         return True
     return False
 ```
@@ -3997,9 +3993,9 @@ llm = OPENAIL
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "vector" in chunk_text.lower() and "retriever" in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower() and "information" in chunk_text.lower():
+    if "retrieval" in chunk_text.lower() and "basic" in chunk_text.lower():
         return True
-    if "content" in chunk_text.lower() and "similar" in chunk_text.lower():
+    if "information" in chunk_text.lower() and "requests" in chunk_text.lower():
         return True
     return False
 ```
@@ -4051,11 +4047,11 @@ There are two components in the process:
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() or "retrieval" in chunk_text.lower():
+    if "VectorCypher" in chunk_text.lower():
         return True
-    if "retrieval" in chunk_text.lower() and "vector" in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
         return True
-    if "similarity" in chunk_text.lower() and "searches" in chunk_text.lower():
+    if "work" in chunk_text.lower():
         return True
     return False
 ```
@@ -4105,11 +4101,11 @@ Be sure to review your retrieval results before generating any text output. This
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "Retrieval" in chunk_text:
+    if "VectorCypher" in chunk_text.lower():
         return True
-    if "basic" in chunk_text or "retriever" in chunk_text:
+    if "retrieval" in chunk_text.lower():
         return True
-    if "cyberextortion" in chunk_text or "ransomware" in chunk_text:
+    if "basic" in chunk_text.lower() and "retriever" in chunk_text.lower():
         return True
     return False
 ```
@@ -4159,11 +4155,11 @@ The Basic Retriever Pattern
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retriever" in chunk_text.lower() and "natural language" in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower():
         return True
-    if "data" in chunk_text.lower() and "accurate" in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
         return True
-    if "results" in chunk_text.lower() and "check" in chunk_text.lower():
+    if "natural language generation" in chunk_text.lower():
         return True
     return False
 ```
@@ -4314,11 +4310,7 @@ In other words, the approach demonstrated here retrieves relevant text fragments
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "Vector" in chunk_text and "search" in chunk_text:
-        return True
-    if "graph" in chunk_text and "enhanced" in chunk_text:
-        return True
-    if "retriever" in chunk_text and "pattern" in chunk_text:
+    if "VectorCypher" in chunk_text or "retrieval" in chunk_text or "augmented" in chunk_text:
         return True
     return False
 ```
@@ -4358,11 +4350,11 @@ The Graph-Enhanced Vector Search Pattern, also known as augmented vector search,
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'cypher' in chunk_text.lower() and 'retriever' in chunk_text.lower():
+    if "cypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
         return True
-    if 'cryptocurrency' in chunk_text.lower():
+    if "cryptocurrency" in chunk_text.lower():
         return True
-    if 'query' in chunk_text.lower():
+    if "traverse" in chunk_text.lower() and "graph" in chunk_text.lower():
         return True
     return False
 ```
@@ -4419,11 +4411,11 @@ Let's start by looking at the parts of the graph that help to answer this query.
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'VectorCypher' in chunk_text and 'Retrieval' in chunk_text:
+    if 'VectorCypher' in chunk_text and 'retrieval' in chunk_text:
         return True
-    if 'retrieval' in chunk_text:
+    if 'cypher' in chunk_text and 'query' in chunk_text:
         return True
-    if 'cypher' in chunk_text:
+    if 'semantic' in chunk_text and 'search' in chunk_text:
         return True
     return False
 ```
@@ -4467,11 +4459,11 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text and "retriever" in chunk_text.lower():
+    if "VectorCypher" in chunk_text or "cypher" in chunk_text:
         return True
-    if "Cypher" in chunk_text:
+    if "retriever" in chunk_text and "practice" in chunk_text:
         return True
-    if "retrieve" in chunk_text.lower() and "records" in chunk_text.lower():
+    if "approach" in chunk_text and "any domain" in chunk_text:
         return True
     return False
 ```
@@ -4519,7 +4511,7 @@ How might this look for other industries?
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'VectorCypher' in chunk_text.lower() or 'retriever' in chunk_text.lower():
+    if "VectorCypher" in chunk_text.lower() or "retriever" in chunk_text.lower():
         return True
     return False
 ```
@@ -4572,7 +4564,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "VectorCypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
         return True
-    if "context-aware" in chunk_text.lower() and "questions" in chunk_text.lower():
+    if "context-aware" in chunk_text.lower():
         return True
     return False
 ```
@@ -4702,9 +4694,9 @@ Next, add this new retrieval query to the VectorCyphe
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if "VectorCypher" in chunk_text and "Retrieval" in chunk_text:
         return True
-    if "query" in chunk_text and "cypher" in chunk_text:
+    if "query" in chunk_text and "search" in chunk_text:
         return True
-    if "semantic" in chunk_text and "search" in chunk_text:
+    if "neo4j" in chunk_text and "database" in chunk_text:
         return True
     return False
 ```
@@ -4760,9 +4752,9 @@ result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in 
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if 'retrieval' in chunk_text.lower():
         return True
-    if 'vectorcypher' in chunk_text.lower():
+    if 'vector' in chunk_text.lower():
         return True
-    if 'company' in chunk_text.lower():
+    if 'apple' in chunk_text.lower() or 'amazon' in chunk_text.lower() or 'microsoft' in chunk_text.lower():
         return True
     return False
 ```
@@ -4817,7 +4809,7 @@ Let's look at the results:
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower() or 'cypher' in chunk_text.lower():
+    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower() or "cypher" in chunk_text.lower():
         return True
     return False
 ```
@@ -4846,7 +4838,7 @@ This is where GraphRAG really shines. You may be wondering how to construct the 
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'cypher' in chunk_text.lower() and 'retriever' in chunk_text.lower():
+    if "cypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
         return True
     return False
 ```
@@ -4956,11 +4948,11 @@ Now that you've defined the schema, you have everything you need to set the Text
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'cypher' in chunk_text.lower() and 'vectorcypher' in chunk_text.lower():
+    if "cypher" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
         return True
-    if 'retrieval' in chunk_text.lower():
+    if "retrieval" in chunk_text.lower():
         return True
-    if 'text2cypher' in chunk_text.lower():
+    if "text2cypher" in chunk_text.lower():
         return True
     return False
 ```
@@ -5142,7 +5134,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
         return True
     if "graphrag" in chunk_text.lower():
         return True
-    if "integrating" in chunk_text.lower():
+    if "knowledge graph" in chunk_text.lower():
         return True
     return False
 ```
@@ -5223,11 +5215,11 @@ embeddings and graph neural networks, promises to enhance the semantic understan
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower() or "neo4j" in chunk_text.lower():
+    if "graphrag" in chunk_text.lower():
         return True
-    if "explore" in chunk_text.lower() and "genai" in chunk_text.lower():
+    if "neo4j" in chunk_text.lower():
         return True
-    if "implementation" in chunk_text.lower():
+    if "genai" in chunk_text.lower():
         return True
     return False
 ```
@@ -5370,11 +5362,11 @@ Data Importer Tool                            | Visual UI for mapping CSVs and r
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() or "vector" in chunk_text.lower():
+    if "cypher" in chunk_text.lower():
+        return True
+    if "vector" in chunk_text.lower() and "accuracy" in chunk_text.lower():
         return True
     if "automatically" in chunk_text.lower() and "queries" in chunk_text.lower():
-        return True
-    if "contextual" in chunk_text.lower() and "accuracy" in chunk_text.lower():
         return True
     return False
 ```

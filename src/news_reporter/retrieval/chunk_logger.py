@@ -12,33 +12,36 @@ logger = logging.getLogger(__name__)
 CHUNK_LOGS_DIR = Path("/app/logs/chunk_analysis")
 CHUNK_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
-CHUNKS_RLM_DISABLED_FILE = CHUNK_LOGS_DIR / "chunks_rlm_disabled.md"
-CHUNKS_RLM_ENABLED_FILE = CHUNK_LOGS_DIR / "chunks_rlm_enabled.md"
+CHUNK_LOGS_ENABLE_DIR = CHUNK_LOGS_DIR / "enable"
+CHUNK_LOGS_DISABLE_DIR = CHUNK_LOGS_DIR / "disable"
+CHUNK_LOGS_ENABLE_DIR.mkdir(parents=True, exist_ok=True)
+CHUNK_LOGS_DISABLE_DIR.mkdir(parents=True, exist_ok=True)
+
+CHUNKS_RLM_DISABLED_FILE = CHUNK_LOGS_DISABLE_DIR / "chunks_rlm_disabled.md"
+CHUNKS_RLM_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "chunks_rlm_enabled.md"
 AGGREGATE_RAW_FILE_NAME = "aggregate_final_answer_raw.md"
 
 
-def _resolve_chunk_logs_dir(output_dir: Optional[str] = None) -> Path:
-    """Resolve chunk logs directory with local fallback."""
-    if output_dir:
-        target_dir = Path(output_dir)
-        target_dir.mkdir(parents=True, exist_ok=True)
-        return target_dir
-
-    logs_dir = os.getenv("LOGS_DIR", str(CHUNK_LOGS_DIR))
-    target_dir = Path(logs_dir)
+def _resolve_chunk_logs_dir(output_dir: Optional[str] = None, rlm_enabled: bool = False) -> Path:
+    """Resolve chunk logs directory with RLM enable/disable subfolder."""
+    base_dir = output_dir if output_dir else os.getenv("LOGS_DIR", str(CHUNK_LOGS_DIR))
+    target_dir = Path(base_dir)
 
     if not target_dir.is_absolute() or str(target_dir).startswith("/app"):
         if os.name == "nt" and not Path("/.dockerenv").exists():
             candidate = (Path(os.getcwd()) / ".." / ".." / "logs" / "chunk_analysis").resolve()
             target_dir = candidate if candidate.exists() else Path("./logs/chunk_analysis")
-
+    
+    # Add enable/disable subfolder
+    subfolder = "enable" if rlm_enabled else "disable"
+    target_dir = target_dir / subfolder
     target_dir.mkdir(parents=True, exist_ok=True)
     return target_dir
 
 
-def init_aggregate_raw_log(query: Optional[str] = None, output_dir: Optional[str] = None) -> Path:
+def init_aggregate_raw_log(query: Optional[str] = None, output_dir: Optional[str] = None, rlm_enabled: bool = True) -> Path:
     """Initialize the aggregate raw log (overwrite per query)."""
-    target_dir = _resolve_chunk_logs_dir(output_dir)
+    target_dir = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled)
     output_path = target_dir / AGGREGATE_RAW_FILE_NAME
 
     content = [
@@ -66,10 +69,11 @@ def append_aggregate_raw_chunk(
     file_name: str,
     chunk_text: str,
     phase: str,
-    output_dir: Optional[str] = None
+    output_dir: Optional[str] = None,
+    rlm_enabled: bool = True
 ) -> None:
     """Append a passing chunk to the aggregate raw log."""
-    output_path = _resolve_chunk_logs_dir(output_dir) / AGGREGATE_RAW_FILE_NAME
+    output_path = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled) / AGGREGATE_RAW_FILE_NAME
 
     entry = [
         f"### Chunk: {chunk_id}\n",
@@ -90,10 +94,11 @@ def log_aggregate_raw_final_set(
     file_id: str,
     file_name: str,
     selected_chunks: List[Dict],
-    output_dir: Optional[str] = None
+    output_dir: Optional[str] = None,
+    rlm_enabled: bool = True
 ) -> None:
     """Append the final selected chunks before summarization."""
-    output_path = _resolve_chunk_logs_dir(output_dir) / AGGREGATE_RAW_FILE_NAME
+    output_path = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled) / AGGREGATE_RAW_FILE_NAME
 
     header = [
         "## Final Selected Chunks\n\n",
@@ -204,7 +209,8 @@ async def log_chunks_to_markdown(
 async def log_phase3_expansion(
     entry_chunks: List[Dict],
     expanded_chunks: Dict[str, Dict],
-    query: Optional[str] = None
+    query: Optional[str] = None,
+    rlm_enabled: bool = True
 ) -> None:
     """
     Log Phase 3 file expansion details to markdown.
@@ -213,6 +219,7 @@ async def log_phase3_expansion(
         entry_chunks: Original entry chunks from retrieval
         expanded_chunks: Result from expand_to_full_files() - {file_id: {chunks: [...], ...}}
         query: Original query string
+        rlm_enabled: Whether RLM is enabled (defaults to True since Phase 3 only runs with RLM)
     """
     
     try:
@@ -242,7 +249,7 @@ async def log_phase3_expansion(
         # Log expanded chunks
         await log_chunks_to_markdown(
             chunks=all_expanded_chunks,
-            rlm_enabled=True,
+            rlm_enabled=rlm_enabled,
             query=query,
             metadata=metadata
         )

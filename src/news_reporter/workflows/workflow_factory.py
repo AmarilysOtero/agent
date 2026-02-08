@@ -465,7 +465,8 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                             await log_final_answer_to_markdown(
                                 answer=final_answer,
                                 query=goal,
-                                output_dir="/app/logs/chunk_analysis"
+                                output_dir="/app/logs/chunk_analysis",
+                                rlm_enabled=high_recall_mode
                             )
                         except Exception as e:
                             logger.warning(f"⚠️  Failed to log Phase 5 answer: {e}")

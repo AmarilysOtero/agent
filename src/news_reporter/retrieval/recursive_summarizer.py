@@ -1423,7 +1423,7 @@ async def recursive_summarize_files(
     )
 
     # Initialize raw aggregate log (overwrite per query)
-    init_aggregate_raw_log(query=query)
+    init_aggregate_raw_log(query=query, rlm_enabled=rlm_enabled)
 
     summaries = []
     inspection_code = {}  # Store LLM-generated inspection logic per file
@@ -1510,7 +1510,8 @@ async def recursive_summarize_files(
                                 file_id=file_id,
                                 file_name=file_name,
                                 chunk_text=chunk_text,
-                                phase="per_chunk_inspector"
+                                phase="per_chunk_inspector",
+                                rlm_enabled=rlm_enabled
                             )
                             logger.debug(f"    ✓ {chunk_short_id} passed inspection")
                         else:
@@ -1612,7 +1613,8 @@ async def recursive_summarize_files(
                 log_aggregate_raw_final_set(
                     file_id=file_id,
                     file_name=file_name,
-                    selected_chunks=selected_chunks_for_log
+                    selected_chunks=selected_chunks_for_log,
+                    rlm_enabled=rlm_enabled
                 )
 
             # Step 3: Summarize relevant chunks
@@ -2551,7 +2553,8 @@ async def _process_file_with_rlm_recursion(
                     file_id=file_id,
                     file_name=file_name,
                     chunk_text=chunk_text,
-                    phase="iterative_boolean_eval"
+                    phase="iterative_boolean_eval",
+                    rlm_enabled=rlm_enabled
                 )
                 chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
                 logger.debug(f"    ✓ {chunk_short_id} passed boolean evaluation")
@@ -3083,9 +3086,9 @@ async def log_file_summaries_to_markdown(
             output_dir = "./logs/chunk_analysis"
 
     try:
-        # Determine output file
-        file_suffix = "enabled" if rlm_enabled else "disabled"
-        output_path = Path(output_dir) / f"summaries_rlm_{file_suffix}.md"
+        # Determine output file with RLM enable/disable subfolder
+        subfolder = "enable" if rlm_enabled else "disable"
+        output_path = Path(output_dir) / subfolder / "summaries_rlm_enabled.md"
 
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3161,14 +3164,12 @@ async def log_inspection_code_to_markdown(
             output_dir = "./logs/chunk_analysis"
 
     try:
-        # FIX #7: Use different filenames and suffix for iterative vs per-chunk
-        # Determine output file based on mode
+        # Determine output file with RLM enable/disable subfolder
+        subfolder = "enable" if rlm_enabled else "disable"
         if mode == "iterative":
-            file_suffix = "enabled" if rlm_enabled else "disabled"
-            output_path = Path(output_dir) / f"inspection_programs_iterative_{file_suffix}.md"
+            output_path = Path(output_dir) / subfolder / "inspection_programs_iterative_enabled.md"
         else:
-            file_suffix = "enabled" if rlm_enabled else "disabled"
-            output_path = Path(output_dir) / f"inspection_code_rlm_{file_suffix}.md"
+            output_path = Path(output_dir) / subfolder / "inspection_code_rlm_enabled.md"
 
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3278,9 +3279,9 @@ async def log_inspection_code_with_text_to_markdown(
             output_dir = "./logs/chunk_analysis"
 
     try:
-        # FIX #7: Use consistent suffix (enabled/disabled, not enable/disable)
-        file_suffix = "enabled" if rlm_enabled else "disabled"
-        output_path = Path(output_dir) / f"inspection_code_chunk_rlm_{file_suffix}.md"
+        # Use RLM enable/disable subfolder
+        subfolder = "enable" if rlm_enabled else "disable"
+        output_path = Path(output_dir) / subfolder / "inspection_code_chunk_rlm_enabled.md"
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -478,7 +478,8 @@ def _create_empty_answer() -> Answer:
 async def log_final_answer_to_markdown(
     answer: Answer,
     query: str,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: str = "/app/logs/chunk_analysis",
+    rlm_enabled: bool = False
 ) -> None:
     """
     Log Phase 5 final answer with citations to markdown file.
@@ -487,13 +488,15 @@ async def log_final_answer_to_markdown(
         answer: Answer object with citations
         query: User query
         output_dir: Output directory for logs
+        rlm_enabled: Whether RLM is enabled (affects subdirectory)
     """
     from pathlib import Path
     from datetime import datetime
 
     try:
-        # Determine output file
-        output_path = Path(output_dir) / "final_answer_phase5.md"
+        # Determine output file with RLM enable/disable subdirectory
+        subfolder = "enable" if rlm_enabled else "disable"
+        output_path = Path(output_dir) / subfolder / "final_answer_phase5.md"
         
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,27 +1,27 @@
 # Phase 4: Recursive Summarization (RLM Enabled)
 
-**Execution Time:** 2026-02-08T01:04:15.025761
+**Execution Time:** 2026-02-08T01:06:11.887667
 
-**Query:** What is VectorCypher Retrieva
+**Query:** Where does Alexis work?
 
-**Query Hash:** `729ee660` (use to verify artifacts match current query)
+**Query Hash:** `83333be0` (use to verify artifacts match current query)
 
 **Total Summaries:** 1
 
 ---
 
-## 1. Developers-Guide-GraphRAG.pdf
+## 1. Alexis Torres - DXC Resume.pdf
 
-**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
-**Chunks:** 8/106 summarized
-**Expansion Ratio:** 26.50x
+**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf
+**Chunks:** 2/16 summarized
+**Expansion Ratio:** 16.00x
 
 ### Summary
 
-VectorCypher Retrieval is a tool that allows users to ask complex, context-aware questions about entities within their industry by connecting structured and unstructured data. It utilizes semantic search to identify relevant chunks of information, then traverses a graph database using Cypher queries to extract related entities and relationships. For example, it can identify asset managers affected by reseller concerns by linking relevant documents and company data. The integration of semantic and structural search enhances the retrieval process, making it applicable across various domains, such as finance and education.
+Alexis Torres works at DXC Technology as a Senior Technical Consultant in Isabela, PR, since August 2021. In this role, he has been involved in various development efforts for the Solumina application, project management for migrations of healthcare applications, and leading a software development group through certification processes. He also serves as a full stack developer and business analyst for AI solutions in the manufacturing industry.
 
 ### Source Chunks
 
-8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
+8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9, 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1
 
 ---

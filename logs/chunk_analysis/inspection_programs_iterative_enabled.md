@@ -1,10 +1,10 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-08T01:04:15.019913
+**Execution Time:** 2026-02-08T01:06:11.880107
 
-**Query:** What is VectorCypher Retrieva
+**Query:** Where does Alexis work?
 
-**Query Hash:** `729ee660` (use to verify artifacts match current query)
+**Query Hash:** `83333be0` (use to verify artifacts match current query)
 
 **Total Inspection Programs:** 1
 
@@ -31,12 +31,12 @@ These functions (inspect_iteration(chunks) -> dict) are executed by the recursiv
 
 ---
 
-## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf)
+## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
 
 
 ### 1.1 Chunk: iteration_0
 
-**Query:** What is VectorCypher Retrieva
+**Query:** Where does Alexis work?
 
 ```python
 def inspect_iteration(chunks):
@@ -46,19 +46,19 @@ def inspect_iteration(chunks):
     stop = False
 
     for chunk in chunks:
-        if "VectorCypher" in chunk['text']:
+        if "DXC Technology" in chunk['text']:
             selected_chunk_ids.append(chunk['chunk_id'])
-            extracted_data['VectorCypher'] = chunk['text']
-    
+            extracted_data['workplace'] = "DXC Technology"
+            confidence += 0.5
+
+        if "Senior Technical Consultant" in chunk['text']:
+            selected_chunk_ids.append(chunk['chunk_id'])
+            confidence += 0.5
+
+    confidence = min(confidence, 1.0)
+
     if len(selected_chunk_ids) >= 2:
-        confidence = 0.8
         stop = True
-    elif len(selected_chunk_ids) == 1:
-        confidence = 0.5
-        stop = False
-    else:
-        confidence = 0.2
-        stop = False
 
     return {
         "selected_chunk_ids": selected_chunk_ids,

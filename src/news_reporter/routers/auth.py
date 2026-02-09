@@ -76,20 +76,21 @@ if _MONGO_AVAILABLE:
             # Connection already tested above
             print(f"[AUTH] Successfully connected to MongoDB database: {auth_db.name}")
     except Exception as e:
-        print(f"[AUTH] Failed to connect to MongoDB: {e}")
+        import traceback
+        print(f"[AUTH] ❌ Failed to connect to MongoDB: {e}")
         print(f"[AUTH] Connection string: {MONGO_AUTH_URL.split('@')[0]}@***")
+        print(f"[AUTH] Full error traceback:")
+        traceback.print_exc()
         print(f"[AUTH] Troubleshooting:")
-        print(f"  1. Verify MongoDB is running (run from any directory):")
-        print(f"     docker ps | findstr rag-mongo")
-        print(f"  2. Check password matches MONGO_APP_PASS (run from RAG_Infra directory):")
-        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
-        print(f"     # Check .env file for MONGO_APP_PASS value")
-        print(f"  3. Verify user exists (run from RAG_Infra directory):")
-        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
-        print(f"     docker exec rag-mongo mongosh -u root -p rootpassword --authenticationDatabase admin")
-        print(f"  4. Test connection (run from RAG_Infra directory):")
-        print(f"     cd c:\\Alexis\\Projects\\RAG_Infra")
-        print(f"     docker exec rag-mongo mongosh \"{MONGO_AUTH_URL.split('@')[0]}@127.0.0.1:27017/{MONGO_AUTH_URL.split('/')[-1].split('?')[0]}?authSource={auth_source}\"")
+        print(f"  1. Verify MongoDB is running:")
+        print(f"     netstat -an | findstr :27017")
+        print(f"  2. Check password matches MONGO_APP_PASS in RAG_Infra/.env")
+        print(f"  3. Verify user 'user_rw' exists in auth_db:")
+        print(f"     Connect to MongoDB and check if user exists")
+        print(f"  4. Common issues:")
+        print(f"     - Password mismatch (check .env files)")
+        print(f"     - User doesn't exist (run bootstrap script)")
+        print(f"     - Database doesn't exist")
         # We don't raise here to avoid crashing the whole app on import, 
         # but endpoints will fail if called.
         auth_db = None
@@ -188,9 +189,17 @@ async def register(user_data: UserRegister):
     
     # Check if MongoDB is connected
     if users_collection is None:
+        error_detail = (
+            "Authentication service is unavailable. MongoDB connection failed. "
+            "Please check:\n"
+            "1. MongoDB is running (docker ps | findstr rag-mongo)\n"
+            "2. MONGO_AUTH_URL is set in .env file\n"
+            "3. User 'user_rw' exists in auth_db with correct password\n"
+            "4. Check server logs for connection errors"
+        )
         raise HTTPException(
             status_code=503,
-            detail="Authentication service is unavailable. MongoDB connection failed."
+            detail=error_detail
         )
 
     # Check if user already exists

@@ -49,7 +49,10 @@ def _foundry_tool_to_spec(t: Any) -> tuple[str, str, str, dict]:
 
 
 def _tool_def_from_db(t: Dict[str, Any]) -> Dict[str, Any]:
-    """Build Foundry ToolDefinition dict from our DB tool."""
+    """
+    Build Foundry ToolDefinition dict from our DB tool.
+    For code-defined tools (source="code"), includes webhook endpoint for execution.
+    """
     tt = t.get("type") or "function"
     name = t.get("name") or ""
     desc = t.get("description") or ""
@@ -57,7 +60,44 @@ def _tool_def_from_db(t: Dict[str, Any]) -> Dict[str, Any]:
     params = spec.get("parameters")
     if params is None:
         params = {"type": "object", "properties": {}}
-    return {"type": "function", "function": {"name": name, "description": desc, "parameters": params}}
+    
+    # Build base tool definition
+    tool_def = {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": desc,
+            "parameters": params
+        }
+    }
+    
+    # Check if this is a code-defined tool that needs webhook
+    source = t.get("source")
+    if source == "code":
+        # For code-defined tools, add webhook endpoint configuration
+        import os
+        
+        # Get backend URL from environment
+        backend_url = (
+            os.getenv("AGENT_BACKEND_URL") or
+            os.getenv("NEXT_PUBLIC_AGENT_URL") or
+            os.getenv("BACKEND_URL") or
+            "http://localhost:8787"  # Default fallback
+        )
+        backend_url = backend_url.rstrip("/")
+        webhook_url = f"{backend_url}/api/tools/webhook/execute"
+        
+        logger.info(f"[TOOLS_SERVICE] Registering code tool '{name}' with webhook: {webhook_url}")
+        
+        # Add endpoint to tool definition
+        # Foundry may recognize this in different formats depending on SDK version
+        # Try adding it as endpoint in the function definition
+        tool_def["function"]["endpoint"] = webhook_url
+        
+        # Also try adding at top level (some Foundry versions may look here)
+        tool_def["endpoint"] = webhook_url
+    
+    return tool_def
 
 
 def sync_foundry_agent_tools(agent_id: str) -> List[str]:

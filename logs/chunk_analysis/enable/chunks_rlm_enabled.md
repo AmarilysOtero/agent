@@ -4,14 +4,14 @@ This file contains chunk information from the latest query execution.
 
 ---
 
-## Execution: 2026-02-08T02:22:13.830682
+## Execution: 2026-02-09T02:39:09.003171
 **Query**: What is VectorCypher Retrieva
 
 **Metadata**:
-- Entry Chunks: 4
+- Entry Chunks: 5
 - Expanded Chunks: 106
 - Source Files: 1
-- Expansion Ratio: 106 / 4
+- Expansion Ratio: 106 / 5
 - Files Expanded: Developers-Guide-GraphRAG.pdf (4/106)
 
 **Total Chunks**: 106

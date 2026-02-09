@@ -1,6 +1,6 @@
 # Phase 4: Recursive Summarization (RLM Enabled)
 
-**Execution Time:** 2026-02-08T02:23:30.083537
+**Execution Time:** 2026-02-09T02:40:28.012657
 
 **Query:** What is VectorCypher Retrieva
 
@@ -18,7 +18,7 @@
 
 ### Summary
 
-VectorCypher Retriever is a tool that enables complex, context-aware queries across structured and unstructured data by leveraging semantic and structural search capabilities. It allows users to ask specific questions, such as identifying asset managers affected by reseller concerns, by starting with semantically related chunks and traversing the graph to relevant entities and relationships. The process involves defining node types, creating vector indexes, and crafting domain-specific Cypher queries to effectively retrieve information. This integration of semantic search with graph traversal enhances the retrieval of relevant data in various domains, such as finance and education.
+VectorCypher Retriever is a tool that enables complex, context-aware queries by combining semantic and structural search capabilities within a knowledge graph. It allows users to ask specific questions, such as identifying asset managers affected by reseller concerns, by traversing relationships in the graph, like OWNS, to connect relevant entities. The retriever utilizes vector indexes for semantic retrieval and executes Cypher queries to extract and analyze data effectively, providing insights tailored to the user's domain. This integration enhances understanding by surfacing information across both structured and unstructured data.
 
 ### Source Chunks
 

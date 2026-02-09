@@ -1,6 +1,6 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-08T02:23:30.077784
+**Execution Time:** 2026-02-09T02:40:28.006441
 
 **Query:** What is VectorCypher Retrieva
 
@@ -40,18 +40,19 @@ These functions (inspect_iteration(chunks) -> dict) are executed by the recursiv
 
 ```python
 def inspect_iteration(chunks):
-    relevant_chunk_ids = []
+    selected_chunk_ids = []
     extracted_data = {}
-    
+    confidence = 0.0
+
     for chunk in chunks:
         if "VectorCypher" in chunk['text']:
-            relevant_chunk_ids.append(chunk['chunk_id'])
-            extracted_data['VectorCypher'] = chunk['text']
-    
-    confidence = len(relevant_chunk_ids) / len(chunks)
-    
+            selected_chunk_ids.append(chunk['chunk_id'])
+            confidence += 0.2  # Increment confidence for each relevant chunk
+
+    confidence = min(confidence, 1.0)  # Ensure confidence does not exceed 1.0
+
     return {
-        "selected_chunk_ids": relevant_chunk_ids,
+        "selected_chunk_ids": selected_chunk_ids,
         "extracted_data": extracted_data,
         "confidence": confidence,
         "stop": False

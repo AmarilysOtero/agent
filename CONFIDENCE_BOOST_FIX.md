@@ -3,6 +3,7 @@
 ## Problem Statement
 
 Chunk #5 from Alexis Torres' resume contained a comprehensive skills list:
+
 - "Waterfall, Agile, SCRUM, KANBAN, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular, Node, MVC, Spring Boot, Django, Docker, Kubernetes, GitHub, OpenShift, AMQ, Camel, Prometheus, Grafana"
 
 However, when querying "tell me the list of skill you can find for Alexis", this chunk was filtered out and the final answer fell back to inferring skills from job titles instead of using the actual data.
@@ -36,12 +37,15 @@ Implemented a hybrid approach that combines both filtering layers:
 **File**: `recursive_summarizer.py`
 
 #### 1. Added Import
+
 ```python
 from typing import List, Dict, Optional, Any, Set  # Added Set
 ```
 
 #### 2. Pre-Iteration Boolean Evaluation
+
 Added to `_process_file_with_rlm_recursion()` before iteration loop:
+
 ```python
 # Generate and execute `evaluate_chunk_relevance()` for each chunk
 boolean_approved_chunk_ids: Set[str] = set()
@@ -50,18 +54,19 @@ logger.info(f"  🔍 Generating per-chunk boolean evaluations for confidence boo
 for idx, chunk in enumerate(active_chunks):
     chunk_id = chunk.get("chunk_id")
     chunk_text = chunk.get("text", "").strip()
-    
+
     # Generate boolean evaluation code
     generated_code = await _generate_inspection_logic(...)
-    
+
     # Execute the boolean evaluation
     is_relevant = await _evaluate_chunk_with_code(...)
-    
+
     if is_relevant:
         boolean_approved_chunk_ids.add(chunk_id)
 ```
 
 #### 3. Updated Function Signature
+
 ```python
 async def _execute_inspection_program(
     chunks: List[Dict],
@@ -73,21 +78,23 @@ async def _execute_inspection_program(
 ```
 
 #### 4. Confidence Boosting Logic
+
 Added to `_execute_inspection_program()` after confidence calculation:
+
 ```python
 # If selected chunks include any that passed per-chunk boolean evaluation,
 # boost confidence to ensure they survive the 0.9 threshold filter.
 if boolean_approved_chunk_ids:
     boolean_approved_in_selection = [
-        cid for cid in selected_ids 
+        cid for cid in selected_ids
         if cid in boolean_approved_chunk_ids
     ]
-    
+
     if boolean_approved_in_selection:
         boost_ratio = len(boolean_approved_in_selection) / max(1, len(selected_ids))
         # Set confidence to at least 0.95 to ensure passing 0.9 threshold
         boosted_confidence = max(confidence, 0.85 + (boost_ratio * 0.1))
-        
+
         if boosted_confidence > confidence:
             logger.info(
                 f"    🚀 Confidence boosted: {confidence:.2f} → {boosted_confidence:.2f}"
@@ -96,6 +103,7 @@ if boolean_approved_chunk_ids:
 ```
 
 #### 5. Updated Function Call
+
 ```python
 result = await _execute_inspection_program(
     chunks=active_chunks,
@@ -117,6 +125,7 @@ boosted_confidence = max(confidence, 0.85 + (boost_ratio * 0.1))
 Where `boost_ratio = approved_chunks_selected / total_chunks_selected`
 
 **Examples**:
+
 - **100% approved**: `0.85 + (1.0 * 0.1) = 0.95` ✅ Passes 0.9 threshold
 - **50% approved**: `0.85 + (0.5 * 0.1) = 0.90` ✅ Passes 0.9 threshold
 - **0% approved**: Uses original confidence (no boost)
@@ -149,17 +158,19 @@ Where `boost_ratio = approved_chunks_selected / total_chunks_selected`
 ✅ **Fixes false negatives** - Boolean-approved chunks survive filtering  
 ✅ **Minimal overhead** - Only runs per-chunk eval once before iterations  
 ✅ **Smart boosting** - Scales with proportion of approved chunks selected  
-✅ **Logging visibility** - Clear indicators when boosting occurs  
+✅ **Logging visibility** - Clear indicators when boosting occurs
 
 ## Testing
 
 To test with the original query:
+
 ```
 Query: "tell me the list of skill you can find for Alexis"
 Expected: Chunk #5 (Skills section) included in final answer
 ```
 
 Look for log messages:
+
 ```
 🔍 Generating per-chunk boolean evaluations for confidence boosting...
 ✓ chunk_5 passed boolean evaluation

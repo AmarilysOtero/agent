@@ -4,8 +4,8 @@ This file captures raw chunks before LLM summarization.
 
 ---
 
-## Execution: 2026-02-09T02:39:09.031483
-**Query**: What is VectorCypher Retrieva
+## Execution: 2026-02-09T03:03:35.893181
+**Query**: What is VectorCypher     Retrieval
 
 ---
 
@@ -16,6 +16,8 @@ This file captures raw chunks before LLM summarization.
 ### File: Developers-Guide-GraphRAG.pdf (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf)
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
+
+**Analyzed At:** 2026-02-09T03:04:59.046430
 
 ```text
 VectorCypher Retriever in Practice
@@ -42,6 +44,8 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
 
+**Analyzed At:** 2026-02-09T03:04:59.046452
+
 ```text
 VectorCypher Retrieval: A Working Example
 Which Asset Managers are most affected by reseller concerns?
@@ -56,6 +60,8 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 ```
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
+
+**Analyzed At:** 2026-02-09T03:04:59.046456
 
 ```text
 VectorCypher Retriever in Practice
@@ -73,6 +79,8 @@ The result: You can ask complex, context-aware questions about entities in your 
 ```
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
+
+**Analyzed At:** 2026-02-09T03:04:59.046460
 
 ```text
 Executes a Cypher query to traverse the graph based on these nodes.
@@ -94,6 +102,8 @@ Next, let's add this new retrieval query to the VectorCypherRetriever parameters
 ```
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
+
+**Analyzed At:** 2026-02-09T03:04:59.046464
 
 ```text
 Table of Contents (continued)
@@ -117,6 +127,8 @@ You've built a retrieval-augmented generation (RAG) system. You embedded the doc
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
 
+**Analyzed At:** 2026-02-09T03:04:59.046468
+
 ```text
 Table of Contents (continued)
 | PART IV: Implementing GraphRAG Retrieval Patterns ..................................................                            |   17 |
@@ -131,6 +143,8 @@ Table of Contents (continued)
 ```
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
+
+**Analyzed At:** 2026-02-09T03:04:59.046472
 
 ```text
 Import Libraries
@@ -151,6 +165,8 @@ These imports enable advanced semantic search, retrieval, and GenAI capabilities
 ```
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
+
+**Analyzed At:** 2026-02-09T03:04:59.047246
 
 ```text
 VectorCypherRetriever parameters:

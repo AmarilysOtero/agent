@@ -48,6 +48,7 @@ for file_id, file_data in expanded_files.items():
 ```
 
 **Current State**:
+
 - `file_id`: Unique identifier for the file (e.g., "file_abc123")
 - `chunks`: List of Dict objects, each containing: `{chunk_id, text, page, offset, section, ...}`
 - `total_chunks`: Number of chunks expanded by Phase 3
@@ -123,6 +124,7 @@ for file_id, file_data in expanded_files.items():
 
 **Function**: `_generate_inspection_logic()`  
 **Input Parameters**:
+
 - `query`: User query (e.g., "where does Kevin work?")
 - `file_name`: Document name (e.g., "resume.pdf")
 - `chunk_id`: Unique chunk identifier (e.g., "chunk_5:offset_2400")
@@ -131,6 +133,7 @@ for file_id, file_data in expanded_files.items():
 - `model_deployment`: Azure deployment name (e.g., "o3-mini")
 
 **LLM Call Details**:
+
 ```
 System Prompt: "You are a Python expert implementing iterative inspection programs..."
 Temperature: 0.3 (low randomness, deterministic)
@@ -139,6 +142,7 @@ Deployment: gpt-4o-mini (forced for code gen, even if o3-mini configured)
 ```
 
 **Generated Code**:
+
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
     """
@@ -154,12 +158,14 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 **Validation** (`_validate_inspection_code()`):
+
 - Checks for FunctionDef AST node
 - Validates return statements (defaults to False, not True)
 - Checks evidence-only rule: string literals come from query or chunk text
 - Catches inverted logic patterns
 
 **Sanity Tests** (`_run_inspection_code_sanity_tests()`):
+
 - Tests with empty string → must return False
 - Tests with garbage text → must return False
 - Tests with actual chunk text → returns deterministic result
@@ -183,10 +189,10 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 
    IF sandbox succeeds:
       Return result boolean
-   
+
    IF sandbox fails (timeout/crash):
       Fall through to fallback
-      
+
 2. FALLBACK: In-Process exec()
    └─ Function: exec(code, safe_globals, namespace)
    └─ safe_globals: Restricted dictionary (no dangerous modules)
@@ -199,6 +205,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 #### Phase 4.3: Selection and Post-Processing
 
 **Guardrails**:
+
 ```python
 selection_ratio = len(relevant_chunk_ids) / max(1, len(chunks))
 if selection_ratio > 0.9 and len(chunks) > 5:
@@ -208,6 +215,7 @@ if selection_ratio > 0.9 and len(chunks) > 5:
 ```
 
 **Budget Filter**:
+
 ```python
 final_selected_chunk_ids = _apply_selection_budget(
     chunks=chunks,
@@ -225,7 +233,8 @@ final_selected_chunk_ids = _apply_selection_budget(
 
 **Enabled When**: `USE_MIT_RLM_RECURSION = true`  
 **Performance**: Efficient (1 per-chunk eval + N iterations)  
-**Advantages**: 
+**Advantages**:
+
 - Smarter narrowing each iteration
 - One LLM call per iteration (not per chunk)
 - Handles 100+ chunks efficiently
@@ -362,14 +371,15 @@ All Chunks from File
 **New in RLM**: Before iterations begin, all chunks are evaluated with their own `evaluate_chunk_relevance()` function.
 
 **Loop**:
+
 ```python
 for idx, chunk in enumerate(active_chunks):
     # STEP 1: Generate code for this chunk (per-chunk, Phase 4.1 above)
     generated_code = await _generate_inspection_logic(...)
-    
+
     # STEP 2: Execute code with sandbox (per-chunk, Phase 4.2 above)
     is_relevant = await _evaluate_chunk_with_code(...)
-    
+
     # STEP 3: Track approved chunks
     if is_relevant:
         boolean_approved_chunk_ids.add(chunk_id)
@@ -383,6 +393,7 @@ for idx, chunk in enumerate(active_chunks):
 **Iteration**: 0, 1, 2, ... (up to 5)
 
 **LLM Call Details**:
+
 ```
 System Prompt: "You are a Python expert implementing iterative inspection programs..."
 Temperature: 0.3
@@ -398,14 +409,15 @@ User Prompt includes:
 ```
 
 **Generated Function Signature**:
+
 ```python
 def inspect_iteration(chunks):
     """
     Evaluate chunks for this iteration and return structured output.
-    
+
     Args:
         chunks: List of dicts with keys: chunk_id, text
-    
+
     Returns:
         {
             "selected_chunk_ids": [...],    # IDs to keep
@@ -417,6 +429,7 @@ def inspect_iteration(chunks):
 ```
 
 **Logical Requirements**:
+
 1. Evaluate ALL chunks
 2. Select FEWER chunks than input (narrow focus)
 3. Return 2+ selected IDs (unless stopping)
@@ -425,12 +438,14 @@ def inspect_iteration(chunks):
 6. Use simple string operations only (no imports)
 
 **Validation** (`_validate_inspection_program()`):
+
 - Checks for correct function definition
 - Validates return structure
 - Prevents "select all" patterns
 - AST-based validation
 
 **Sanity Tests** (`_run_inspection_program_sanity_tests()`):
+
 - Test with limited chunk set
 - Verify narrowing occurs
 - Check output schema validity
@@ -443,16 +458,18 @@ def inspect_iteration(chunks):
 **Function**: `_execute_inspection_program()`
 
 **Execution Path**:
+
 ```
 1. PRIMARY: Subprocess Sandbox
    timeout: 5 seconds (longer than per-chunk)
    memory: 512 MB (more for full set)
-   
+
 2. FALLBACK: In-process exec()
    Same safe_globals as per-chunk
 ```
 
 **Input Data Structure**:
+
 ```python
 chunk_list = [
     {
@@ -465,6 +482,7 @@ chunk_list = [
 ```
 
 **Program Execution**:
+
 ```python
 # Inside sandbox or in-process:
 raw_result = inspect_iteration(chunk_list)
@@ -483,6 +501,7 @@ raw_result = inspect_iteration(chunk_list)
 **Steps in order**:
 
 1. **Validate Selection**:
+
    ```python
    selected_ids = raw_result.get("selected_chunk_ids", [])
    # Filter to valid IDs only
@@ -490,6 +509,7 @@ raw_result = inspect_iteration(chunk_list)
    ```
 
 2. **Enforce Minimum**:
+
    ```python
    MIN_KEEP = 2
    if not should_stop and len(selected_ids) < MIN_KEEP:
@@ -498,6 +518,7 @@ raw_result = inspect_iteration(chunk_list)
    ```
 
 3. **Broad Selection Guard**:
+
    ```python
    selection_ratio = len(selected_ids) / max(1, len(chunk_list))
    if selection_ratio > 0.9 and len(chunk_list) > 3:
@@ -508,12 +529,13 @@ raw_result = inspect_iteration(chunk_list)
    ```
 
 4. **Confidence Boosting** (NEW):
+
    ```python
    boolean_approved_in_selection = [
        cid for cid in selected_ids
        if cid in boolean_approved_chunk_ids
    ]
-   
+
    if boolean_approved_in_selection:
        boost_ratio = len(boolean_approved_in_selection) / len(selected_ids)
        boosted_confidence = max(confidence, 0.85 + (boost_ratio * 0.1))
@@ -577,11 +599,13 @@ if shrink_ratio > 0.9 and not should_stop:
 **Function**: `_summarize_chunks()`
 
 **Input**:
+
 - `relevant_chunks`: List of selected chunk texts
 - `query`: Original user query
 - `file_name`: File name for context
 
 **Process**:
+
 ```
 1. Concatenate chunk texts
 2. Call LLM summarization:
@@ -605,11 +629,11 @@ Total Chunks: 36
 CHUNK 0 (Work History):
   Code Gen: "if 'work' in text or 'company' in text: return True"
   Execute: ✓ True → Added to relevant_chunks
-  
+
 CHUNK 5 (Skills):
   Code Gen: "if 'skills' in text or 'list' in text: return True"
   Execute: ✓ True → Added to relevant_chunks
-  
+
 CHUNK 10 (Education):
   Code Gen: "if 'education' in text or 'degree' in text: return True"
   Execute: ✗ False → Not added
@@ -669,17 +693,17 @@ Result: Summarize with actual skill data included
 
 ## Key Code Locations
 
-| Component | Function | File | Lines |
-|-----------|----------|------|-------|
-| Entry point | `recursively_retrieve_and_summarize()` | recursive_summarizer.py | 1270-1700 |
-| Per-chunk code gen | `_generate_inspection_logic()` | recursive_summarizer.py | 1685-1850 |
-| Per-chunk execution | `_evaluate_chunk_with_code()` | recursive_summarizer.py | 2140-2180 |
-| Iterative setup | `_process_file_with_rlm_recursion()` | recursive_summarizer.py | 2360-2550 |
-| Boolean eval loop | (inline in _process_file_with_rlm_recursion) | recursive_summarizer.py | 2385-2425 |
-| Program generation | `_generate_recursive_inspection_program()` | recursive_summarizer.py | 1960-2090 |
-| Program execution | `_execute_inspection_program()` | recursive_summarizer.py | 2210-2340 |
-| Confidence boosting | (inline in _execute_inspection_program) | recursive_summarizer.py | 2295-2312 |
-| Summarization | `_summarize_chunks()` | recursive_summarizer.py | 1630-1660 |
+| Component           | Function                                      | File                    | Lines     |
+| ------------------- | --------------------------------------------- | ----------------------- | --------- |
+| Entry point         | `recursively_retrieve_and_summarize()`        | recursive_summarizer.py | 1270-1700 |
+| Per-chunk code gen  | `_generate_inspection_logic()`                | recursive_summarizer.py | 1685-1850 |
+| Per-chunk execution | `_evaluate_chunk_with_code()`                 | recursive_summarizer.py | 2140-2180 |
+| Iterative setup     | `_process_file_with_rlm_recursion()`          | recursive_summarizer.py | 2360-2550 |
+| Boolean eval loop   | (inline in \_process_file_with_rlm_recursion) | recursive_summarizer.py | 2385-2425 |
+| Program generation  | `_generate_recursive_inspection_program()`    | recursive_summarizer.py | 1960-2090 |
+| Program execution   | `_execute_inspection_program()`               | recursive_summarizer.py | 2210-2340 |
+| Confidence boosting | (inline in \_execute_inspection_program)      | recursive_summarizer.py | 2295-2312 |
+| Summarization       | `_summarize_chunks()`                         | recursive_summarizer.py | 1630-1660 |
 
 ---
 
@@ -707,12 +731,12 @@ Result: Summarize with actual skill data included
 
 ## LLM Models Used
 
-| Stage | Model | Config | Purpose |
-|-------|-------|--------|---------|
-| Code Generation | gpt-4o-mini (forced) | temp=0.3 | Reliable code output |
-| Per-Chunk Eval | gpt-4o-mini | temp=0.3 | Generate evaluate_chunk_relevance() |
-| Iteration Program | gpt-4o-mini | temp=0.3 | Generate inspect_iteration() |
-| Summarization | o3-mini (or override) | temp=0.2 | Final text summarization |
+| Stage             | Model                 | Config   | Purpose                             |
+| ----------------- | --------------------- | -------- | ----------------------------------- |
+| Code Generation   | gpt-4o-mini (forced)  | temp=0.3 | Reliable code output                |
+| Per-Chunk Eval    | gpt-4o-mini           | temp=0.3 | Generate evaluate_chunk_relevance() |
+| Iteration Program | gpt-4o-mini           | temp=0.3 | Generate inspect_iteration()        |
+| Summarization     | o3-mini (or override) | temp=0.2 | Final text summarization            |
 
 ---
 
@@ -731,12 +755,14 @@ MAX_TOTAL_CHARS_FOR_SUMMARY = int(os.getenv("MAX_TOTAL_CHARS_FOR_SUMMARY", "1200
 ## Error Handling
 
 ### Per-Chunk Mode
+
 - **LLM Call Fails**: Log warning, skip chunk
 - **Code Generation Invalid**: Log warning, skip chunk
 - **Code Execution Fails**: Default to False (not relevant)
 - **Multiple Generators Exceed Limit**: Reject entire file
 
 ### Iterative Mode
+
 - **LLM Program Gen Fails**: Use fallback program (query-term based)
 - **Program Execution Fails**: Use fallback result
 - **Program Returns Invalid Data**: Repair and continue
@@ -746,12 +772,12 @@ MAX_TOTAL_CHARS_FOR_SUMMARY = int(os.getenv("MAX_TOTAL_CHARS_FOR_SUMMARY", "1200
 
 ## Performance Characteristics
 
-| Metric | Per-Chunk | Iterative |
-|--------|-----------|-----------|
-| LLM Calls (36 Chunks) | 36 | 1-5 |
-| Code Executions | 36 | 36 + iterations |
-| Typical Duration | 2-5 min | 30-60 sec |
-| Recommended Max Chunks | <50 | 100+ |
+| Metric                 | Per-Chunk | Iterative       |
+| ---------------------- | --------- | --------------- |
+| LLM Calls (36 Chunks)  | 36        | 1-5             |
+| Code Executions        | 36        | 36 + iterations |
+| Typical Duration       | 2-5 min   | 30-60 sec       |
+| Recommended Max Chunks | <50       | 100+            |
 
 ---
 
@@ -762,11 +788,13 @@ MAX_TOTAL_CHARS_FOR_SUMMARY = int(os.getenv("MAX_TOTAL_CHARS_FOR_SUMMARY", "1200
 **Solution**: Track boolean-approved chunks, boost confidence when they're selected
 
 **Formula**:
+
 ```python
 boosted_confidence = max(current_confidence, 0.85 + (approved_ratio * 0.1))
 ```
 
 **Effect**:
+
 - 100% approved: 0.95 (passes 0.9 threshold)
 - 50% approved: 0.90 (passes 0.9 threshold)
 - 0% approved: No boost (maintain current confidence)

@@ -3221,8 +3221,10 @@ async def log_inspection_code_to_markdown(
             
             chunk_counter = 1
             for chunk_id, code in chunk_codes.items():
+                chunk_timestamp = datetime.now().isoformat()
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
+                    f"\n**Analyzed At:** {chunk_timestamp}",
                     f"\n**Query:** {query}\n",
                     "```python",
                     code,

@@ -2247,6 +2247,76 @@ def _get_fallback_inspection_program(query: str, iteration: int) -> str:
     )
 
 
+async def _evaluate_keywords_with_inspection_code(
+    keywords: List[str],
+    inspection_code: str,
+    chunk_id: str
+) -> bool:
+    """
+    Evaluate keywords against inspection code (fast-path before full text evaluation).
+
+    MIT RLM Optimization: Execute the inspection code against keywords instead of full text.
+    This enables fast pre-filtering of chunks: if keywords match the inspection criteria,
+    skip First Read and proceed directly to Recursive Text evaluation.
+
+    Args:
+        keywords: List of keywords extracted by Neo4j (from chunk metadata)
+        inspection_code: Python code containing evaluate_chunk_relevance function
+        chunk_id: ID of chunk for logging
+
+    Returns:
+        True if keywords match inspection criteria, False otherwise
+    """
+    # Hard cap on code size  (prevent memory bombs)
+    MAX_CODE_SIZE = 5000
+    if len(inspection_code) > MAX_CODE_SIZE:
+        logger.warning(f"⚠️  Code for {chunk_id} exceeds size limit ({len(inspection_code)} > {MAX_CODE_SIZE})")
+        return False
+    
+    # Use keywords as synthetic text: "keyword1 keyword2 keyword3..."
+    # This allows the inspection code to match against extracted keywords
+    # without needing the full chunk text
+    keyword_text = " ".join(keywords) if keywords else ""
+    
+    if not keyword_text:
+        # No keywords available, fall back to False (will evaluate full text in normal flow)
+        return False
+    
+    try:
+        # ── Primary path: subprocess sandbox ──
+        sandbox_result = await sandbox_exec(
+            kind="chunk_eval",
+            code=inspection_code,
+            input_data={"chunk_text": keyword_text},  # Pass keyword text, not full chunk text
+        )
+        if sandbox_result["ok"]:
+            return bool(sandbox_result["result"])
+
+        # Sandbox failed (timeout / crash) – log and fall through to in-process
+        logger.warning(
+            f"⚠️  Keyword sandbox failed for {chunk_id}: {sandbox_result.get('error')}; "
+            f"falling back to in-process exec"
+        )
+
+        # ── Fallback: in-process exec (last resort) ──
+        safe_globals = _build_safe_globals()
+        namespace = {}
+        exec(inspection_code, safe_globals, namespace)
+        evaluate_func = namespace.get("evaluate_chunk_relevance")
+        if evaluate_func is None:
+            logger.warning(f"⚠️  Code for {chunk_id} doesn't contain evaluate_chunk_relevance; returning False")
+            return False
+        result = evaluate_func(keyword_text)
+        return bool(result)
+        
+    except SyntaxError as e:
+        logger.warning(f"⚠️  Syntax error in keyword eval for {chunk_id}: {e}")
+        return False
+    except Exception as e:
+        logger.warning(f"⚠️  Error executing keyword eval for {chunk_id}: {e}")
+        return False
+
+
 async def _evaluate_chunk_with_code(
     chunk_text: str,
     inspection_code: str,
@@ -2317,6 +2387,7 @@ async def _execute_inspection_program(
     iteration: int,
     query: str = "",
     boolean_approved_chunk_ids: Optional[Set[str]] = None,
+    keyword_approved_chunk_ids: Optional[Set[str]] = None,
 ) -> Dict:
     """
     Execute inspection program (iterative mode) and return structured output.
@@ -2331,6 +2402,9 @@ async def _execute_inspection_program(
         boolean_approved_chunk_ids: Set of chunk IDs that passed per-chunk boolean evaluation.
                                      If provided, confidence will be boosted for selections
                                      that include these chunks.
+        keyword_approved_chunk_ids: Set of chunk IDs that matched keyword pre-filter.
+                                     If provided, confidence will be boosted higher than
+                                     boolean-approved chunks (priorities: keyword > boolean > none)
 
     The program is expected to define:
         def inspect_iteration(chunks) -> Dict
@@ -2417,27 +2491,47 @@ async def _execute_inspection_program(
         else:
             confidence = max(0.0, min(1.0, raw_result.get("confidence", 0.5)))
             
-            # ── NEW: Boost confidence for boolean-approved chunks ──
+            # ── NEW: Boost confidence for keyword-approved chunks (highest priority) ──
+            # Chunks that matched keyword pre-filter get highest boost (0.90-1.0)
+            if keyword_approved_chunk_ids:
+                keyword_approved_in_selection = [
+                    cid for cid in selected_ids 
+                    if cid in keyword_approved_chunk_ids
+                ]
+                
+                if keyword_approved_in_selection:
+                    # Keyword match is strongest signal → boost to 0.92 minimum
+                    boost_ratio = len(keyword_approved_in_selection) / max(1, len(selected_ids))
+                    keyword_boosted_confidence = max(confidence, 0.90 + (boost_ratio * 0.08))
+                    
+                    if keyword_boosted_confidence > confidence:
+                        chunk_short_ids = [cid.split(':')[-1] for cid in keyword_approved_in_selection[:3]]
+                        logger.info(
+                            f"    🗝️  Confidence boosted (keywords): {confidence:.2f} → {keyword_boosted_confidence:.2f} "
+                            f"(keyword-approved: {', '.join(chunk_short_ids)}"
+                            f"{' + more' if len(keyword_approved_in_selection) > 3 else ''})"
+                        )
+                        confidence = keyword_boosted_confidence
+            
+            # ── EXISTING: Boost confidence for boolean-approved chunks (secondary) ──
             # If selected chunks include any that passed per-chunk boolean evaluation,
-            # boost confidence to ensure they survive the 0.9 threshold filter.
-            if boolean_approved_chunk_ids:
+            # boost confidence (but less than keyword-approved)
+            elif boolean_approved_chunk_ids:
                 boolean_approved_in_selection = [
                     cid for cid in selected_ids 
                     if cid in boolean_approved_chunk_ids
                 ]
                 
                 if boolean_approved_in_selection:
-                    # Boost confidence based on the proportion of boolean-approved chunks selected
+                    # Boolean match is strong signal → boost to 0.80-0.90
                     boost_ratio = len(boolean_approved_in_selection) / max(1, len(selected_ids))
-                    # Set confidence to at least 0.95 to ensure passing 0.9 threshold
-                    # Scale based on how many boolean-approved chunks were selected
-                    boosted_confidence = max(confidence, 0.85 + (boost_ratio * 0.1))
+                    boosted_confidence = max(confidence, 0.80 + (boost_ratio * 0.1))
                     
                     if boosted_confidence > confidence:
                         chunk_short_ids = [cid.split(':')[-1] for cid in boolean_approved_in_selection[:3]]
                         logger.info(
-                            f"    🚀 Confidence boosted: {confidence:.2f} → {boosted_confidence:.2f} "
-                            f"(boolean-approved chunks: {', '.join(chunk_short_ids)}"
+                            f"    🚀 Confidence boosted (boolean): {confidence:.2f} → {boosted_confidence:.2f} "
+                            f"(boolean-approved: {', '.join(chunk_short_ids)}"
                             f"{' + more' if len(boolean_approved_in_selection) > 3 else ''})"
                         )
                         confidence = boosted_confidence
@@ -2514,7 +2608,53 @@ async def _process_file_with_rlm_recursion(
     final_confidence = 0.0
     narrowing_streak = 0
 
-    # ── NEW: Per-chunk boolean evaluation for confidence boosting ────────
+    # ── NEW: Keyword-based pre-filter (fast path) ─────────────────────────
+    # Before full text evaluation, try matching against extracted keywords from Neo4j.
+    # If keywords match the inspection criteria → skip First Read, jump to Recursive Text.
+    # If keywords don't match → proceed with normal First Read + Recursive Text flow.
+    keyword_approved_chunk_ids: Set[str] = set()
+    
+    logger.info(f"  🔎 Performing keyword-based pre-filter (Neo4j keywords)...")
+    for idx, chunk in enumerate(active_chunks):
+        chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
+        chunk_text = chunk.get("text", "").strip()
+        
+        # Extract keywords from metadata
+        keywords = chunk.get("metadata", {}).get("keywords", []) if isinstance(chunk.get("metadata"), dict) else []
+        
+        if not chunk_text or not keywords:
+            continue
+        
+        try:
+            # Generate inspection code for this chunk (same as boolean evaluation)
+            generated_code = await _generate_inspection_logic(
+                query=query,
+                file_name=file_name,
+                chunk_id=chunk_id,
+                chunk_text=chunk_text,
+                llm_client=llm_client,
+                model_deployment=model_deployment
+            )
+            
+            # Fast-path: Evaluate keywords against inspection code
+            keywords_match = await _evaluate_keywords_with_inspection_code(
+                keywords=keywords,
+                inspection_code=generated_code,
+                chunk_id=chunk_id
+            )
+            
+            if keywords_match:
+                keyword_approved_chunk_ids.add(chunk_id)
+                chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
+                logger.debug(f"    ✓ {chunk_short_id} passed keyword pre-filter (keywords: {keywords[:3]})")
+        
+        except Exception as e:
+            logger.debug(f"    ⚠️  Keyword pre-filter failed for chunk {idx}: {e}")
+            continue
+    
+    logger.info(f"  ✅ Keyword pre-filter complete: {len(keyword_approved_chunk_ids)}/{len(active_chunks)} chunks approved")
+
+    # ── EXISTING: Per-chunk boolean evaluation for confidence boosting ────────
     # Generate and execute `evaluate_chunk_relevance()` for each chunk
     # to identify which chunks pass strict boolean criteria.
     # These will receive confidence boost if selected by iteration programs.
@@ -2554,7 +2694,7 @@ async def _process_file_with_rlm_recursion(
                     file_name=file_name,
                     chunk_text=chunk_text,
                     phase="iterative_boolean_eval",
-                    rlm_enabled=rlm_enabled
+                    rlm_enabled=True  # Always True when called from _process_file_with_rlm_recursion
                 )
                 chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
                 logger.debug(f"    ✓ {chunk_short_id} passed boolean evaluation")
@@ -2598,6 +2738,7 @@ async def _process_file_with_rlm_recursion(
                 iteration=iteration,
                 query=query,
                 boolean_approved_chunk_ids=boolean_approved_chunk_ids,
+                keyword_approved_chunk_ids=keyword_approved_chunk_ids,
             )
 
             selected_ids = result.get("selected_chunk_ids", [])

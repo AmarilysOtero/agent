@@ -1,10 +1,10 @@
 # Phase 4: Recursive Summarization (RLM Enabled)
 
-**Execution Time:** 2026-02-09T03:05:00.466353
+**Execution Time:** 2026-02-09T03:38:46.351900
 
-**Query:** What is VectorCypher     Retrieval
+**Query:** What is  VectorCypher  Retrieval
 
-**Query Hash:** `0392c147` (use to verify artifacts match current query)
+**Query Hash:** `cb14f8b5` (use to verify artifacts match current query)
 
 **Total Summaries:** 1
 
@@ -18,7 +18,7 @@
 
 ### Summary
 
-VectorCypher is a retrieval tool designed to answer complex, context-aware questions by connecting structured and unstructured data within a graph database. It allows users to perform semantic searches and traverse relationships in the data, such as identifying asset managers affected by specific concerns or risk factors related to companies discussing cryptocurrency. By defining node types, relationships, and crafting domain-specific Cypher queries, users can integrate VectorCypher with their data to enhance retrieval accuracy and relevance. This tool combines semantic and structural search capabilities to deliver insights tailored to specific industries or contexts.
+VectorCypher Retrieval is a method that allows users to ask complex, context-aware questions within their industry by leveraging both semantic and structural search capabilities. It operates by identifying semantically similar chunks of data and traversing graph relationships to extract relevant entities, such as Asset Managers affected by specific concerns. The process involves defining node types and relationships, indexing the appropriate data, and crafting domain-specific Cypher queries to retrieve information from a Neo4j knowledge graph. This integration enables users to obtain insights that connect structured and unstructured data, enhancing their understanding of real-world scenarios.
 
 ### Source Chunks
 

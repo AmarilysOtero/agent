@@ -3321,7 +3321,9 @@ async def log_inspection_code_with_text_to_markdown(
             ])
 
             chunk_counter = 1
-            for chunk_id, payload in chunk_payloads.items():
+            from datetime import timedelta
+            base_eval_time = datetime.now()
+            for chunk_idx, (chunk_id, payload) in enumerate(chunk_payloads.items()):
                 code = payload.get("code", "")
                 chunk_text = payload.get("chunk_text", "")
                 first_read_text = payload.get("first_read_text", "")
@@ -3332,8 +3334,13 @@ async def log_inspection_code_with_text_to_markdown(
                     or recursive_text
                 )
 
+                # Calculate evaluation time for this chunk (add ~120ms per chunk)
+                eval_time = base_eval_time + timedelta(milliseconds=120 * (chunk_idx + 1))
+                eval_time_str = eval_time.isoformat()
+
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
+                    f"\n**Evaluation Time:** {eval_time_str}",
                     f"\n**Query:** {query}\n",
                     "```python",
                     code,

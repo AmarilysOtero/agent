@@ -4,10 +4,10 @@ This file contains chunk information from the latest query execution.
 
 ---
 
-## Execution: 2026-02-09T02:41:44.626359
-**Query**: What is VectorCypher Retrieva
+## Execution: 2026-02-09T02:49:51.699747
+**Query**: What is VectorCypher Retrieval
 
-**Total Chunks**: 5
+**Total Chunks**: 4
 
 ### Chunks
 
@@ -17,7 +17,6 @@ This file contains chunk information from the latest query execution.
 | 2 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90` | N/A | VectorCypher Retrieval: A Working Example Which Asset Managers are most affected by reseller concern... | 522 bytes |
 | 3 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89` | N/A | VectorCypher Retriever in Practice structural search.  The result: You can ask complex, context-awar... | 905 bytes |
 | 4 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6` | N/A | Table of Contents (continued) \|   20 \| \| VectorCypher Retriever in Practice............................ | 1210 bytes |
-| 5 | `8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5` | N/A | Table of Contents (continued) \| PART IV: Implementing GraphRAG Retrieval Patterns ..................... | 1176 bytes |
 
 ---
 

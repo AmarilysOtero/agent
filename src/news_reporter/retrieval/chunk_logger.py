@@ -112,7 +112,9 @@ def log_aggregate_raw_final_set(
         for chunk in selected_chunks:
             chunk_id = chunk.get("chunk_id", "unknown")
             chunk_text = chunk.get("text", "")
+            timestamp = datetime.now().isoformat()
             f.write(f"#### Chunk: {chunk_id}\n\n")
+            f.write(f"**Analyzed At:** {timestamp}\n\n")
             f.write("```text\n")
             f.write(f"{chunk_text}\n")
             f.write("```\n\n")
@@ -175,10 +177,11 @@ async def log_chunks_to_markdown(
         
         # Add chunks table
         content.append("### Chunks\n\n")
-        content.append("| # | Chunk ID | File | Text Preview | Size |\n")
-        content.append("|---|----------|------|--------------|------|\n")
+        content.append("| # | Timestamp | Chunk ID | File | Text Preview | Size |\n")
+        content.append("|---|-----------|----------|------|--------------|------|\n")
         
         for idx, chunk in enumerate(chunks, 1):
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
             chunk_id = chunk.get("chunk_id", chunk.get("id", "N/A"))
             file_name = chunk.get("file", "N/A")
             text = chunk.get("text", "")
@@ -186,7 +189,7 @@ async def log_chunks_to_markdown(
             text_preview = text_preview.replace("\n", " ").replace("|", "\\|")
             size = len(text)
             
-            content.append(f"| {idx} | `{chunk_id}` | {file_name} | {text_preview} | {size} bytes |\n")
+            content.append(f"| {idx} | {timestamp} | `{chunk_id}` | {file_name} | {text_preview} | {size} bytes |\n")
         
         content.append("\n---\n\n")
         

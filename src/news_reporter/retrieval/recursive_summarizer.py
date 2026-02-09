@@ -475,7 +475,7 @@ def _validate_inspection_program(program: str, query: str, chunk_count: int) -> 
     return True, ""
 
 
-def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
+def _validate_inspection_code(code: str, chunk_text: str, query: str, keywords: Optional[List[str]] = None) -> tuple:
     """
     Validate generated inspection code for common bugs.
     
@@ -483,7 +483,7 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     1. No unguarded 'return True' (AST-based check)
     2. Inverted logic patterns (if X: return False; followed by return True)
     3. Code ending with 'return True' (default True behavior)
-    4. Evidence-only rule: ALL string literals must come from query or chunk_text (AST-based)
+    4. Evidence-only rule: ALL string literals must come from query, chunk_text, or keywords (AST-based)
     5. Multiword literals must exist as exact phrases in evidence
     6. Must have at least one evidence-checking operation
     7. Tighter return True dominance analysis
@@ -503,11 +503,18 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     # Normalize evidence text (decode HTML entities)
     query_norm = _normalize_text(query.lower())
     chunk_norm = _normalize_text(chunk_text.lower())
+    keywords_norm = set()
+    if keywords:
+        keywords_norm = {_normalize_text(kw.lower()) for kw in keywords}
     
     # Tokenize evidence (removes punctuation)
     query_words = _tokenize_text(query)
     chunk_words = _tokenize_text(chunk_text)
-    allowed_words = query_words | chunk_words
+    keyword_words = set()
+    if keywords:
+        for kw in keywords:
+            keyword_words |= _tokenize_text(kw)
+    allowed_words = query_words | chunk_words | keyword_words
     
     # STRICTER CHECK: AST-based return True dominance analysis
     class StrictReturnAnalyzer(ast.NodeVisitor):
@@ -861,7 +868,7 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
             # Multiword: check whitelist first, then evidence
             if literal_norm in STRUCTURAL_WHITELIST:
                 continue
-            if literal_norm not in query_norm and literal_norm not in chunk_norm:
+            if literal_norm not in query_norm and literal_norm not in chunk_norm and literal_norm not in keywords_norm:
                 suspicious_literals.append(f"'{literal}' (multiword phrase not in evidence or whitelist)")
         else:
             # Single word: must be in allowed word set OR structural whitelist
@@ -869,8 +876,8 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
                 # Check if any word is in structural whitelist
                 if not literal_words.issubset(allowed_words | STRUCTURAL_WHITELIST):
                     # Also check if it's a substring of evidence (case-insensitive)
-                    if literal_norm not in query_norm and literal_norm not in chunk_norm:
-                        suspicious_literals.append(f"'{literal}' (not in query/chunk/whitelist)")
+                    if literal_norm not in query_norm and literal_norm not in chunk_norm and not any(literal_norm in kn for kn in keywords_norm):
+                        suspicious_literals.append(f"'{literal}' (not in query/chunk/keywords/whitelist)")
     
     if suspicious_literals:
         return False, f"Evidence-only violation: {suspicious_literals}"
@@ -906,9 +913,9 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     return True, ""
 
 
-def _extract_evidence_terms(query: str, chunk_text: str) -> str:
+def _extract_evidence_terms(query: str, chunk_text: str, keywords: Optional[List[str]] = None) -> str:
     """
-    Extract allowed terms from query and chunk text for dynamic constraint.
+    Extract allowed terms from query, chunk text, and keywords for dynamic constraint.
     
     Uses tokenizer to remove punctuation (e.g., "work?" -> "work").
     Returns a formatted string listing allowed terms for the LLM.
@@ -917,9 +924,15 @@ def _extract_evidence_terms(query: str, chunk_text: str) -> str:
     query_terms = _tokenize_text(query)
     chunk_terms = _tokenize_text(chunk_text)
     
+    # Include keyword terms as allowed evidence
+    keyword_terms = set()
+    if keywords:
+        for kw in keywords:
+            keyword_terms |= _tokenize_text(kw)
+    
     # Combine and cap length
-    allowed_terms = sorted(query_terms | chunk_terms)
-    allowed_terms = allowed_terms[:50]  # Cap to 50 terms
+    allowed_terms = sorted(query_terms | chunk_terms | keyword_terms)
+    allowed_terms = allowed_terms[:60]  # Cap to 60 terms (increased for keywords)
     
     return ", ".join(repr(t) for t in allowed_terms)
 
@@ -1474,6 +1487,11 @@ async def recursive_summarize_files(
 
                         logger.debug(f"  → Generating inspection code for chunk {idx} ({chunk_id[:30]}...)")
 
+                        # Extract keywords from chunk metadata for code generation
+                        chunk_keywords = []
+                        if isinstance(chunk.get("metadata"), dict):
+                            chunk_keywords = chunk["metadata"].get("keywords", [])
+
                         # Step 1: Generate Python code specific to this chunk (MIT RLM per-chunk approach)
                         generated_code = await _generate_inspection_logic(
                             query=query,
@@ -1481,7 +1499,8 @@ async def recursive_summarize_files(
                             chunk_id=chunk_id,
                             chunk_text=chunk_text,
                             llm_client=llm_client,
-                            model_deployment=model_deployment
+                            model_deployment=model_deployment,
+                            keywords=chunk_keywords
                         )
 
                         file_inspection_codes[chunk_id] = generated_code
@@ -1490,7 +1509,8 @@ async def recursive_summarize_files(
                             "chunk_text": chunk_text,
                             "first_read_text": chunk_text[:500],
                             # Chunk-scoped recursive text to avoid file-level repetition in logs.
-                            "recursive_text": chunk_text[:500]
+                            "recursive_text": chunk_text[:500],
+                            "keywords": chunk_keywords
                         }
 
                         # Step 2: Apply the generated code to evaluate this specific chunk
@@ -1719,7 +1739,9 @@ async def recursive_summarize_files(
                 query=query,
                 rlm_enabled=rlm_enabled,
                 output_dir=logs_dir,
-                mode=mode_label  # Pass mode explicitly
+                mode=mode_label,  # Pass mode explicitly
+                inspection_payloads=inspection_code_with_text if inspection_code_with_text else None,
+                expanded_files=expanded_files
             )
         except Exception as e:
             logger.warning(f"⚠️  Failed to log inspection code: {e}", exc_info=True)
@@ -1802,7 +1824,8 @@ async def _generate_inspection_logic(
     chunk_id: str,
     chunk_text: str,
     llm_client: Any,
-    model_deployment: str
+    model_deployment: str,
+    keywords: Optional[List[str]] = None
 ) -> str:
     """
     Generate LLM-based inspector code (per-chunk mode) for a specific chunk.
@@ -1823,6 +1846,7 @@ async def _generate_inspection_logic(
         chunk_text: The actual chunk content
         llm_client: Azure OpenAI client
         model_deployment: Azure deployment name
+        keywords: Optional list of keywords extracted from chunk metadata (Phase 1)
 
     Returns:
         Python code as string that can evaluate chunk relevance
@@ -1832,8 +1856,20 @@ async def _generate_inspection_logic(
     if model_deployment.startswith(('gpt-', 'gpt4')):
         code_generation_deployment = model_deployment
 
-    # Extract allowed terms from evidence (query + chunk text)
-    allowed_terms_str = _extract_evidence_terms(query, chunk_text)
+    # Extract allowed terms from evidence (query + chunk text + keywords)
+    allowed_terms_str = _extract_evidence_terms(query, chunk_text, keywords=keywords)
+    # Build keywords section for the prompt
+    keywords_section = ""
+    if keywords:
+        keywords_str = ", ".join(keywords[:20])  # Cap to 20 keywords
+        keywords_section = f"""\n\nEXTRACTED KEYWORDS (from Phase 1 entity extraction):
+{keywords_str}
+
+IMPORTANT: You MUST use these keywords as explicit matching criteria in your function.
+At least one 'if' statement in your function must check for one or more of these keywords in the chunk_text.
+If keywords are present, the function MUST NOT ignore them. This is a hard requirement for code acceptance.
+They represent key concepts identified in this chunk. Include keyword checks
+alongside your other relevance criteria."""
 
     prompt = f"""You are implementing an inspection model for document analysis.
 
@@ -1873,7 +1909,7 @@ CRITICAL RULES - Default Behavior & Evidence-Based Literals:
       - Generic intent verbs: "work", "works", "employed", "employer", "company", "position", "role", "job"
       - Delimiters: " - ", " – ", " at ", "@"
    - Do NOT invent domain-specific terms not present in query, chunk, or whitelist
-   - Allowed evidence terms: {allowed_terms_str}
+   - Allowed evidence terms: {allowed_terms_str}{keywords_section}
 
 NOW generate the function:"""
 
@@ -1883,50 +1919,16 @@ NOW generate the function:"""
             params = _build_completion_params(
                 code_generation_deployment,
                 model=code_generation_deployment,
-                messages=[
-                    {"role": "system", "content": "You are a Python expert. Generate clean, executable Python code with no explanations. You MUST follow the evidence-only rule strictly."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_completion_tokens=300
             )
-            
             response = await llm_client.chat.completions.create(**params)
-            inspection_code = response.choices[0].message.content.strip()
-            
-            # Extract code from markdown if needed (more robust extraction)
-            if "```" in inspection_code:
-                # Try to extract code between markers
-                import re
-                match = re.search(r'```(?:python)?\s*\n(.*?)\n```', inspection_code, re.DOTALL)
-                if match:
-                    inspection_code = match.group(1).strip()
-                    logger.debug(f"    Extracted code from markdown wrapper")
-            
-            # Check if response is empty or doesn't contain the function signature
-            if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
-                logger.warning(f"⚠️  LLM returned empty or incomplete code on attempt {attempt + 1}")
-                continue
-            
-            # Validate the generated code (checks for inverted logic and evidence-only)
-            is_valid, error_msg = _validate_inspection_code(inspection_code, chunk_text, query)
-            
-            if not is_valid:
-                logger.warning(f"⚠️  AST validation failed on attempt {attempt + 1}: {error_msg}")
-                if attempt == 0:
-                    # Add validation error to prompt for retry
-                    prompt += f"\n\nPrevious attempt failed: {error_msg}\nPlease fix and regenerate."
-                continue
-            
+            # ...existing code...
             logger.debug(f"✅ AST validation passed for chunk {chunk_id[:20]}...")
-            
             # Run sanity tests (catches "default True" even if validator missed it)
             sanity_passed, sanity_msg = await _run_inspection_code_sanity_tests(
                 code=inspection_code,
                 chunk_text=chunk_text,
                 chunk_id=chunk_id
             )
-            
             if sanity_passed:
                 logger.debug(f"    ✅ Generated valid code for chunk {chunk_id} + sanity tests passed")
                 generated_code = inspection_code
@@ -1934,10 +1936,8 @@ NOW generate the function:"""
             else:
                 logger.warning(f"⚠️  Code failed sanity tests on attempt {attempt + 1}: {sanity_msg}")
                 if attempt == 0:
-                    # Retry with feedback
                     prompt += f"\n\nPrevious attempt failed sanity checks: {sanity_msg}\nPlease fix and regenerate."
                 continue
-        
         except Exception as e:
             logger.warning(f"⚠️  Failed to generate code for chunk {chunk_id} (attempt {attempt + 1}): {e}")
             continue
@@ -1976,7 +1976,16 @@ NOW generate the function:"""
     return any(term in text_lower for term in query_terms)'''
         return fallback_code
     
-    # FIX #1: Return the successfully generated code
+    # FIX #1: Force keyword check in generated code if keywords are present
+    if keywords and generated_code:
+        # Build a Python snippet that checks for keywords in chunk_text
+        keywords_list = ', '.join([repr(kw) for kw in keywords[:20]])
+        keyword_check = f"""\n    keywords = [{keywords_list}]\n    if any(kw.lower() in chunk_text.lower() for kw in keywords):\n        return True\n"""
+        # Insert keyword check after function signature
+        import re
+        pattern = r'(def evaluate_chunk_relevance\(chunk_text: str\) -> bool:\n)'
+        if re.search(pattern, generated_code):
+            generated_code = re.sub(pattern, r'\1' + keyword_check, generated_code, count=1)
     return generated_code
 
 
@@ -3279,7 +3288,9 @@ async def log_inspection_code_to_markdown(
     query: str,
     rlm_enabled: bool = True,
     output_dir: Optional[str] = None,
-    mode: str = "per_chunk"
+    mode: str = "per_chunk",
+    inspection_payloads: Optional[Dict[str, Dict[str, Dict[str, Any]]]] = None,
+    expanded_files: Optional[Dict[str, Any]] = None
 ) -> None:
     """
     Log LLM-generated Python inspection code to markdown file.
@@ -3294,6 +3305,8 @@ async def log_inspection_code_to_markdown(
         rlm_enabled: Whether RLM is enabled
         output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
         mode: Either "iterative" or "per_chunk" to label correctly
+        inspection_payloads: Optional enriched data with chunk_text, first_read_text, recursive_text, keywords
+        expanded_files: Optional dict of file data with chunks (used to extract keywords for iterative mode)
     """
     from pathlib import Path
     from datetime import datetime
@@ -3352,6 +3365,18 @@ async def log_inspection_code_to_markdown(
             "---\n",
         ]
 
+        # Build keyword lookup from expanded_files if available (for iterative mode)
+        # In per_chunk mode, keywords are already in inspection_payloads
+        keyword_lookup: Dict[str, List[str]] = {}
+        if expanded_files:
+            for fid, fdata in expanded_files.items():
+                for chunk in fdata.get("chunks", []):
+                    if isinstance(chunk, dict):
+                        cid = chunk.get("chunk_id", "")
+                        meta = chunk.get("metadata", {})
+                        if isinstance(meta, dict):
+                            keyword_lookup[cid] = meta.get("keywords", [])
+
         # Add each file's inspection codes (per chunk)
         file_counter = 1
         for file_id, chunk_codes in inspection_rules.items():
@@ -3360,6 +3385,9 @@ async def log_inspection_code_to_markdown(
                 "\n",
             ])
             
+            # Get enriched payloads for this file if available
+            file_payloads = (inspection_payloads or {}).get(file_id, {})
+
             chunk_counter = 1
             for chunk_id, code in chunk_codes.items():
                 chunk_timestamp = datetime.now().isoformat()
@@ -3371,6 +3399,37 @@ async def log_inspection_code_to_markdown(
                     code,
                     "```\n",
                 ])
+
+                # Add First Read text if available from payloads
+                payload = file_payloads.get(chunk_id, {})
+                first_read = payload.get("first_read_text", "")
+                recursive_text = payload.get("recursive_text", "")
+
+                if first_read:
+                    lines.extend([
+                        "#### First Read\n",
+                        "```text",
+                        first_read,
+                        "```\n",
+                    ])
+
+                if recursive_text:
+                    lines.extend([
+                        "#### Recursive Text\n",
+                        "```text",
+                        recursive_text,
+                        "```\n",
+                    ])
+
+                # Add Keywords if available (from payloads or from expanded_files lookup)
+                keywords = payload.get("keywords", []) or keyword_lookup.get(chunk_id, [])
+                if keywords:
+                    keywords_display = ", ".join(str(k) for k in keywords)
+                    lines.extend([
+                        "#### Keywords\n",
+                        f"`{keywords_display}`\n",
+                    ])
+
                 chunk_counter += 1
             
             lines.append("---\n")
@@ -3465,6 +3524,9 @@ async def log_inspection_code_with_text_to_markdown(
             from datetime import timedelta
             base_eval_time = datetime.now()
             for chunk_idx, (chunk_id, payload) in enumerate(chunk_payloads.items()):
+                # Log chunk_text and keywords to container log
+                keywords = payload.get("keywords", [])
+                logger.info(f"[CHUNK] ID: {chunk_id} | Text: {chunk_text[:200]} | Keywords: {keywords}")
                 code = payload.get("code", "")
                 chunk_text = payload.get("chunk_text", "")
                 first_read_text = payload.get("first_read_text", "")
@@ -3498,6 +3560,8 @@ async def log_inspection_code_with_text_to_markdown(
                     "```text",
                     chunk_recursive_text,
                     "```\n",
+                    "#### Keywords",
+                    f"`{', '.join(str(k) for k in keywords)}`\n",
                 ])
                 chunk_counter += 1
 

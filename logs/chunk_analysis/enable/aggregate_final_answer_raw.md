@@ -4,181 +4,251 @@ This file captures raw chunks before LLM summarization.
 
 ---
 
-## Execution: 2026-02-09T03:37:23.833900
-**Query**: What is  VectorCypher  Retrieval
+## Execution: 2026-02-09T15:58:25.870692
+**Query**: tell me kevin skills
 
 ---
 
 ## Passing Chunks (Append Log)
 
+### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4
+**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf
+**File Name:** Alexis Torres - DXC Resume.pdf
+**Phase:** iterative_boolean_eval
+**Captured:** 2026-02-09T15:58:27.911302
+
+```text
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
+```
+
+### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5
+**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf
+**File Name:** Alexis Torres - DXC Resume.pdf
+**Phase:** iterative_boolean_eval
+**Captured:** 2026-02-09T15:58:28.040904
+
+```text
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
+```
+
 ## Final Selected Chunks
 
-### File: Developers-Guide-GraphRAG.pdf (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf)
+### File: Alexis Torres - DXC Resume.pdf (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5
 
-**Analyzed At:** 2026-02-09T03:38:44.838136
+**Analyzed At:** 2026-02-09T15:58:31.677362
 
 ```text
-VectorCypher Retriever in Practice
-structural search.
-
-The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across structured and unstructured data to drive real-world understanding.
-
-With this in mind, let's look at another VectorCypherRetriever example.
-
-
-
-## VectorCypher Retrieval: A Working Example
-
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
-
-
-Figure 28. VectorCypherRetriever example 2
-
-
-Next, add this new retrieval query to the VectorCypherRetriever parameters:
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4
 
-**Analyzed At:** 2026-02-09T03:38:44.838177
+**Analyzed At:** 2026-02-09T15:58:31.677379
 
 ```text
-VectorCypher Retrieval: A Working Example
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
-
-
-Figure 28. VectorCypherRetriever example 2
-
-
-Next, add this new retrieval query to the VectorCypherRetriever parameters:
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12
 
-**Analyzed At:** 2026-02-09T03:38:44.838182
+**Analyzed At:** 2026-02-09T15:58:31.677383
 
 ```text
-VectorCypher Retriever in Practice
-eports (text) with the graph relationships between vulnerabilities, affected assets, and mitigation strategies to provide a holistic view of your security posture.
--  Education: Map student essays or discussion posts to learning objectives, course materials, and assessment outcomes for personalized education analytics.
+Caguas, PR
+Oct 2002 -Jan 2016
 
-Let's summarize the major tasks from  this example so you can apply it to your domain:
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of complete data centers for Telecommunication companies, including servers, storage, networking (LAN/WAN), security, backup.
+- Project management for the implementation of Fortinet network security systems.
+- Project management for the implementation of virtual city surveillance systems including IP cameras, Wireless/LAN/WAN connection, data center and monitoring center.
 
--  Adapt the Pattern Model Your Domain: Define the node types, relationships, and key properties relevant to your vertical (e.g., Patient, Diagnosis, Product, Supplier, Case, Asset, etc.).
-- Index the Right Data: Create vector indexes on the appropriate text or document nodes for semantic retrieval.
--  Craft Domain-Specific Cypher Queries: Write Cypher queries that traverse from the retrieved nodes to related entities and/or relationships that matter in your context.
--  Integrate With VectorCypherRetriever: Use the VectorCypherRetriever with your custom query to combine semantic and structural search.
 
-The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across
+Mar 2020 -Aug 2021
+
+<!-- image -->
+
+- Solution development for a IOT system for a finance/security industry, including software and hardware development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9
 
-**Analyzed At:** 2026-02-09T03:38:44.838212
+**Analyzed At:** 2026-02-09T15:58:31.677388
 
 ```text
-Executes a Cypher query to traverse the graph based on these nodes.
-To set up this particular query, you need to tell the graph where and how to traverse from the semantic nodes. In this example, the query is:
+DXC Technology
+Senior Technical Consultant
 
-'What are the risk factors for companies discussing cryptocurrency in their filings?'
+Isabela, PR
 
-The following code creates a retriever to answer this query:
+August 2021 -Present
 
-
-Let's start by looking at the parts of the graph that help to answer this query. We start by identifying the Chunk that is semantically similar to the cryptocurrency query. Then we need to traverse the graph to identify the Document the Chunk comes from, the Company that FILED the Document and collect the other RiskFactors for that Company . Once this information is retrieved, it's converted to Cypher and set as the retrieval query.
-
-
-Figure 27.  VectorCypherRetriever example 1
-
-
-
-Next, let's add this new retrieval query to the VectorCypherRetriever parameters:
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V migration.
+- Full stack developer for a XML mapping application using Java, React, Redis, Spring Boot, Message Broker, Prometheus, Grafana, AMQ, Camel, OpenShift among other tools for a transportation agency.
+- Project Manager to  lead  a  new  software development  group through  the  certification process for  a Manufacturing Execution System (MES).
+- Project Manager for the development of a Front-End Application in Angular for an Internal DXC group.
+- Business Analyst for AI solution for the manufactory industry.
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11
 
-**Analyzed At:** 2026-02-09T03:38:44.838216
+**Analyzed At:** 2026-02-09T15:58:31.677393
 
 ```text
-Table of Contents (continued)
-|   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking Example....................................................                                    |   22 |
-| Text2CypherRetriever..................................................................................................          |   23 |
-| Community Summary Pattern...................................................................................                    |   25 |
-| Concluding Thoughts and Next Steps..................................................................                            |   25 |
-| Appendix: Technical Resources in Workflow Order........................................................                         |   27 |
+Consultant
+Senior Consultant
 
 
+Jan 2016 -March  2020
 
-
-## PART I: The Problem With Current RAG
-
-Why chunk-based RAG hits a ceiling - and why developers need more context to answer well
-
-You've built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new Medicare EDI-837 record format for the payment process in MMM (Health Care Provider). Project Management for the implementation of an e-commerce WEB application for Triple S.
+- Business Analyst in  First Medical  (Health  Care  Provider). Increase the  efficiency of  more  than  10 departments  and  40  employees by  restructuring all  reporting processes. Coordination  with  multiple business units including compliance, finance, customer service among other departments to define the new report structure.
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14
 
-**Analyzed At:** 2026-02-09T03:38:44.838219
+**Analyzed At:** 2026-02-09T15:58:31.677397
 
 ```text
-Table of Contents (continued)
-| PART IV: Implementing GraphRAG Retrieval Patterns ..................................................                            |   17 |
-|---------------------------------------------------------------------------------------------------------------------------------|------|
-| Import Libraries............................................................................................................... |   17 |
-| Load Environment Variables and Initialize Neo4j Driver................................                                          |   18 |
-| Initialize the LLM and Embedder.............................................................................                    |   18 |
-| The Basic Retriever Pattern.......................................................................................              |   18 |
-| The Graph-Enhanced Vector Search Pattern.....................................................                                   |   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking
+San Juan, PR
+Apr 1996 -Oct 2002
+
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimensioning,  TAC  support,  Resources  Coordination (Optimization, Engineering, Service, Customer, etc).
+- Provide Technical and Commercial (solution presentation, offer preparation, etc) pre-sale assistance to customers  through  Puerto  Rico,  the  Caribbean,  our  support  group  and  employees  about  new telecommunication including hardware and software requirements.
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13
 
-**Analyzed At:** 2026-02-09T03:38:44.838222
+**Analyzed At:** 2026-02-09T15:58:31.677400
 
 ```text
-Import Libraries
-This notebook imports the core libraries required for building and querying RAG pipelines with Neo4j and GraphRAG:
-
-- neo4j.GraphDatabase: The official Python driver for connecting to and querying a Neo4j database.
-- neo4j\_graphrag.llm.OpenAILLM : Integrates OpenAI language models for generating and processing natural language queries.
-- neo4j\_graphrag.embeddings. OpenAIEmbeddings : Provides access to OpenAI's embedding models for generating vector representations of text.
-- Neo4j\_graphrag.retrievers : Different retriever classes for semantic and hybrid search over graph data using vector similarity and Cypher queries:
-- VectorRetriever
-- VectorCypherRetriever
-- Text2CypherRetriever
-- neo4j\_graphrag.generation.GraphRAG : The main class for orchestrating RAG workflows over a Neo4j knowledge graph.
-- neo4j\_graphrag.schema.get\_schema : Utility to introspect and retrieve the schema of your Neo4j database.
-- dotenv.load\_dotenv : Loads environment variables (such as credentials and API keys) from an .env file for secure configuration.
-
-These imports enable advanced semantic search, retrieval, and GenAI capabilities directly on your Neo4j knowledge graph.
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and robbery. This technology became the most advance solution in the market.
+- Author of several patents in the IOT field for finance and security industry. Responsible to analyze the market needs and develop new technologies.
 ```
 
-#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15
 
-**Analyzed At:** 2026-02-09T03:38:44.838498
+**Analyzed At:** 2026-02-09T15:58:31.677407
 
 ```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name : The name of the vector index (here, chunkEmbeddings ) used for semantic search
-- Embedder : The embedding model used to generate/query vector representations
-- Retrieval\_query : The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
+Caguas, PR
+Aug 1990 -Apr 1996
 
-This setup enables you to start with a semantic search (e.g., for 'cryptocurrency risk') and automatically traverse your knowledge graph to reveal which companies are involved and what other risks they face. The resulting responses are both semantically relevant and graph-aware.
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world leader in its field. Awarded  with the biggest worldwide  orders including  Spain, Hungary,  Argentina  among other countries.
+- Author of two patents in the telecommunication  field.
 ```
 
 **Summary:**
 - Selected chunks: 8
-- Total chars: 7827
+- Total chars: 6156
+
+### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
+**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf
+**File Name:** 20250912 Kevin Ramirez DXC Resume.pdf
+**Phase:** iterative_boolean_eval
+**Captured:** 2026-02-09T15:58:35.735548
+
+```text
+Kevin J. Ramírez Pomales
+I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with great problem-solving skills looking to develop experience in cloud development.
+```
+
+### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
+**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf
+**File Name:** 20250912 Kevin Ramirez DXC Resume.pdf
+**Phase:** iterative_boolean_eval
+**Captured:** 2026-02-09T15:58:35.853844
+
+```text
+Skills
+## Skills
+```
+
+### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
+**File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf
+**File Name:** 20250912 Kevin Ramirez DXC Resume.pdf
+**Phase:** iterative_boolean_eval
+**Captured:** 2026-02-09T15:58:35.952522
+
+```text
+Top Skills (Technical/Nontechnical skills)
+- Java - (5 years)
+- Front End Development - (5 years)
+- HTML/CSS - (5 years)
+- JavaScript - (5 years)
+- AngularJS - (4 years)
+- Agile - (3 years)
+- Data Structures - (3 years)
+- ReactJS - (3 years)
+```
+
+## Final Selected Chunks
+
+### File: 20250912 Kevin Ramirez DXC Resume.pdf (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf)
+
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:1
+
+**Analyzed At:** 2026-02-09T15:58:39.994072
+
+```text
+Kevin J. Ramírez Pomales
+I'm a disciplined and enthusiastic software engineer with a passionate vision of becoming a full-stack engineer and help clients identify, formulate, and solve computing technological challenges. I serve as a trusted assistant advisor to our clients, designing full-stack development solutions and translating their business challenges into robust architectures and actionable roadmaps delivering clear enablement across application engineering. I am a fast learner with great problem-solving skills looking to develop experience in cloud development.
+```
+
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:2
+
+**Analyzed At:** 2026-02-09T15:58:39.994103
+
+```text
+Skills
+## Skills
+```
+
+#### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\20250912 Kevin Ramirez DXC Resume.pdf:chunk:3
+
+**Analyzed At:** 2026-02-09T15:58:39.994111
+
+```text
+Top Skills (Technical/Nontechnical skills)
+- Java - (5 years)
+- Front End Development - (5 years)
+- HTML/CSS - (5 years)
+- JavaScript - (5 years)
+- AngularJS - (4 years)
+- Agile - (3 years)
+- Data Structures - (3 years)
+- ReactJS - (3 years)
+```
+
+**Summary:**
+- Selected chunks: 3
+- Total chars: 833
 

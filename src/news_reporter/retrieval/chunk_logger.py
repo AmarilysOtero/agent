@@ -24,17 +24,14 @@ AGGREGATE_RAW_FILE_NAME = "aggregate_final_answer_raw.md"
 
 def _resolve_chunk_logs_dir(output_dir: Optional[str] = None, rlm_enabled: bool = False) -> Path:
     """Resolve chunk logs directory with RLM enable/disable subfolder."""
-    base_dir = output_dir if output_dir else os.getenv("LOGS_DIR", str(CHUNK_LOGS_DIR))
-    target_dir = Path(base_dir)
-
-    if not target_dir.is_absolute() or str(target_dir).startswith("/app"):
-        if os.name == "nt" and not Path("/.dockerenv").exists():
-            candidate = (Path(os.getcwd()) / ".." / ".." / "logs" / "chunk_analysis").resolve()
-            target_dir = candidate if candidate.exists() else Path("./logs/chunk_analysis")
-    
+    # Always use local logs/chunk_analysis directory for Windows/non-Docker
+    if os.name == "nt" or not Path("/.dockerenv").exists():
+        base_dir = Path(__file__).parent.parent.parent / "logs" / "chunk_analysis"
+    else:
+        base_dir = Path("/app/logs/chunk_analysis")
     # Add enable/disable subfolder
     subfolder = "enable" if rlm_enabled else "disable"
-    target_dir = target_dir / subfolder
+    target_dir = base_dir / subfolder
     target_dir.mkdir(parents=True, exist_ok=True)
     return target_dir
 

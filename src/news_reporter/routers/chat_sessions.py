@@ -233,13 +233,14 @@ async def create_session(user: dict = Depends(get_current_user)):
         user_id = str(user["_id"])
         print(f"User ID: {user_id}")
         
+        import uuid
         now = datetime.utcnow()
-        
         new_session = {
             "userId": user_id,
             "title": "New Chat",
             "createdAt": now,
             "updatedAt": now,
+            "session_id": str(uuid.uuid4()),
         }
         
         print(f"Inserting session: {new_session}")

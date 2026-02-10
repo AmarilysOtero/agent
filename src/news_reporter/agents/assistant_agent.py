@@ -15,11 +15,11 @@ class AssistantAgent:
     async def run(self, query: str, context: str) -> str:
         logger.info(f"🤖 [AGENT INVOKED] AssistantAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] AssistantAgent (ID: {self._id})")
-        
+
         # If no context found, allow LLM to provide helpful general guidance
         context_instruction = "the context above" if context and context.strip() else "general knowledge"
         fallback_permission = "" if context and context.strip() else "\n- If no specific documentation is available, you may provide general best-practice guidance."
-        
+
         prompt = (
             f"User Question: {query}\n\n"
             f"Retrieved Context:\n{context if context and context.strip() else '(No specific documentation found in knowledge base)'}\n\n"
@@ -30,6 +30,8 @@ class AssistantAgent:
             "- If citing context, mention the source"
         )
         print("AssistantAgent: using Foundry agent:", self._id)  # keep print
+        logger.info(f"[DEBUG] Prompt sent to Foundry:\n{prompt}")
+        print(f"[DEBUG] Prompt sent to Foundry:\n{prompt}")
         try:
             return run_foundry_agent(self._id, prompt)
         except RuntimeError as e:

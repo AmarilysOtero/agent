@@ -272,81 +272,11 @@ def _extract_string_literals_via_ast(code: str) -> set:
         Set of string literals found in the code
     """
     import ast
-    
     try:
         tree = ast.parse(code)
     except SyntaxError:
         # If code doesn't parse, return empty (will be caught by other validation)
         return set()
-    
-    literals = set()
-    
-    class StringExtractor(ast.NodeVisitor):
-        def __init__(self):
-            self.strings = set()
-        
-        def visit_Constant(self, node):
-            # Python 3.8+ uses Constant for all literals
-            if isinstance(node.value, str):
-                # Skip very short strings (likely not search terms)
-                if len(node.value) > 0:
-                    self.strings.add(node.value)
-            self.generic_visit(node)
-        
-        def visit_Dict(self, node):
-            # Visit dict values but not keys
-            for value in node.values:
-                self.visit(value)
-            # Don't visit keys (they're not search terms)
-        
-        def visit_FunctionDef(self, node):
-            # Skip docstrings
-            body = node.body
-            if body and isinstance(body[0], ast.Expr):
-                expr = body[0].value
-                if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
-                    # This is the docstring, skip it
-                    for child in body[1:]:
-                        self.visit(child)
-                    return
-            # Normal function, visit all
-            self.generic_visit(node)
-    
-    extractor = StringExtractor()
-    extractor.visit(tree)
-    return extractor.strings
-
-
-def _validate_inspection_program(program: str, query: str, chunk_count: int) -> tuple:
-    """
-    Validate generated inspect_iteration program for MIT RLM recursion.
-    
-    Checks:
-    1. Syntax is valid
-    2. Returns dict with required keys (selected_chunk_ids, extracted_data, confidence, stop)
-    3. selected_chunk_ids is always a list (never None or other type)
-    4. confidence is a float in [0.0, 1.0]
-    5. No "select all chunks blindly" patterns (unless stop=True and low confidence)
-    6. Logic checks chunk.text or chunk["text"] (evidence-based)
-    7. No hardcoded list of chunk IDs
-    8. No obvious infinite loops (for i in range(10**N))
-    
-    Args:
-        program: Python code for inspect_iteration function
-        query: User query
-        chunk_count: Number of chunks being evaluated
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    
-    # Check for obvious CPU bombs (basic pattern detection)
-    dangerous_patterns = [
-        r'range\s*\(\s*10\s*\*\*\s*[6-9]',  # range(10**6) or higher
-        r'range\s*\(\s*\d{7,}',  # range(1000000+)
-        r'while\s+True',  # while True without obvious break
-    ]
-    import re
     for pattern in dangerous_patterns:
         if re.search(pattern, program):
             return False, f"Dangerous pattern detected: {pattern}"
@@ -3456,11 +3386,11 @@ async def log_inspection_code_to_markdown(
 
 
 async def log_inspection_code_with_text_to_markdown(
-    inspection_rules: Dict[str, Dict[str, Dict[str, str]]],
+    inspection_rules: dict,
     query: str,
-    summary_by_file_id: Dict[str, str],
+    summary_by_file_id: dict,
     rlm_enabled: bool = True,
-    output_dir: Optional[str] = None
+    output_dir: str = None
 ) -> None:
     """
     Log inspection code with chunk text, first read, and recursive text.
@@ -3474,7 +3404,7 @@ async def log_inspection_code_with_text_to_markdown(
         output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
     """
     from pathlib import Path
-    from datetime import datetime
+    from datetime import datetime, timedelta
 
     # Handle output_dir with fallback logic
     if output_dir is None:
@@ -3486,7 +3416,6 @@ async def log_inspection_code_with_text_to_markdown(
         # Use RLM enable/disable subfolder
         subfolder = "enable" if rlm_enabled else "disable"
         output_path = Path(output_dir) / subfolder / "inspection_code_chunk_rlm_enabled.md"
-
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         total_programs = sum(len(chunk_payloads) for chunk_payloads in inspection_rules.values())
@@ -3523,61 +3452,59 @@ async def log_inspection_code_with_text_to_markdown(
             ])
 
             chunk_counter = 1
-            from datetime import timedelta
             base_eval_time = datetime.now()
+            summary_text = summary_by_file_id.get(file_id, "")
             for chunk_idx, (chunk_id, payload) in enumerate(chunk_payloads.items()):
                 keywords = payload.get("keywords", [])
                 code = payload.get("code", "")
                 chunk_text = payload.get("chunk_text", "")
                 first_read_text = payload.get("first_read_text", "")
-
                 chunk_recursive_text = (
                     payload.get("recursive_text")
-                    or payload.get("first_read_text", "")
+                    or first_read_text
                     or recursive_text
                 )
-                # Log chunk_text and keywords to container log (after chunk_text assignment)
                 logger.info(f"[CHUNK] ID: {chunk_id} | Text: {chunk_text[:200]} | Keywords: {keywords}")
-
-                # Calculate evaluation time for this chunk (add ~120ms per chunk)
                 eval_time = base_eval_time + timedelta(milliseconds=120 * (chunk_idx + 1))
                 eval_time_str = eval_time.isoformat()
-
+                if chunk_id and chunk_id in summary_text:
+                    if keywords:
+                        selection_method = "keyword"
+                    else:
+                        selection_method = "recursive"
+                else:
+                    selection_method = "discarded"
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
                     f"\n**Evaluation Time:** {eval_time_str}",
-                    f"\n**Query:** {query}\n",
+                    f"\n**Query:** {query}",
+                    f"\n**Selection Method:** {selection_method}\n",
                     "```python",
                     code,
-                    "```\n",
+                    "```",
                     "#### Chunk Text",
                     "```text",
                     chunk_text,
-                    "```\n",
+                    "```",
                     "#### First Read",
                     "```text",
                     first_read_text,
-                    "```\n",
+                    "```",
                     "#### Recursive Text",
                     "```text",
                     chunk_recursive_text,
-                    "```\n",
+                    "```",
                     "#### Keywords",
-                    f"`{', '.join(str(k) for k in keywords)}`\n",
+                    f"`{', '.join(str(k) for k in keywords)}`\n"
                 ])
                 chunk_counter += 1
-
             lines.append("---\n")
             file_counter += 1
-
         content = "\n".join(lines)
-
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
-
         logger.info(f"✅ Phase 4 inspection code with text logged to {output_path}")
         logger.info(f"   Stored {total_programs} per-chunk inspection programs with text")
-
     except Exception as e:
-        logger.error(f"❌ Failed to log inspection code with text: {e}", exc_info=True)
+        logger.error(f"Error writing inspection code with text to markdown: {e}")
         raise

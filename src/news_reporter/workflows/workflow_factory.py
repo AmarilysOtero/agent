@@ -254,19 +254,38 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         if high_recall_mode:
             logger.info("🔍 Workflow: High-recall retrieval enabled (RLM mode)")
         raw_results = None
-        if isinstance(search_agent, SQLAgent):
-            context = await search_agent.run(goal, database_id=search_database_id, high_recall_mode=high_recall_mode)
-        elif isinstance(search_agent, AiSearchAgent):
-            # For AiSearchAgent, always return results for logging
+        # Always try to get both context and raw_results for logging
+        if isinstance(search_agent, AiSearchAgent):
             context, raw_results = await search_agent.run(
                 goal,
                 high_recall_mode=high_recall_mode,
                 return_results=True
             )
+        elif isinstance(search_agent, SQLAgent):
+            # If SQLAgent supports returning results, try to get them
+            try:
+                context, raw_results = await search_agent.run(
+                    goal,
+                    database_id=search_database_id,
+                    high_recall_mode=high_recall_mode,
+                    return_results=True
+                )
+            except TypeError:
+                # Fallback if not supported
+                context = await search_agent.run(goal, database_id=search_database_id, high_recall_mode=high_recall_mode)
+                raw_results = None
         else:
-            context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
+            try:
+                context, raw_results = await search_agent.run(
+                    goal,
+                    high_recall_mode=high_recall_mode,
+                    return_results=True
+                )
+            except TypeError:
+                context = await search_agent.run(goal, high_recall_mode=high_recall_mode)
+                raw_results = None
 
-        # Log retrieved chunks
+        # Log retrieved chunks for both RLM modes if available
         if raw_results:
             try:
                 await log_chunks_to_markdown(
@@ -508,9 +527,9 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             # GENERIC: Pass all available context to assistant, let it decide what's relevant
             logger.info(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
             print(f"🔍 Workflow: Assistant step - context length: {len(expanded_context) if expanded_context else 0}")
-            
+            logger.info(f"🔍 Workflow: Assistant step - context string:\n{expanded_context}")
+            print(f"🔍 Workflow: Assistant step - context string:\n{expanded_context}")
             response = await assistant.run(goal, expanded_context or "")
-            
             logger.info(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
             print(f"🔍 Workflow: Final response length: {len(response) if response else 0}")
             if not response:
@@ -519,7 +538,7 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                 return "I apologize, but I couldn't generate a response. Please try rephrasing your question."
 
             # Review step (max 3 passes) - only for Assistant-generated responses
-            max_iters = 1 
+            max_iters = 2 
             for i in range(1, max_iters + 1):
                 print(f"Review pass {i}/{max_iters}...")
                 verdict = await reviewer.run(goal, response)

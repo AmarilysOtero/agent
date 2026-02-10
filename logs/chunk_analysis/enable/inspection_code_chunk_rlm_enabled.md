@@ -1,12 +1,12 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-08T00:51:27.336836
+**Execution Time:** 2026-02-09T21:53:41.395131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
-**Query Hash:** `97d6b33c` (use to verify artifacts match current query)
+**Query Hash:** `4b459d00` (use to verify artifacts match current query)
 
-**Total Inspection Programs:** 106
+**Total Inspection Programs:** 16
 
 **Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation
 
@@ -30,5914 +30,806 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ---
 
-## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf)
+## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
 
-### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0
 
-**Evaluation Time:** 2026-02-08T00:51:27.338421
+### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:0
 
-**Query:** What is VectorCypher Retrieval
+**Evaluation Time:** 2026-02-09T21:53:41.515131
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "developer" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-THE DEVELOPER'S GUIDE TO GraphRAG
-Alison Cossette Zach Blumenfeld Damaso Sanoja
-```
-
-#### First Read
-
-```text
-THE DEVELOPER'S GUIDE TO GraphRAG
-Alison Cossette Zach Blumenfeld Damaso Sanoja
-```
-
-#### Recursive Text
-
-```text
-THE DEVELOPER'S GUIDE TO GraphRAG
-Alison Cossette Zach Blumenfeld Damaso Sanoja
-```
-
-### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1
-
-**Evaluation Time:** 2026-02-08T00:51:27.456789
+**Query:** tell me about Alexis Torres
 
-**Query:** What is VectorCypher Retrieval
-
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Table of Contents
-| PART I: The Problem With Current RAG...............................................................................             |   4 |
-|---------------------------------------------------------------------------------------------------------------------------------|-----|
-| PART II: What Makes It GraphRAG-Structure, Logic, and Meaning........................                                           |   5 |
-| What Is RAG? .................................................................................................................. |   5 |
-| What Is GraphRAG?......................................................................................................         |   6 |
-| 1. Context-Aware Responses.....................................................................                                 |   6 |
-| 2. Traceability and Explainability ............................................................                                 |   6 |
-| 3, Access to Structured and Unstructured Data ..............................                                                    |   7 |
-| How GraphRAG
+Introduction
+<!-- image -->
 ```
 
 #### First Read
-
 ```text
-Table of Contents
-| PART I: The Problem With Current RAG...............................................................................             |   4 |
-|---------------------------------------------------------------------------------------------------------------------------------|-----|
-| PART II: What Makes It GraphRAG-Structure, Logic, and Meaning........................                                           |   5 |
-| What Is RAG? .....................................................
+Introduction
+<!-- image -->
 ```
 
 #### Recursive Text
-
-```text
-Table of Contents
-| PART I: The Problem With Current RAG...............................................................................             |   4 |
-|---------------------------------------------------------------------------------------------------------------------------------|-----|
-| PART II: What Makes It GraphRAG-Structure, Logic, and Meaning........................                                           |   5 |
-| What Is RAG? .....................................................
-```
-
-### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
-
-**Evaluation Time:** 2026-02-08T00:51:27.456836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "how" in chunk_text.lower() and "works" in chunk_text.lower():
-        return True
-    if "access" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Table of Contents
-......                                 |   6 |
-| 3, Access to Structured and Unstructured Data ..............................                                                    |   7 |
-| How GraphRAG Works................................................................................................              |   7 |
-| Prepare a Knowledge Graph for GraphRAG.......................................................                                   |   7 |
-| Ground With Unstructured and Structured Data..............................................                                      |   8 |
-| PART III: Constructing the Graph ............................................................................................   |   9 |
-| Create a Neo4j Database............................................................................................             |   9 |
-| Ingest Unstructured Data...........................................................................................             |  10 |
-| Key Features of Neo4j GraphRAG Package.......................................                                                   |  10 |
-| Neo4j
-```
-
-#### First Read
-
 ```text
-Table of Contents
-......                                 |   6 |
-| 3, Access to Structured and Unstructured Data ..............................                                                    |   7 |
-| How GraphRAG Works................................................................................................              |   7 |
-| Prepare a Knowledge Graph for GraphRAG.......................................................                                   |   7 |
-| Ground With Unstruc
+Introduction
+<!-- image -->
 ```
-
-#### Recursive Text
 
-```text
-Table of Contents
-......                                 |   6 |
-| 3, Access to Structured and Unstructured Data ..............................                                                    |   7 |
-| How GraphRAG Works................................................................................................              |   7 |
-| Prepare a Knowledge Graph for GraphRAG.......................................................                                   |   7 |
-| Ground With Unstruc
-```
+#### Keywords
+`introduction, image`
 
-### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3
+### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1
 
-**Evaluation Time:** 2026-02-08T00:51:27.576836
+**Evaluation Time:** 2026-02-09T21:53:41.635131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Table of Contents
-.................................             |  10 |
-| Key Features of Neo4j GraphRAG Package.......................................                                                   |  10 |
-| Neo4j Connection...........................................................................................                     |  10 |
-| Initialize the LLM and Embeddings.........................................................                                      |  11 |
-| Define Node Labels and Relationship Types......................................                                                 |  11 |
-| Initialize and Run the Pipeline...................................................................                              |  11 |
-| Process the PDF Document.......................................................................                                 |  12 |
-| Create the Vector Index..............................................................................                           |  12 |
-| Ingest Structured Data................................................................................................          |  13 |
-| Getting Started With Data
-```
-
-#### First Read
+Alexis Torres Senior Technical Consultant
+Email ID:
 
-```text
-Table of Contents
-.................................             |  10 |
-| Key Features of Neo4j GraphRAG Package.......................................                                                   |  10 |
-| Neo4j Connection...........................................................................................                     |  10 |
-| Initialize the LLM and Embeddings.........................................................                                      |  11 |
-| Define Node
+alexis.torres@dxc.com
 ```
-
-#### Recursive Text
 
+#### First Read
 ```text
-Table of Contents
-.................................             |  10 |
-| Key Features of Neo4j GraphRAG Package.......................................                                                   |  10 |
-| Neo4j Connection...........................................................................................                     |  10 |
-| Initialize the LLM and Embeddings.........................................................                                      |  11 |
-| Define Node
-```
-
-### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4
-
-**Evaluation Time:** 2026-02-08T00:51:27.696836
+Alexis Torres Senior Technical Consultant
+Email ID:
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'data' in chunk_text.lower() and 'structured' in chunk_text.lower():
-        return True
-    return False
+alexis.torres@dxc.com
 ```
-
-#### Chunk Text
 
+#### Recursive Text
 ```text
-Table of Contents
-|  12 |
-| Ingest Structured Data................................................................................................          |  13 |
-| Getting Started With Data Importer.......................................................                                       |  13 |
-| Import Structured Data...............................................................................                           |  13 |
-| Mapping Your Data to Graph Structures..............................................                                             |  14 |
-| Mapping Relationships ................................................................................                          |  15 |
-```
-
-#### First Read
+Alexis Torres Senior Technical Consultant
+Email ID:
 
-```text
-Table of Contents
-|  12 |
-| Ingest Structured Data................................................................................................          |  13 |
-| Getting Started With Data Importer.......................................................                                       |  13 |
-| Import Structured Data...............................................................................                           |  13 |
-| Mapping Your Data to Graph Structures.....................
+alexis.torres@dxc.com
 ```
-
-#### Recursive Text
 
-```text
-Table of Contents
-|  12 |
-| Ingest Structured Data................................................................................................          |  13 |
-| Getting Started With Data Importer.......................................................                                       |  13 |
-| Import Structured Data...............................................................................                           |  13 |
-| Mapping Your Data to Graph Structures.....................
-```
+#### Keywords
+`torres, alexis, technical, senior, id, email, dxc, consultant, com`
 
-### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
+### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:2
 
-**Evaluation Time:** 2026-02-08T00:51:27.816836
+**Evaluation Time:** 2026-02-09T21:53:41.755131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Table of Contents (continued)
-| PART IV: Implementing GraphRAG Retrieval Patterns ..................................................                            |   17 |
-|---------------------------------------------------------------------------------------------------------------------------------|------|
-| Import Libraries............................................................................................................... |   17 |
-| Load Environment Variables and Initialize Neo4j Driver................................                                          |   18 |
-| Initialize the LLM and Embedder.............................................................................                    |   18 |
-| The Basic Retriever Pattern.......................................................................................              |   18 |
-| The Graph-Enhanced Vector Search Pattern.....................................................                                   |   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking
+Contact no.:
+787-405-1855
 ```
 
 #### First Read
-
 ```text
-Table of Contents (continued)
-| PART IV: Implementing GraphRAG Retrieval Patterns ..................................................                            |   17 |
-|---------------------------------------------------------------------------------------------------------------------------------|------|
-| Import Libraries............................................................................................................... |   17 |
-| Load Environment Variables and Initialize Neo4j Dri
+Contact no.:
+787-405-1855
 ```
 
 #### Recursive Text
-
 ```text
-Table of Contents (continued)
-| PART IV: Implementing GraphRAG Retrieval Patterns ..................................................                            |   17 |
-|---------------------------------------------------------------------------------------------------------------------------------|------|
-| Import Libraries............................................................................................................... |   17 |
-| Load Environment Variables and Initialize Neo4j Dri
+Contact no.:
+787-405-1855
 ```
+
+#### Keywords
+`contact, 787, 405, 1855`
 
-### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
+### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:3
 
-**Evaluation Time:** 2026-02-08T00:51:27.936836
+**Evaluation Time:** 2026-02-09T21:53:41.875131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher Retrieval" in chunk_text.lower():
-        return True
-    if "VectorCypher Retriever" in chunk_text.lower():
-        return True
-    if "AWorking Example" in chunk_text:
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Table of Contents (continued)
-|   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking Example....................................................                                    |   22 |
-| Text2CypherRetriever..................................................................................................          |   23 |
-| Community Summary Pattern...................................................................................                    |   25 |
-| Concluding Thoughts and Next Steps..................................................................                            |   25 |
-| Appendix: Technical Resources in Workflow Order........................................................                         |   27 |
-
-
-
-
-## PART I: The Problem With Current RAG
-
-Why chunk-based RAG hits a ceiling - and why developers need more context to answer well
-
-You've built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to register four patents.
 ```
 
 #### First Read
-
 ```text
-Table of Contents (continued)
-|   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking Example....................................................                                    |   22 |
-| Text2CypherRetriever..................................................................................................          |   23 |
-| Community Summary Pattern.................
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
 ```
 
 #### Recursive Text
-
 ```text
-Table of Contents (continued)
-|   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking Example....................................................                                    |   22 |
-| Text2CypherRetriever..................................................................................................          |   23 |
-| Community Summary Pattern.................
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
 ```
+
+#### Keywords
+`projects, years, tracked, time, telecommunication, technology, summary, software, register, record, proven, project, profile, patents, over, opportunity, onbudget, my, millions, management, industry, industries, including, implemented, health, hardware, government, four, finance, engineer, different, development, developed, computer, career, business, broad, background, analyst, accumulative, 250, 15`
 
-### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7
+### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4
 
-**Evaluation Time:** 2026-02-08T00:51:28.056836
+**Evaluation Time:** 2026-02-09T21:53:41.995131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() and "system" in chunk_text.lower():
-        return True
-    if "embedded" in chunk_text.lower() and "docs" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Table of Contents (continued)
-'ve built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
 #### First Read
-
 ```text
-Table of Contents (continued)
-'ve built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
 #### Recursive Text
-
 ```text
-Table of Contents (continued)
-'ve built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
+
+#### Keywords
+`years, technical, software, skills, project, primary, management, expertise, experience, development, business, analyst, 25, 15, 14`
 
-### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8
+### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5
 
-**Evaluation Time:** 2026-02-08T00:51:28.176836
+**Evaluation Time:** 2026-02-09T21:53:42.115131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    if "developers" in chunk_text.lower() and "context" in chunk_text.lower():
-        return True
-    if "current" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-PART I: The Problem With Current RAG
-Why chunk-based RAG hits a ceiling - and why developers need more context to answer well
-
-You've built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
 #### First Read
-
 ```text
-PART I: The Problem With Current RAG
-Why chunk-based RAG hits a ceiling - and why developers need more context to answer well
-
-You've built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
 #### Recursive Text
-
 ```text
-PART I: The Problem With Current RAG
-Why chunk-based RAG hits a ceiling - and why developers need more context to answer well
-
-You've built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
-### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9
+#### Keywords
+`skills, project, waterfall, sql, spring, sdlc, scrum, react, python, prometheus, pmi, people, oriented, openshift, node, mvc, ms, mongodb, message, management, kubernetes, kanban, json, jira, javascript, java, html5, guides, grafana, github, framework, foundry, excellent, docker, django, different, cursor, css, communication, camel, broker, bootstrap, boot, azure, aws, angular, amq, amp, ajax, ai`
 
-**Evaluation Time:** 2026-02-08T00:51:28.296836
+### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:6
 
-**Query:** What is VectorCypher Retrieval
+**Evaluation Time:** 2026-02-09T21:53:42.235131
 
+**Query:** tell me about Alexis Torres
+
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "question" in chunk_text.lower():
-        return True
-    if "system" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Then reality hit.
-The system works - but only under the most forgiving conditions. The moment you ask a question that spans documents, relies on implicit context, or touches anything complex or structured, the cracks start to show. Answers get vague. Sometimes they're just plain wrong. Or worse, the system confidently quotes the right chunk - but misses the point entirely.
-
-Your RAG system isn't broken. It's just blind.
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
 #### First Read
-
 ```text
-Then reality hit.
-The system works - but only under the most forgiving conditions. The moment you ask a question that spans documents, relies on implicit context, or touches anything complex or structured, the cracks start to show. Answers get vague. Sometimes they're just plain wrong. Or worse, the system confidently quotes the right chunk - but misses the point entirely.
-
-Your RAG system isn't broken. It's just blind.
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
 #### Recursive Text
-
 ```text
-Then reality hit.
-The system works - but only under the most forgiving conditions. The moment you ask a question that spans documents, relies on implicit context, or touches anything complex or structured, the cracks start to show. Answers get vague. Sometimes they're just plain wrong. Or worse, the system confidently quotes the right chunk - but misses the point entirely.
-
-Your RAG system isn't broken. It's just blind.
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
+
+#### Keywords
+`university, year, uprm, rico, qualification, puerto, mayaguez, engineer, education, degree, computer, college, bs, background, attained, 1987`
 
-### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:10
+### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:7
 
-**Evaluation Time:** 2026-02-08T00:51:28.416836
+**Evaluation Time:** 2026-02-09T21:53:42.355131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "architecture" in chunk_text.lower():
-        return True
-    if "retrieve" in chunk_text.lower() and "semantically" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-It has no map of your domain. No memory of what matters. It's like hiring a new developer and giving them a stack of index cards with code snippets from your repo. They can parrot back functions, maybe even modify them, but they don't understand the architecture. They don't know the 'why,' only the 'what.'
-
-That's the ceiling of traditional RAG. And that's what this book is here to fix.
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
-## Here's the core issue: RAG retrieves based on similarity, not understanding.
-
-You give it a query, it vectorizes that query, and fetches the top-k similar chunks. That's fine if the answer you need lives entirely within isolated chunks. But most real-world questions don't work that way.
-
-Let's say a user asks about a contract clause, but
-
-
-the meaning depends on a sales addendum from three weeks earlier. Or maybe they ask a support question that only makes sense in the context of their infrastructure and license tier. The information is there, but it's scattered across multiple documents, formats, and timelines. Chunk-based retrieval can't bridge that gap.
-
-Traditional RAG doesn't have shared context across documents. That's because it doesn't track relationships. It doesn't know which concepts
+<!-- image -->
 ```
 
 #### First Read
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-It has no map of your domain. No memory of what matters. It's like hiring a new developer and giving them a stack of index cards with code snippets from your repo. They can parrot back functions, maybe even modify them, but they don't understand the architecture. They don't know the 'why,' only the 'what.'
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
-That's the ceiling of traditional RAG. And that's what this book is here to fix.
-
-## Here's the core
+<!-- image -->
 ```
 
 #### Recursive Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-It has no map of your domain. No memory of what matters. It's like hiring a new developer and giving them a stack of index cards with code snippets from your repo. They can parrot back functions, maybe even modify them, but they don't understand the architecture. They don't know the 'why,' only the 'what.'
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
-That's the ceiling of traditional RAG. And that's what this book is here to fix.
-
-## Here's the core
+<!-- image -->
 ```
+
+#### Keywords
+`trainings, sprint, software, react, python, professional, practitioner, mes, java, image, ibaset, development, cloud, certifications, boot, aws, angular, ai, agentic, activities, 2022, 2021`
 
-### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11
+### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:8
 
-**Evaluation Time:** 2026-02-08T00:51:28.536836
+**Evaluation Time:** 2026-02-09T21:53:42.475131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "retrieval" in chunk_text.lower():
-        return True
-    if "RAG" in chunk_text and "retrieves" in chunk_text:
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-nd timelines. Chunk-based retrieval can't bridge that gap.
-
-Traditional RAG doesn't have shared context across documents. That's because it doesn't track relationships. It doesn't know which concepts are upstream, downstream, dependent, or mutually exclusive. It doesn't distinguish between definitions, instructions, timelines, policies, or decision logic.
-
-## The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-
-Even more problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enough.
-
-You already know what your RAG system should be able to do. It's the kind of reasoning your team does every day without thinking. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When
+Employment history
 ```
 
 #### First Read
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-nd timelines. Chunk-based retrieval can't bridge that gap.
-
-Traditional RAG doesn't have shared context across documents. That's because it doesn't track relationships. It doesn't know which concepts are upstream, downstream, dependent, or mutually exclusive. It doesn't distinguish between definitions, instructions, timelines, policies, or decision logic.
-
-## The bottom line: Traditional RAG treats all chun
+Employment history
 ```
 
 #### Recursive Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-nd timelines. Chunk-based retrieval can't bridge that gap.
-
-Traditional RAG doesn't have shared context across documents. That's because it doesn't track relationships. It doesn't know which concepts are upstream, downstream, dependent, or mutually exclusive. It doesn't distinguish between definitions, instructions, timelines, policies, or decision logic.
-
-## The bottom line: Traditional RAG treats all chun
+Employment history
 ```
 
-### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12
+#### Keywords
+`history, employment`
 
-**Evaluation Time:** 2026-02-08T00:51:28.656836
+### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9
 
-**Query:** What is VectorCypher Retrieval
+**Evaluation Time:** 2026-02-09T21:53:42.595131
 
+**Query:** tell me about Alexis Torres
+
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "how" in chunk_text.lower() and "fit" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower() and "customer" in chunk_text.lower():
-        return True
-    if "retrieve" in chunk_text.lower() and "text" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-ng. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When answering the customer's question, the employee brings context. They may answer differently if the person is a new customer vs. a long-term customer.
+DXC Technology
+Senior Technical Consultant
 
-You want your RAG application to do what humans do naturally: use context to inform its answer. As examples, you might want the RAG system to:
+Isabela, PR
 
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
+August 2021 -Present
 
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
-
-These shouldn't feel like advanced use cases they're basic context. They're what you, as a human developer, bring into every decision without even realizing it. And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V migration.
+- Full stack developer for a XML mapping application using Java, React, Redis, Spring Boot, Message Broker, Prometheus, Grafana, AMQ, Camel, OpenShift among other tools for a transportation agency.
+- Project Manager to  lead  a  new  software development  group through  the  certification process for  a Manufacturing Execution System (MES).
+- Project Manager for the development of a Front-End Application in Angular for an Internal DXC group.
+- Business Analyst for AI solution for the manufactory industry.
 ```
 
 #### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-ng. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When answering the customer's question, the employee brings context. They may answer differently if the person is a new customer vs. a long-term customer.
-
-You want your RAG application to do what humans do naturall
-```
-
-#### Recursive Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-ng. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When answering the customer's question, the employee brings context. They may answer differently if the person is a new customer vs. a long-term customer.
+DXC Technology
+Senior Technical Consultant
 
-You want your RAG application to do what humans do naturall
-```
-
-### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13
+Isabela, PR
 
-**Evaluation Time:** 2026-02-08T00:51:28.776836
+August 2021 -Present
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower():
-        return True
-    return False
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
 ```
-
-#### Chunk Text
 
+#### Recursive Text
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector store. But RAG can't use what it can't see. So until you give it structure - until you teach it relationships, timelines, ownership, and dependencies - it will keep retrieving the right words for the wrong reasons.
+DXC Technology
+Senior Technical Consultant
 
-This isn't a whitepaper. It's a build-it-yourself playbook. We're going to walk you through:
+Isabela, PR
 
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
+August 2021 -Present
 
-And we're going to do it with code. No fluff. Just the stack, the logic, and the patterns that actually work. If you've built RAG, and you know it's not enough, then this is the guide to take you further.
-
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational
-```
-
-#### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector store. But RAG can't use what it can't see. So until you give it structure - until you teach it relationships, timelines, ownership, and dependencies - it will keep retrieving the right words for the wrong reaso
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
 ```
-
-#### Recursive Text
 
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector store. But RAG can't use what it can't see. So until you give it structure - until you teach it relationships, timelines, ownership, and dependencies - it will keep retrieving the right words for the wrong reaso
-```
+#### Keywords
+`project, manager, migration, including, end, development, application, xml, v2v, technical, projects, multiple, mapping, group, front, dxc, business, ai, transportation, tools, technology, system, stack, spring, specification, solution, solumina, software, shift, senior, redis, react, rag, prometheus, process, present, pr, p2v, openshift, new, message, mes, manufacturing, manufactory, lift, lead, java, isabela, internal, interface`
 
-### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:14
+### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10
 
-**Evaluation Time:** 2026-02-08T00:51:28.896836
+**Evaluation Time:** 2026-02-09T21:53:42.715131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() and "retrieves" in chunk_text.lower():
-        return True
-    if "guide" in chunk_text.lower() and "further" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-, and you know it's not enough, then this is the guide to take you further.
+Bridgewater
+Full Stack Developer
 
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
 ```
 
 #### First Read
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-, and you know it's not enough, then this is the guide to take you further.
+Bridgewater
+Full Stack Developer
 
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
 ```
 
 #### Recursive Text
-
 ```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-, and you know it's not enough, then this is the guide to take you further.
+Bridgewater
+Full Stack Developer
 
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
 ```
+
+#### Keywords
+`stack, full, development, developer, application, web, tools, tomcat, test, technics, scrum, project, premises, planning, plan, mysql, migration, management, life, jquery, javascript, java, including, html, git, eclipse, deployment, cycle, css, complete, company, cloud, clickup, bridgewater, aws, as, agile`
 
-### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15
+### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11
 
-**Evaluation Time:** 2026-02-08T00:51:29.016836
+**Evaluation Time:** 2026-02-09T21:53:42.835131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorizes" in chunk_text.lower() or "similarity" in chunk_text.lower() or "retrieves" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-You give it a query, it vectorizes that query, and fetches the top-k similar chunks. That's fine if the answer you need lives entirely within isolated chunks. But most real-world questions don't work that way.
-
-Let's say a user asks about a contract clause, but
+Consultant
+Senior Consultant
 
 
-the meaning depends on a sales addendum from three weeks earlier. Or maybe they ask a support question that only makes sense in the context of their infrastructure and license tier. The information is there, but it's scattered across multiple documents, formats, and timelines. Chunk-based retrieval can't bridge that gap.
+Jan 2016 -March  2020
 
-Traditional RAG doesn't have shared context across documents. That's because it doesn't track relationships. It doesn't know which concepts are upstream, downstream, dependent, or mutually exclusive. It doesn't distinguish between definitions, instructions, timelines, policies, or decision logic.
-
-## The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-
-Even more problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new Medicare EDI-837 record format for the payment process in MMM (Health Care Provider). Project Management for the implementation of an e-commerce WEB application for Triple S.
+- Business Analyst in  First Medical  (Health  Care  Provider). Increase the  efficiency of  more  than  10 departments  and  40  employees by  restructuring all  reporting processes. Coordination  with  multiple business units including compliance, finance, customer service among other departments to define the new report structure.
 ```
 
 #### First Read
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-You give it a query, it vectorizes that query, and fetches the top-k similar chunks. That's fine if the answer you need lives entirely within isolated chunks. But most real-world questions don't work that way.
+Consultant
+Senior Consultant
 
-Let's say a user asks about a contract clause, but
 
+Jan 2016 -March  2020
 
-the meaning depends on a sales addendum from three weeks earlier. Or maybe they ask a support question that only makes sense in the context of their infrastruc
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
 ```
 
 #### Recursive Text
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-You give it a query, it vectorizes that query, and fetches the top-k similar chunks. That's fine if the answer you need lives entirely within isolated chunks. But most real-world questions don't work that way.
-
-Let's say a user asks about a contract clause, but
-
-
-the meaning depends on a sales addendum from three weeks earlier. Or maybe they ask a support question that only makes sense in the context of their infrastruc
-```
-
-### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16
-
-**Evaluation Time:** 2026-02-08T00:51:29.136836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieves" in chunk_text.lower() and "understanding" in chunk_text.lower():
-        return True
-    if "core issue" in chunk_text.lower() and "customer" in chunk_text.lower():
-        return True
-    if "mental model" in chunk_text.lower() and "business" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enough.
+Consultant
+Senior Consultant
 
-You already know what your RAG system should be able to do. It's the kind of reasoning your team does every day without thinking. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When answering the customer's question, the employee brings context. They may answer differently if the person is a new customer vs. a long-term customer.
 
-You want your RAG application to do what humans do naturally: use context to inform its answer. As examples, you might want the RAG system to:
+Jan 2016 -March  2020
 
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like,
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
 ```
-
-#### First Read
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enough.
-
-You already know what y
-```
-
-#### Recursive Text
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enough.
 
-You already know what y
-```
+#### Keywords
+`application, web, provider, project, management, health, commerce, care, visual, studio, stack, new, implementation, html, full, developer, departments, css, consultant, business, units, triple, structure, sql, service, senior, restructuring, reporting, report, register, record, python, program, processes, process, postgresql, payment, participants, nlp, multiple, mmm, mi, merchant, medicare, medical, march, json, javascript, jan, increase`
 
-### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17
+### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12
 
-**Evaluation Time:** 2026-02-08T00:51:29.256836
+**Evaluation Time:** 2026-02-09T21:53:42.955131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "answer" in chunk_text.lower() and "support" in chunk_text.lower():
-        return True
-    if "explain" in chunk_text.lower() and "contract" in chunk_text.lower():
-        return True
-    if "interpret" in chunk_text.lower() and "customer" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-want the RAG system to:
+Caguas, PR
+Oct 2002 -Jan 2016
 
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of complete data centers for Telecommunication companies, including servers, storage, networking (LAN/WAN), security, backup.
+- Project management for the implementation of Fortinet network security systems.
+- Project management for the implementation of virtual city surveillance systems including IP cameras, Wireless/LAN/WAN connection, data center and monitoring center.
 
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
 
-These shouldn't feel like advanced use cases they're basic context. They're what you, as a human developer, bring into every decision without even realizing it. And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector store. But RAG can't use what it can't see. So until you give it structure - until you teach it relationships, timelines, ownership, and dependencies - it will keep retrieving the right words for the wrong reasons.
+Mar 2020 -Aug 2021
 
-This isn't a whitepaper. It's a build-it-yourself playbook. We're going to walk you through:
+<!-- image -->
 
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that
+- Solution development for a IOT system for a finance/security industry, including software and hardware development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system
 ```
 
 #### First Read
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
+Caguas, PR
+Oct 2002 -Jan 2016
 
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
-
-These shouldn't feel like advanced use cases they're
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
 ```
 
 #### Recursive Text
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
-
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
+Caguas, PR
+Oct 2002 -Jan 2016
 
-These shouldn't feel like advanced use cases they're
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
 ```
 
-### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18
+#### Keywords
+`development, project, including, implementation, security, management, wan, systems, system, software, scrum, product, network, methodology, lan, kanban, iot, hardware, data, center, wireless, waterfall, virtual, variety, utilization, transform, testing, telecommunication, team, surveillance, strategies, storage, solutions, solution, servers, resources, quality, provided, pr, oct, networking, monitoring, methodologies, market, mar, manager, mainly, latin, jan, ip`
 
-**Evaluation Time:** 2026-02-08T00:51:29.376836
+### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13
 
-**Query:** What is VectorCypher Retrieval
+**Evaluation Time:** 2026-02-09T21:53:43.075131
 
+**Query:** tell me about Alexis Torres
+
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "dynamic" in chunk_text.lower() and "query" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower() and "pull" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-And we're going to do it with code. No fluff. Just the stack, the logic, and the patterns that actually work. If you've built RAG, and you know it's not enough, then this is the guide to take you further.
-
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and robbery. This technology became the most advance solution in the market.
+- Author of several patents in the IOT field for finance and security industry. Responsible to analyze the market needs and develop new technologies.
 ```
 
 #### First Read
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-And we're going to do it
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
 ```
 
 #### Recursive Text
-
 ```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-And we're going to do it
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
 ```
 
-### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19
+#### Keywords
+`market, security, system, latin, iot, industry, including, finance, atm, america, wireless, way, wan, video, variety, transform, transaction, testing, technology, technologies, solutions, solution, software, several, robbery, responsible, re, project, product, pr, pci, patents, new, network, needs, management, managed, lan, introduction, implementation, field, dominated, documentation, development, developer, develop, department, customer, compliance, claims`
 
-**Evaluation Time:** 2026-02-08T00:51:29.496836
+### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14
 
-**Query:** What is VectorCypher Retrieval
+**Evaluation Time:** 2026-02-09T21:53:43.195131
 
+**Query:** tell me about Alexis Torres
+
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "Retrieval" in chunk_text:
-        return True
-    if "RAG" in chunk_text and "retrieve" in chunk_text:
-        return True
-    if "business" in chunk_text and "customer" in chunk_text:
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-Even more problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enough.
-
-You already know what your RAG system should be able to do. It's the kind of reasoning your team does every day without thinking. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When answering the customer's question, the employee brings context. They may answer differently if the person is a new customer vs. a long-term customer.
+San Juan, PR
+Apr 1996 -Oct 2002
 
-You want your RAG application to do what humans do naturally: use context to inform its answer. As examples, you might want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimensioning,  TAC  support,  Resources  Coordination (Optimization, Engineering, Service, Customer, etc).
+- Provide Technical and Commercial (solution presentation, offer preparation, etc) pre-sale assistance to customers  through  Puerto  Rico,  the  Caribbean,  our  support  group  and  employees  about  new telecommunication including hardware and software requirements.
 ```
 
 #### First Read
-
 ```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-Even more problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
+San Juan, PR
+Apr 1996 -Oct 2002
 
-Without it, RAG can't reason. It can only retrieve, and that isn't enou
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
 ```
 
 #### Recursive Text
-
 ```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-Even more problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
+San Juan, PR
+Apr 1996 -Oct 2002
 
-Without it, RAG can't reason. It can only retrieve, and that isn't enou
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
 ```
+
+#### Keywords
+`telecommunication, including, project, management, support, networks, implementation, etc, customer, coordination, wireless, wan, technologies, technical, tac, system, supporting, solution, software, sites, service, san, sale, rico, resources, requirements, puerto, provide, presentation, preparation, pre, pr, power, our, optimization, offices, offer, oct, new, multimillionaire, many, lan, juan, infrastructure, hardware, group, equipment, engineering, employees, dimensioning`
 
-### 1.21 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
+### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15
 
-**Evaluation Time:** 2026-02-08T00:51:29.616836
+**Evaluation Time:** 2026-02-09T21:53:43.315131
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "support question" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
 #### Chunk Text
-
 ```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-might want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
-
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
-
-These shouldn't feel like advanced use cases they're basic context. They're what you, as a human developer, bring into every decision without even realizing it. And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector store. But RAG can't use what it can't see. So until you give it structure - until you teach it relationships, timelines, ownership, and dependencies - it will keep retrieving the right words for the wrong reasons.
+Caguas, PR
+Aug 1990 -Apr 1996
 
-This isn't a whitepaper. It's a build-it-yourself playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world leader in its field. Awarded  with the biggest worldwide  orders including  Spain, Hungary,  Argentina  among other countries.
+- Author of two patents in the telecommunication  field.
 ```
 
 #### First Read
-
 ```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-might want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
-
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
+Caguas, PR
+Aug 1990 -Apr 1996
 
-These shouldn't feel like adv
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
 ```
 
 #### Recursive Text
-
-```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-might want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
-
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
-
-These shouldn't feel like adv
-```
-
-### 1.22 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21
-
-**Evaluation Time:** 2026-02-08T00:51:29.736836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
 ```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-self playbook. We're going to walk you through:
+Caguas, PR
+Aug 1990 -Apr 1996
 
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-And we're going to do it with code. No fluff. Just the stack, the logic, and the patterns that actually work. If you've built RAG, and you know it's not enough, then this is the guide to take you further.
-
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
 ```
-
-#### First Read
-
-```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-self playbook. We're going to walk you through:
 
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-An
-```
-
-#### Recursive Text
-
-```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-self playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-An
-```
-
-### 1.23 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:22
-
-**Evaluation Time:** 2026-02-08T00:51:29.856836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() or "graphs" in chunk_text.lower():
-        return True
-    if "understand" in chunk_text.lower() and "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
-```
-
-#### First Read
-
-```text
-PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
-```
-
-#### Recursive Text
-
-```text
-PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
-```
-
-### 1.24 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23
-
-**Evaluation Time:** 2026-02-08T00:51:29.976836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "accuracy" in chunk_text.lower() or "chatbots" in chunk_text.lower() or "generates" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-What Is RAG?
-Let's start with the well-known problems of large language models (LLMs), which power chatbots
-
-
-such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the LLM, it generates a response based on its training data. Due to the probabilistic nature of response generation, LLMs often produce responses that lack accuracy and nuance and don't draw on knowledge specific to your business. In addition, the LLM in question may have limited explainability, which limits its adoption in enterprise settings.
-
-RAG addresses these challenges by intercepting a user's prompt, querying external data, usually a vector store, and passing relevant documents back to the LLM. Adding retrieval to the LLM enables the application to answer questions with knowledge from a specific dataset. This simple technique suddenly makes it possible to build applications for a variety of use cases. As examples:
-
--  Knowledge assistants can tap into companyspecific information for accurate, contextual responses.
--  Recommendation systems can incorporate real-time data for more personalized suggestions.
--  Search APIs can deliver more nuanced and context-aware results.
-
-RAG consists of three key
-```
-
-#### First Read
-
-```text
-What Is RAG?
-Let's start with the well-known problems of large language models (LLMs), which power chatbots
-
-
-such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the LLM, it generates a response based on its training data. Due to the probabilistic nature of response generation, LLMs often produce responses that lack accuracy and nuance and don't draw on knowledge specific to your business. In addition, the LLM in question may have limited explainability, which limits its a
-```
-
-#### Recursive Text
-
-```text
-What Is RAG?
-Let's start with the well-known problems of large language models (LLMs), which power chatbots
-
-
-such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the LLM, it generates a response based on its training data. Due to the probabilistic nature of response generation, LLMs often produce responses that lack accuracy and nuance and don't draw on knowledge specific to your business. In addition, the LLM in question may have limited explainability, which limits its a
-```
-
-### 1.25 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24
-
-**Evaluation Time:** 2026-02-08T00:51:30.096836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-What Is RAG?
-al responses.
--  Recommendation systems can incorporate real-time data for more personalized suggestions.
--  Search APIs can deliver more nuanced and context-aware results.
-
-RAG consists of three key components:
-
--  An LLM that serves as the generator
--  A knowledge base or database that stores the information to be retrieved
--  A retrieval mechanism to find relevant information from the knowledge base, based on the input query
-
-
-Figure 1. Querying a knowledge graph with an LLM
-```
-
-#### First Read
-
-```text
-What Is RAG?
-al responses.
--  Recommendation systems can incorporate real-time data for more personalized suggestions.
--  Search APIs can deliver more nuanced and context-aware results.
-
-RAG consists of three key components:
-
--  An LLM that serves as the generator
--  A knowledge base or database that stores the information to be retrieved
--  A retrieval mechanism to find relevant information from the knowledge base, based on the input query
-
-
-Figure 1. Querying a knowledge graph with an LLM
-```
-
-#### Recursive Text
-
-```text
-What Is RAG?
-al responses.
--  Recommendation systems can incorporate real-time data for more personalized suggestions.
--  Search APIs can deliver more nuanced and context-aware results.
-
-RAG consists of three key components:
-
--  An LLM that serves as the generator
--  A knowledge base or database that stores the information to be retrieved
--  A retrieval mechanism to find relevant information from the knowledge base, based on the input query
-
-
-Figure 1. Querying a knowledge graph with an LLM
-```
-
-### 1.26 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25
-
-**Evaluation Time:** 2026-02-08T00:51:30.216836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "query" in chunk_text.lower() and "database" in chunk_text.lower():
-        return True
-    if "semantic" in chunk_text.lower() and "similar" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The quality of a RAG response depends heavily on the database type the information is retrieved from.
-If you use a vector store (as in traditional RAG), the process goes like this: The user query is turned into a vector, which is then used to retrieve semantically similar text chunks from a vector database. While retrieval based on semantic similarity can work across multiple documents, it often falls short when questions require understanding implicit context or relationships that span those documents. Traditional RAG treats each chunk in isolation, as it lacks a holistic view of the domain.
-
-Retrieval based on semantic similarity can only get you so far. And this is where GraphRAG comes in. GraphRAG gives the LLM a mental model of your domain so that it can answer questions by drawing on the correct context.
-```
-
-#### First Read
-
-```text
-The quality of a RAG response depends heavily on the database type the information is retrieved from.
-If you use a vector store (as in traditional RAG), the process goes like this: The user query is turned into a vector, which is then used to retrieve semantically similar text chunks from a vector database. While retrieval based on semantic similarity can work across multiple documents, it often falls short when questions require understanding implicit context or relationships that span those do
-```
-
-#### Recursive Text
-
-```text
-The quality of a RAG response depends heavily on the database type the information is retrieved from.
-If you use a vector store (as in traditional RAG), the process goes like this: The user query is turned into a vector, which is then used to retrieve semantically similar text chunks from a vector database. While retrieval based on semantic similarity can work across multiple documents, it often falls short when questions require understanding implicit context or relationships that span those do
-```
-
-### 1.27 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:26
-
-**Evaluation Time:** 2026-02-08T00:51:30.336836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-What Is GraphRAG?
-In GraphRAG, the knowledge base used for retrieval is a knowledge graph. A knowledge graph organizes facts as connected entities and relationships, which helps the system understand how pieces of information relate to each other.
-
-The knowledge graph becomes a mental map of your domain, providing the LLM with information about dependencies, sequences, hierarchies, and meaning. This makes GraphRAG especially effective at answering complex, multi-step questions that require reasoning across multiple sources.
-
-Imagine that a customer calls to request support regarding a recent purchase. Customer Service uses an internal chatbot to troubleshoot the request. A traditional system built on vector-only RAG would retrieve a product name from the customer support ticket:
-
-|   Service Ticket | Service Ticket Text                       | Embedding            |
-|------------------|-------------------------------------------|----------------------|
-|           234381 | My new JavaCo coffee maker isn't working. | [.234, .789, .123……] |
-
-But that's all the RAG system would surface.
-
-A GraphRAG system, on the other hand, would show not only this service ticket text but also the
-
-
-
-customer's
-```
-
-#### First Read
-
-```text
-What Is GraphRAG?
-In GraphRAG, the knowledge base used for retrieval is a knowledge graph. A knowledge graph organizes facts as connected entities and relationships, which helps the system understand how pieces of information relate to each other.
-
-The knowledge graph becomes a mental map of your domain, providing the LLM with information about dependencies, sequences, hierarchies, and meaning. This makes GraphRAG especially effective at answering complex, multi-step questions that require reaso
-```
-
-#### Recursive Text
-
-```text
-What Is GraphRAG?
-In GraphRAG, the knowledge base used for retrieval is a knowledge graph. A knowledge graph organizes facts as connected entities and relationships, which helps the system understand how pieces of information relate to each other.
-
-The knowledge graph becomes a mental map of your domain, providing the LLM with information about dependencies, sequences, hierarchies, and meaning. This makes GraphRAG especially effective at answering complex, multi-step questions that require reaso
-```
-
-### 1.28 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27
-
-**Evaluation Time:** 2026-02-08T00:51:30.456836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graph" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-What Is GraphRAG?
-er isn't working. | [.234, .789, .123……] |
-
-But that's all the RAG system would surface.
-
-A GraphRAG system, on the other hand, would show not only this service ticket text but also the
-
-
-
-customer's purchase history, known issues with that product version, related documentation, and prior support conversations.
-
-Figure 2. Order issue flow
-
-
-A knowledge graph holds all related information together across both structured and unstructured data. A RAG system built on a knowledge graph  or GraphRAG - excels at generating context-aware responses.
-
-The main reasons to implement a GraphRAG solution include:
-```
-
-#### First Read
-
-```text
-What Is GraphRAG?
-er isn't working. | [.234, .789, .123……] |
-
-But that's all the RAG system would surface.
-
-A GraphRAG system, on the other hand, would show not only this service ticket text but also the
-
-
-
-customer's purchase history, known issues with that product version, related documentation, and prior support conversations.
-
-Figure 2. Order issue flow
-
-
-A knowledge graph holds all related information together across both structured and unstructured data. A RAG system built on a knowledge g
-```
-
-#### Recursive Text
-
-```text
-What Is GraphRAG?
-er isn't working. | [.234, .789, .123……] |
-
-But that's all the RAG system would surface.
-
-A GraphRAG system, on the other hand, would show not only this service ticket text but also the
-
-
-
-customer's purchase history, known issues with that product version, related documentation, and prior support conversations.
-
-Figure 2. Order issue flow
-
-
-A knowledge graph holds all related information together across both structured and unstructured data. A RAG system built on a knowledge g
-```
-
-### 1.29 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28
-
-**Evaluation Time:** 2026-02-08T00:51:30.576836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "graphrag" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower() and "relevant" in chunk_text.lower():
-        return True
-    if "accurate" in chunk_text.lower() and "information" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-1.  Context-Aware Responses
-Unlike traditional RAG, which retrieves isolated chunks of text based on similarity, GraphRAG retrieves facts in context. Since the knowledge graph explicitly encodes relationships, GraphRAG returns relevant information, as well as related information. This structured retrieval ensures that application outputs are comprehensive, reducing hallucinations and leading to more accurate, reliable outputs and improving real-world applicability.
-```
-
-#### First Read
-
-```text
-1.  Context-Aware Responses
-Unlike traditional RAG, which retrieves isolated chunks of text based on similarity, GraphRAG retrieves facts in context. Since the knowledge graph explicitly encodes relationships, GraphRAG returns relevant information, as well as related information. This structured retrieval ensures that application outputs are comprehensive, reducing hallucinations and leading to more accurate, reliable outputs and improving real-world applicability.
-```
-
-#### Recursive Text
-
-```text
-1.  Context-Aware Responses
-Unlike traditional RAG, which retrieves isolated chunks of text based on similarity, GraphRAG retrieves facts in context. Since the knowledge graph explicitly encodes relationships, GraphRAG returns relevant information, as well as related information. This structured retrieval ensures that application outputs are comprehensive, reducing hallucinations and leading to more accurate, reliable outputs and improving real-world applicability.
-```
-
-### 1.30 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29
-
-**Evaluation Time:** 2026-02-08T00:51:30.696836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "explainability" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-2.  Traceability and Explainability
-LLMs and even standard RAG approaches operate as black boxes, making it difficult to know why and how a certain answer was generated. GraphRAG increases transparency by structuring retrieval paths through the knowledge graph. The knowledge graph will show the sources and relationships that contributed to a response. This makes it easier to audit results, build trust, and meet compliance needs.
-```
-
-#### First Read
-
-```text
-2.  Traceability and Explainability
-LLMs and even standard RAG approaches operate as black boxes, making it difficult to know why and how a certain answer was generated. GraphRAG increases transparency by structuring retrieval paths through the knowledge graph. The knowledge graph will show the sources and relationships that contributed to a response. This makes it easier to audit results, build trust, and meet compliance needs.
-```
-
-#### Recursive Text
-
-```text
-2.  Traceability and Explainability
-LLMs and even standard RAG approaches operate as black boxes, making it difficult to know why and how a certain answer was generated. GraphRAG increases transparency by structuring retrieval paths through the knowledge graph. The knowledge graph will show the sources and relationships that contributed to a response. This makes it easier to audit results, build trust, and meet compliance needs.
-```
-
-### 1.31 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30
-
-**Evaluation Time:** 2026-02-08T00:51:30.816836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() and "structured" in chunk_text.lower():
-        return True
-    if "integrates" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-3.  Access to Structured and Unstructured Data
-GraphRAG overcomes a key limitation of vector-only RAG by integrating both structured and unstructured data. It integrates information like whole databases, ontologies, documents, and real-time streams into a single knowledge graph. Richer data means superior AI responses.
-```
-
-#### First Read
-
-```text
-3.  Access to Structured and Unstructured Data
-GraphRAG overcomes a key limitation of vector-only RAG by integrating both structured and unstructured data. It integrates information like whole databases, ontologies, documents, and real-time streams into a single knowledge graph. Richer data means superior AI responses.
-```
-
-#### Recursive Text
-
-```text
-3.  Access to Structured and Unstructured Data
-GraphRAG overcomes a key limitation of vector-only RAG by integrating both structured and unstructured data. It integrates information like whole databases, ontologies, documents, and real-time streams into a single knowledge graph. Richer data means superior AI responses.
-```
-
-### 1.32 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:31
-
-**Evaluation Time:** 2026-02-08T00:51:30.936836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "vector" in chunk_text.lower():
-        return True
-    if "how" in chunk_text.lower() and "works" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-How GraphRAG Works
-GraphRAG works by using a knowledge graph to retrieve and connect relevant information. It starts with a search - vector, full-text, spatial, or others to find entry points in the graph, then follows related nodes and relationships to gather more context. The system considers the user's task and filters and ranks the results before passing them to the generation phase.
-
-Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a knowledge graph affects the way you design the entire solution. There are two main steps to creating a GraphRAG application:
-```
-
-#### First Read
-
-```text
-How GraphRAG Works
-GraphRAG works by using a knowledge graph to retrieve and connect relevant information. It starts with a search - vector, full-text, spatial, or others to find entry points in the graph, then follows related nodes and relationships to gather more context. The system considers the user's task and filters and ranks the results before passing them to the generation phase.
-
-Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a knowledge graph affects the way
-```
-
-#### Recursive Text
-
-```text
-How GraphRAG Works
-GraphRAG works by using a knowledge graph to retrieve and connect relevant information. It starts with a search - vector, full-text, spatial, or others to find entry points in the graph, then follows related nodes and relationships to gather more context. The system considers the user's task and filters and ranks the results before passing them to the generation phase.
-
-Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a knowledge graph affects the way
-```
-
-### 1.33 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32
-
-**Evaluation Time:** 2026-02-08T00:51:31.056836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "documents" in chunk_text.lower() or "unstructured" in chunk_text.lower():
-        return True
-    if "knowledge" in chunk_text.lower() or "graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Preparing a knowledge graph for GraphRAG
--  Documents and unstructured text ingestion
--  Structured data source import
-```
-
-#### First Read
-
-```text
-Preparing a knowledge graph for GraphRAG
--  Documents and unstructured text ingestion
--  Structured data source import
-```
-
-#### Recursive Text
-
-```text
-Preparing a knowledge graph for GraphRAG
--  Documents and unstructured text ingestion
--  Structured data source import
-```
-
-### 1.34 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:33
-
-**Evaluation Time:** 2026-02-08T00:51:31.176836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "implementing" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Implementing GraphRAG retrieval patterns
-Figure 3. Implementing GraphRAG retrieval patterns flow
-
-
-The rest of this book walks you through these two critical steps.
-```
-
-#### First Read
-
-```text
-Implementing GraphRAG retrieval patterns
-Figure 3. Implementing GraphRAG retrieval patterns flow
-
-
-The rest of this book walks you through these two critical steps.
-```
-
-#### Recursive Text
-
-```text
-Implementing GraphRAG retrieval patterns
-Figure 3. Implementing GraphRAG retrieval patterns flow
-
-
-The rest of this book walks you through these two critical steps.
-```
-
-### 1.35 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34
-
-**Evaluation Time:** 2026-02-08T00:51:31.296836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
-        return True
-    if "effective" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Prepare a Knowledge Graph for GraphRAG
-Effective retrieval in GraphRAG starts with a wellstructured knowledge graph. The data needs to be structured to model the business domain as it relates to the documents. That means having a clear data model that defines both the content you're working with and how it is connected.
-
-There are two aspects to consider when you're modeling a knowledge graph for AI workflows:
-```
-
-#### First Read
-
-```text
-Prepare a Knowledge Graph for GraphRAG
-Effective retrieval in GraphRAG starts with a wellstructured knowledge graph. The data needs to be structured to model the business domain as it relates to the documents. That means having a clear data model that defines both the content you're working with and how it is connected.
-
-There are two aspects to consider when you're modeling a knowledge graph for AI workflows:
-```
-
-#### Recursive Text
-
-```text
-Prepare a Knowledge Graph for GraphRAG
-Effective retrieval in GraphRAG starts with a wellstructured knowledge graph. The data needs to be structured to model the business domain as it relates to the documents. That means having a clear data model that defines both the content you're working with and how it is connected.
-
-There are two aspects to consider when you're modeling a knowledge graph for AI workflows:
-```
-
-### 1.36 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35
-
-**Evaluation Time:** 2026-02-08T00:51:31.416836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'how' in chunk_text.lower() and 'organized' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The relationships between documents - or how your content is organized and related:
--  How chunks connect to source documents
-- How sections of a book or catalog are structured
--  How content is grouped or nested
-```
-
-#### First Read
-
-```text
-The relationships between documents - or how your content is organized and related:
--  How chunks connect to source documents
-- How sections of a book or catalog are structured
--  How content is grouped or nested
-```
-
-#### Recursive Text
-
-```text
-The relationships between documents - or how your content is organized and related:
--  How chunks connect to source documents
-- How sections of a book or catalog are structured
--  How content is grouped or nested
-```
-
-### 1.37 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36
-
-**Evaluation Time:** 2026-02-08T00:51:31.536836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "business" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Business entities and logic:
--  The core entities (i.e., Customers, Products, Companies)
-- How these entities relate to each other
--  The structure and relationships that already exist in your current databases, schemas, or business logic
-
-These two layers - the document structure and the business domain - work together to give GraphRAG its power. GraphRAG is retrieving documents in the context of your business. Consider a customer review in context of their purchase history or a user's question in context of their technical stack.
-
-The first step is to determine where you can access that business domain and how to connect it to your documents. It might be well defined in your structured data (databases, business hierarchies, etc.) or it may be hidden inside your unstructured content (i.e., contract terms, product features). A knowledge graph brings it all together, connecting the dots so your LLM retrieves not just semantic similarity but also relevant facts.
-```
-
-#### First Read
-
-```text
-Business entities and logic:
--  The core entities (i.e., Customers, Products, Companies)
-- How these entities relate to each other
--  The structure and relationships that already exist in your current databases, schemas, or business logic
-
-These two layers - the document structure and the business domain - work together to give GraphRAG its power. GraphRAG is retrieving documents in the context of your business. Consider a customer review in context of their purchase history or a user's question
-```
-
-#### Recursive Text
-
-```text
-Business entities and logic:
--  The core entities (i.e., Customers, Products, Companies)
-- How these entities relate to each other
--  The structure and relationships that already exist in your current databases, schemas, or business logic
-
-These two layers - the document structure and the business domain - work together to give GraphRAG its power. GraphRAG is retrieving documents in the context of your business. Consider a customer review in context of their purchase history or a user's question
-```
-
-### 1.38 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
-
-**Evaluation Time:** 2026-02-08T00:51:31.656836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "unstructured" in chunk_text.lower() and "structured" in chunk_text.lower():
-        return True
-    if "data" in chunk_text.lower() and "content" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Ground With Unstructured and Structured Data
-If you've worked with RAG systems, you're already familiar with vector databases and unstructured content - PDFs, contracts, reports. But the most important  context for your data rarely lives in a single format. In fact, most of the time you'll want to use more than just unstructured data. Structured data like CRM exports, product catalogs, and relational databases often contains crucial grounding information for the answers your users need.
-
-To build systems that retrieve the right answer at the right time, you need to connect two worlds: unstructured and structured. That's where knowledge graphs come in. By linking unstructured chunks to structured business entities and relationships, you create a semantic network that makes retrieval smarter, safer, and more transparent. So, where do you start? With your documents or your structured schema?
-
-Technically, you can begin from either side. But in practice, most teams start with unstructured data because that's where the buried context usually lives. Think financial disclosures, legal contracts, emails, and support tickets. These contain implicit business logic, risk factors, and decision-making signals that don't show up in
-```
-
-#### First Read
-
-```text
-Ground With Unstructured and Structured Data
-If you've worked with RAG systems, you're already familiar with vector databases and unstructured content - PDFs, contracts, reports. But the most important  context for your data rarely lives in a single format. In fact, most of the time you'll want to use more than just unstructured data. Structured data like CRM exports, product catalogs, and relational databases often contains crucial grounding information for the answers your users need.
-
-To buil
-```
-
-#### Recursive Text
-
-```text
-Ground With Unstructured and Structured Data
-If you've worked with RAG systems, you're already familiar with vector databases and unstructured content - PDFs, contracts, reports. But the most important  context for your data rarely lives in a single format. In fact, most of the time you'll want to use more than just unstructured data. Structured data like CRM exports, product catalogs, and relational databases often contains crucial grounding information for the answers your users need.
-
-To buil
-```
-
-### 1.39 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
-
-**Evaluation Time:** 2026-02-08T00:51:31.776836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "data" in chunk_text.lower() and "documents" in chunk_text.lower():
-        return True
-    if "structured" in chunk_text.lower() and "unstructured" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Ground With Unstructured and Structured Data
-ontext usually lives. Think financial disclosures, legal contracts, emails, and support tickets. These contain implicit business logic, risk factors, and decision-making signals that don't show up in structured rows and columns.
-
-But here's the catch: Structure isn't binary. It's a continuum.
-
-
-Figure 4. Structured and unstructured data continuum
-
-
-
-At one end, you've got relational databases and clean CSV, where entities and relationships are explicitly defined. At the other end, you've got raw text: meaning buried in natural language. In between? A complex middle: XML files, JSON logs, form submissions, and mixed-format documents with both tables and prose.
-
-As you think about your own dataset, ask yourself these questions: Where does the context for your application actually live? And where on the structure continuum does it fall? These questions matter because they will help you determine the tools you should use to build the knowledge graph. For this guide, you'll use:
-
-- Neo4j Data Importer (Neo4j Aura Platform) for structured data
--  Knowledge Graph Builder Pipeline (Neo4j GraphRAG Python Package) for extracting implicit relationships from natural language
-
-If you find that
-```
-
-#### First Read
-
-```text
-Ground With Unstructured and Structured Data
-ontext usually lives. Think financial disclosures, legal contracts, emails, and support tickets. These contain implicit business logic, risk factors, and decision-making signals that don't show up in structured rows and columns.
-
-But here's the catch: Structure isn't binary. It's a continuum.
-
-
-Figure 4. Structured and unstructured data continuum
-
-
-
-At one end, you've got relational databases and clean CSV, where entities and relationships are explici
-```
-
-#### Recursive Text
-
-```text
-Ground With Unstructured and Structured Data
-ontext usually lives. Think financial disclosures, legal contracts, emails, and support tickets. These contain implicit business logic, risk factors, and decision-making signals that don't show up in structured rows and columns.
-
-But here's the catch: Structure isn't binary. It's a continuum.
-
-
-Figure 4. Structured and unstructured data continuum
-
-
-
-At one end, you've got relational databases and clean CSV, where entities and relationships are explici
-```
-
-### 1.40 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
-
-**Evaluation Time:** 2026-02-08T00:51:31.896836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Ground With Unstructured and Structured Data
-ta Importer (Neo4j Aura Platform) for structured data
--  Knowledge Graph Builder Pipeline (Neo4j GraphRAG Python Package) for extracting implicit relationships from natural language
-
-If you find that your dataset has more complex data structures, you can consider adding tools to your workflow. This is an ever-evolving field, and many are working on building tools for these scenarios. A few to consider:
-
-| Took                                           | Description                                                                                                      | Resource                            |
-|------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-------------------------------------|
-| Unstructured.io                                | Extracts structured data (tables, lists, key-value pairs) from unstructured documents like PDFs, HTML, and email | Neo4j Integration Guide             |
-| Boundary's Annotation Modeling Language (BAML) | Declarative language for extracting structured data from unstructured sources, demonstrated with Neo4j           | BAML to Neo4j
-```
-
-#### First Read
-
-```text
-Ground With Unstructured and Structured Data
-ta Importer (Neo4j Aura Platform) for structured data
--  Knowledge Graph Builder Pipeline (Neo4j GraphRAG Python Package) for extracting implicit relationships from natural language
-
-If you find that your dataset has more complex data structures, you can consider adding tools to your workflow. This is an ever-evolving field, and many are working on building tools for these scenarios. A few to consider:
-
-| Took
-```
-
-#### Recursive Text
-
-```text
-Ground With Unstructured and Structured Data
-ta Importer (Neo4j Aura Platform) for structured data
--  Knowledge Graph Builder Pipeline (Neo4j GraphRAG Python Package) for extracting implicit relationships from natural language
-
-If you find that your dataset has more complex data structures, you can consider adding tools to your workflow. This is an ever-evolving field, and many are working on building tools for these scenarios. A few to consider:
-
-| Took
-```
-
-### 1.41 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
-
-**Evaluation Time:** 2026-02-08T00:51:32.016836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "extract" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Ground With Unstructured and Structured Data
-Guide             |
-| Boundary's Annotation Modeling Language (BAML) | Declarative language for extracting structured data from unstructured sources, demonstrated with Neo4j           | BAML to Neo4j Tutorial by Jason Koo |
-| pdfplumber                                     | Parses tables and text from PDF files, ideal for extracting structured data from documents                       | GitHub Repository                   |
-| LangChain                                      | Framework for developing applications powered by language models, with support for Neo4j integration             | Neo4j Integration                   |
-
-
-For this exercise, you'll start with unstructured financial documents. Using an LLM-powered pipeline to extract entities like Company and Risk Factor, you'll look for relationships such as FACES\_RISK to build a knowledge graph in Neo4j. This process mirrors what many teams face: extracting meaning from dense reports, contracts, or disclosures.
-
-You'll then use Neo4j's Data Importer to load structured datasets - the kind of CSVs or database connectors most companies already have - further enriching the graph with known entities and relationships.
-
-Finally,
-```
-
-#### First Read
-
-```text
-Ground With Unstructured and Structured Data
-Guide             |
-| Boundary's Annotation Modeling Language (BAML) | Declarative language for extracting structured data from unstructured sources, demonstrated with Neo4j           | BAML to Neo4j Tutorial by Jason Koo |
-| pdfplumber                                     | Parses tables and text from PDF files, ideal for extracting structured data from documents                       | GitHub Repository                   |
-| LangChain
-```
-
-#### Recursive Text
-
-```text
-Ground With Unstructured and Structured Data
-Guide             |
-| Boundary's Annotation Modeling Language (BAML) | Declarative language for extracting structured data from unstructured sources, demonstrated with Neo4j           | BAML to Neo4j Tutorial by Jason Koo |
-| pdfplumber                                     | Parses tables and text from PDF files, ideal for extracting structured data from documents                       | GitHub Repository                   |
-| LangChain
-```
-
-### 1.42 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41
-
-**Evaluation Time:** 2026-02-08T00:51:32.136836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    if "dynamic" in chunk_text.lower() and "cypher" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Ground With Unstructured and Structured Data
-Neo4j's Data Importer to load structured datasets - the kind of CSVs or database connectors most companies already have - further enriching the graph with known entities and relationships.
-
-Finally, you'll test retrieval strategies, from vector search to graph-enhanced queries, to dynamic Cypher generation with Text2Cypher. The same process can be applied to your own PDFs, internal databases, and business domain to build a semantic layer over enterprise knowledge, making it accessible to GenAI systems with precision, transparency, and context.
-
-## PART III: Constructing the Graph
-```
-
-#### First Read
-
-```text
-Ground With Unstructured and Structured Data
-Neo4j's Data Importer to load structured datasets - the kind of CSVs or database connectors most companies already have - further enriching the graph with known entities and relationships.
-
-Finally, you'll test retrieval strategies, from vector search to graph-enhanced queries, to dynamic Cypher generation with Text2Cypher. The same process can be applied to your own PDFs, internal databases, and business domain to build a semantic layer over enterpri
-```
-
-#### Recursive Text
-
-```text
-Ground With Unstructured and Structured Data
-Neo4j's Data Importer to load structured datasets - the kind of CSVs or database connectors most companies already have - further enriching the graph with known entities and relationships.
-
-Finally, you'll test retrieval strategies, from vector search to graph-enhanced queries, to dynamic Cypher generation with Text2Cypher. The same process can be applied to your own PDFs, internal databases, and business domain to build a semantic layer over enterpri
-```
-
-### 1.43 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42
-
-**Evaluation Time:** 2026-02-08T00:51:32.256836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "database" in chunk_text.lower():
-        return True
-    if "create" in chunk_text.lower():
-        return True
-    if "free" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Create a Neo4j Database
-Begin by choosing a Neo4j database solution that fits your needs. Options include a free instance of AuraDB or a free trial of AuraDB Professional. Neo4j is also available on all the major cloud partner marketplaces. When you navigate to https://console. neo4j.io and log in, you'll see the following screen, inviting you to create your first instance.
-
-Tip: Download your AuraDB credentials (URI, username, password) immediately after creating the instance. They will not be available for download later. Store them securely, as you'll need them to connect your application to Neo4j.
-
-
-
-Figure 5. Create your first instance screen
-
-
-You then have three choices of instances to choose from:
-
--  AuraDB Free, a small database (2 GB) that will always be free, though it will be deleted after 30 days of no activity.
--  AuraDB Professional offers up to 128 GB of memory and a free 14-day trial.
--  AuraDB Business Critical is the most robust and offers up to 512 GB of memory and pay-asyou-go billing.
-
-Figure 6. New instance tiers
-
-
-If you're just getting started, you'll do well with AuraDB Free or AuraDB Professional trial.
-
-
-Be sure to download the credentials when you set up the database because
-```
-
-#### First Read
-
-```text
-Create a Neo4j Database
-Begin by choosing a Neo4j database solution that fits your needs. Options include a free instance of AuraDB or a free trial of AuraDB Professional. Neo4j is also available on all the major cloud partner marketplaces. When you navigate to https://console. neo4j.io and log in, you'll see the following screen, inviting you to create your first instance.
-
-Tip: Download your AuraDB credentials (URI, username, password) immediately after creating the instance. They will not be
-```
-
-#### Recursive Text
-
-```text
-Create a Neo4j Database
-Begin by choosing a Neo4j database solution that fits your needs. Options include a free instance of AuraDB or a free trial of AuraDB Professional. Neo4j is also available on all the major cloud partner marketplaces. When you navigate to https://console. neo4j.io and log in, you'll see the following screen, inviting you to create your first instance.
-
-Tip: Download your AuraDB credentials (URI, username, password) immediately after creating the instance. They will not be
-```
-
-### 1.44 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43
-
-**Evaluation Time:** 2026-02-08T00:51:32.376836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'database' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Create a Neo4j Database
-Figure 6. New instance tiers
-
-
-If you're just getting started, you'll do well with AuraDB Free or AuraDB Professional trial.
-
-
-Be sure to download the credentials when you set up the database because they won't be available later on.
-
-Figure 7. Credential download and continue screen
-```
-
-#### First Read
-
-```text
-Create a Neo4j Database
-Figure 6. New instance tiers
-
-
-If you're just getting started, you'll do well with AuraDB Free or AuraDB Professional trial.
-
-
-Be sure to download the credentials when you set up the database because they won't be available later on.
-
-Figure 7. Credential download and continue screen
-```
-
-#### Recursive Text
-
-```text
-Create a Neo4j Database
-Figure 6. New instance tiers
-
-
-If you're just getting started, you'll do well with AuraDB Free or AuraDB Professional trial.
-
-
-Be sure to download the credentials when you set up the database because they won't be available later on.
-
-Figure 7. Credential download and continue screen
-```
-
-### 1.45 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44
-
-**Evaluation Time:** 2026-02-08T00:51:32.496836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "ingest" in chunk_text.lower() and "unstructured" in chunk_text.lower():
-        return True
-    if "knowledge" in chunk_text.lower() and "graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Ingest Unstructured Data
-As you begin to build your knowledge graph, you can use the Neo4j GraphRAG Python library. This package offers specialized functionalities that streamline and enhance the process of building a knowledge graph from unstructured data, such as PDFs. Capabilities include document chunking, embedding generation, and knowledge graph construction.
-
-Figure 8. Document flow
-```
-
-#### First Read
-
-```text
-Ingest Unstructured Data
-As you begin to build your knowledge graph, you can use the Neo4j GraphRAG Python library. This package offers specialized functionalities that streamline and enhance the process of building a knowledge graph from unstructured data, such as PDFs. Capabilities include document chunking, embedding generation, and knowledge graph construction.
-
-Figure 8. Document flow
-```
-
-#### Recursive Text
-
-```text
-Ingest Unstructured Data
-As you begin to build your knowledge graph, you can use the Neo4j GraphRAG Python library. This package offers specialized functionalities that streamline and enhance the process of building a knowledge graph from unstructured data, such as PDFs. Capabilities include document chunking, embedding generation, and knowledge graph construction.
-
-Figure 8. Document flow
-```
-
-### 1.46 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
-
-**Evaluation Time:** 2026-02-08T00:51:32.616836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "vector indexing" in chunk_text.lower():
-        return True
-    if "semantic search" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Key Features of Neo4j GraphRAG Package
--  Knowledge Graph Construction Pipeline: Automates the extraction of entities and relationships from unstructured text and structures them into a Neo4j graph.
--  Vector Indexing and Retrieval: Facilitates the creation of vector indices for efficient semantic search within the graph.
--  Integration with LLMs: Seamlessly integrates with LLMs for tasks like entity extraction and relation identification.
--  Document Chunking and Storage: The package uses the SimpleKGPipeline class to automate chunking and storage. This class handles the parsing of documents, the chunking of text, and storage of chunks as nodes in Neo4j.
-- neo4j: Official Python driver for interacting with a Neo4j database.
-- GraphDatabase: Connects to Neo4j to interact with the graph database.
-- SimpleKGPipeline : Automates chunking, entity recognition, and storage in Neo4j.
-- OpenAILLM : Integrates GPT-4 for text-based processing and knowledge extraction.
-- OpenAIEmbeddings : Handles vector embeddings to enable semantic search in Neo4j.
-- ERExtractionTemplate: Supplies prompt templates for entity-relation extraction.
-
-
-
-
-The LLM does the thinking by extracting meaningful concepts from text. The embedder turns the
-```
-
-#### First Read
-
-```text
-Key Features of Neo4j GraphRAG Package
--  Knowledge Graph Construction Pipeline: Automates the extraction of entities and relationships from unstructured text and structures them into a Neo4j graph.
--  Vector Indexing and Retrieval: Facilitates the creation of vector indices for efficient semantic search within the graph.
--  Integration with LLMs: Seamlessly integrates with LLMs for tasks like entity extraction and relation identification.
--  Document Chunking and Storage: The package uses the S
-```
-
-#### Recursive Text
-
-```text
-Key Features of Neo4j GraphRAG Package
--  Knowledge Graph Construction Pipeline: Automates the extraction of entities and relationships from unstructured text and structures them into a Neo4j graph.
--  Vector Indexing and Retrieval: Facilitates the creation of vector indices for efficient semantic search within the graph.
--  Integration with LLMs: Seamlessly integrates with LLMs for tasks like entity extraction and relation identification.
--  Document Chunking and Storage: The package uses the S
-```
-
-### 1.47 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:46
-
-**Evaluation Time:** 2026-02-08T00:51:32.736836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "search" in chunk_text.lower() and "neo4j" in chunk_text.lower():
-        return True
-    if "extraction" in chunk_text.lower() and "entity" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Key Features of Neo4j GraphRAG Package
-ic search in Neo4j.
-- ERExtractionTemplate: Supplies prompt templates for entity-relation extraction.
-
-
-
-
-The LLM does the thinking by extracting meaningful concepts from text. The embedder turns the text into vectors, which lets your system perform semantic search later.
-```
-
-#### First Read
-
-```text
-Key Features of Neo4j GraphRAG Package
-ic search in Neo4j.
-- ERExtractionTemplate: Supplies prompt templates for entity-relation extraction.
-
-
-
-
-The LLM does the thinking by extracting meaningful concepts from text. The embedder turns the text into vectors, which lets your system perform semantic search later.
-```
-
-#### Recursive Text
-
-```text
-Key Features of Neo4j GraphRAG Package
-ic search in Neo4j.
-- ERExtractionTemplate: Supplies prompt templates for entity-relation extraction.
-
-
-
-
-The LLM does the thinking by extracting meaningful concepts from text. The embedder turns the text into vectors, which lets your system perform semantic search later.
-```
-
-### 1.48 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47
-
-**Evaluation Time:** 2026-02-08T00:51:32.856836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'connect' in chunk_text.lower() and 'database' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Neo4j Connection
-You'll use GraphDatabase from the Neo4j Python driver to connect to Neo4j Graph Database.
-
-
-
-Note that the required credentials can be found in the .txt file you downloaded when you created the instance.
-
-Figure 9. Credentials from .txt file
-
-
-- NEO4J\_URI: The database URL (e.g., 'neo4j+s://ef123456.database.neo4j. io' ) · auth=(NEO4J\_USER, NEO4J\_PASSWORD) : Credentials to authenticate
-```
-
-#### First Read
-
-```text
-Neo4j Connection
-You'll use GraphDatabase from the Neo4j Python driver to connect to Neo4j Graph Database.
-
-
-
-Note that the required credentials can be found in the .txt file you downloaded when you created the instance.
-
-Figure 9. Credentials from .txt file
-
-
-- NEO4J\_URI: The database URL (e.g., 'neo4j+s://ef123456.database.neo4j. io' ) · auth=(NEO4J\_USER, NEO4J\_PASSWORD) : Credentials to authenticate
-```
-
-#### Recursive Text
-
-```text
-Neo4j Connection
-You'll use GraphDatabase from the Neo4j Python driver to connect to Neo4j Graph Database.
-
-
-
-Note that the required credentials can be found in the .txt file you downloaded when you created the instance.
-
-Figure 9. Credentials from .txt file
-
-
-- NEO4J\_URI: The database URL (e.g., 'neo4j+s://ef123456.database.neo4j. io' ) · auth=(NEO4J\_USER, NEO4J\_PASSWORD) : Credentials to authenticate
-```
-
-### 1.49 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:48
-
-**Evaluation Time:** 2026-02-08T00:51:32.976836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "gpt" in chunk_text.lower() and "embeddings" in chunk_text.lower():
-        return True
-    if "semantic" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Initialize the LLM and Embeddings
-- llm: Uses GPT-4o to extract entities, relationships, and summarize text.
--  embedder: Generates vector embeddings to enable semantic search and contextual retrieval.
-```
-
-#### First Read
-
-```text
-Initialize the LLM and Embeddings
-- llm: Uses GPT-4o to extract entities, relationships, and summarize text.
--  embedder: Generates vector embeddings to enable semantic search and contextual retrieval.
-```
-
-#### Recursive Text
-
-```text
-Initialize the LLM and Embeddings
-- llm: Uses GPT-4o to extract entities, relationships, and summarize text.
--  embedder: Generates vector embeddings to enable semantic search and contextual retrieval.
-```
-
-### 1.50 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49
-
-**Evaluation Time:** 2026-02-08T00:51:33.096836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'define' in chunk_text.lower() or 'defining' in chunk_text.lower():
-        return True
-    if 'entities' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Define Node Labels and Relationship Types
-```
-
-entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Product', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'FinancialMetric', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'RiskFactor', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'StockType', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Transaction', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'TimePeriod', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Company', 'properties': [{'name': 'name', 'type': 'STRING'}]} ] relations = [ {'label': 'HAS_METRIC', 'source': 'Company', 'target': 'FinancialMetric'}, {'label': 'FACES_RISK', 'source': 'Company', 'target': 'RiskFactor'}, {'label': 'ISSUED_STOCK', 'source': 'Company', 'target': 'StockType'}, {'label': 'MENTIONS', 'source': 'Company', 'target': 'Product'} ]
-
-```
-
-
-Defining your nodes and relationships in two lists is a key moment in the knowledge graph construction process. This is when you determine the data model. These lists control what the SimpleKGBuilder will look for in the text and how it will organize that
-```
-
-#### First Read
-
-```text
-Define Node Labels and Relationship Types
-```
-
-entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Product', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'FinancialMetric', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'RiskFactor', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'StockType', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Transaction', 'properties': [{'name': 'name',
-
-````
-
-#### Recursive Text
-```text
-Define Node Labels and Relationship Types
-````
-
-entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Product', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'FinancialMetric', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'RiskFactor', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'StockType', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Transaction', 'properties': [{'name': 'name',
-
-````
-
-### 1.51 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50
-
-**Evaluation Time:** 2026-02-08T00:51:33.216836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "define" in chunk_text.lower() and "node" in chunk_text.lower():
-        return True
-    if "relationship" in chunk_text.lower() and "types" in chunk_text.lower():
-        return True
-    return False
-````
-
-#### Chunk Text
-
-```text
-Define Node Labels and Relationship Types
-key moment in the knowledge graph construction process. This is when you determine the data model. These lists control what the SimpleKGBuilder will look for in the text and how it will organize that information in your graph. To understand how you might want to construct these lists, let's take a look at some general ideas.
-```
-
-#### First Read
-
-```text
-Define Node Labels and Relationship Types
-key moment in the knowledge graph construction process. This is when you determine the data model. These lists control what the SimpleKGBuilder will look for in the text and how it will organize that information in your graph. To understand how you might want to construct these lists, let's take a look at some general ideas.
-```
-
-#### Recursive Text
-
-```text
-Define Node Labels and Relationship Types
-key moment in the knowledge graph construction process. This is when you determine the data model. These lists control what the SimpleKGBuilder will look for in the text and how it will organize that information in your graph. To understand how you might want to construct these lists, let's take a look at some general ideas.
-```
-
-### 1.52 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:51
-
-**Evaluation Time:** 2026-02-08T00:51:33.336836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Entities = Nouns
-What are the real-world concepts you're trying to capture?
-
-Company, Executive, RiskFactor, Product whatever matters to your domain.
-```
-
-#### First Read
-
-```text
-Entities = Nouns
-What are the real-world concepts you're trying to capture?
-
-Company, Executive, RiskFactor, Product whatever matters to your domain.
-```
-
-#### Recursive Text
-
-```text
-Entities = Nouns
-What are the real-world concepts you're trying to capture?
-
-Company, Executive, RiskFactor, Product whatever matters to your domain.
-```
-
-### 1.53 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52
-
-**Evaluation Time:** 2026-02-08T00:51:33.456836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'how' in chunk_text.lower() and 'relate' in chunk_text.lower():
-        return True
-    if 'company' in chunk_text.lower() and 'risk' in chunk_text.lower():
-        return True
-    if 'information' in chunk_text.lower() and 'answer' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Relationships = Verbs or Connectors
-How do those concepts relate?
-
-Perhaps a Company  FACES\_RISK  RiskFactor, or Company  ISSUED\_STOCK  StockType.
-
-If you aren't sure which entities and relationships to include in your first project, ask yourself: What information would help my chunk provide a better answer? Alternatively, what information connects various chunks? Ultimately, you want to think through the application's use case and start with the entities and relationships that will move the needle the most on your project. This step isn't just configuration; it's your chance to define the mental model of your data.
-```
-
-#### First Read
-
-```text
-Relationships = Verbs or Connectors
-How do those concepts relate?
-
-Perhaps a Company  FACES\_RISK  RiskFactor, or Company  ISSUED\_STOCK  StockType.
-
-If you aren't sure which entities and relationships to include in your first project, ask yourself: What information would help my chunk provide a better answer? Alternatively, what information connects various chunks? Ultimately, you want to think through the application's use case and start with the entities and relationships that will move t
-```
-
-#### Recursive Text
-
-```text
-Relationships = Verbs or Connectors
-How do those concepts relate?
-
-Perhaps a Company  FACES\_RISK  RiskFactor, or Company  ISSUED\_STOCK  StockType.
-
-If you aren't sure which entities and relationships to include in your first project, ask yourself: What information would help my chunk provide a better answer? Alternatively, what information connects various chunks? Ultimately, you want to think through the application's use case and start with the entities and relationships that will move t
-```
-
-### 1.54 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53
-
-**Evaluation Time:** 2026-02-08T00:51:33.576836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "similarity-based" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "knowledge" in chunk_text.lower() and "extracting" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Initialize and Run the Pipeline
-The SimpleKGPipeline sets up a structured pipeline for extracting and storing knowledge from unstructured text into a graph database. It starts with the driver , which is the Neo4j connection used to write data into the graph. The llm parameter specifies the language model that will interpret and extract meaningful entities and relationships from the input text. The embedder is the embedding
-
-model used to vectorize text, which supports similarity-based retrieval alongside structured querying.
-
-The entities and relations define the schema: what kinds of objects (like Customers, Contracts, Products) and relationships (like HAS\_CONTRACT , CONTAINS , REFERENCES ) the pipeline should look for. Finally, enforce\_schema=True ensures that only the entity and relationship types that have been explicitly defined in those lists are allowed into the graph. This prevents schema drift and keeps the resulting knowledge graph clean and reliable.
-```
-
-#### First Read
-
-```text
-Initialize and Run the Pipeline
-The SimpleKGPipeline sets up a structured pipeline for extracting and storing knowledge from unstructured text into a graph database. It starts with the driver , which is the Neo4j connection used to write data into the graph. The llm parameter specifies the language model that will interpret and extract meaningful entities and relationships from the input text. The embedder is the embedding
-
-model used to vectorize text, which supports similarity-based retrieval
-```
-
-#### Recursive Text
-
-```text
-Initialize and Run the Pipeline
-The SimpleKGPipeline sets up a structured pipeline for extracting and storing knowledge from unstructured text into a graph database. It starts with the driver , which is the Neo4j connection used to write data into the graph. The llm parameter specifies the language model that will interpret and extract meaningful entities and relationships from the input text. The embedder is the embedding
-
-model used to vectorize text, which supports similarity-based retrieval
-```
-
-### 1.55 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54
-
-**Evaluation Time:** 2026-02-08T00:51:33.696836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower() or 'asynchronous' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Process the PDF Document
-Running the pipeline involves I/O-heavy operations:
-
--  Calling the LLM to extract structured meaning from text
--  Generating embeddings via an external API
--  Writing data into Neo4j
-
-All of these are network-bound and would block the main thread in a normal synchronous setup. That's why the pipeline is designed to be asynchronous -  so these operations can run concurrently and efficiently. To execute it, you need to use Python's async / await syntax : The await keyword tells Python:
-
-'Pause this function while we wait on an external operation, but don't freeze the whole program.'
-
-async def run\_pipeline\_on\_file(file\_path, pipeline):
-
-await pipeline.run\_async(pdf\_path=file\_path)
-
-If you're calling this inside another async function, it will work by itself. If you're in a regular script or notebook, you'll need to run it inside an event loop. If you're unfamiliar with it, don't worry - you can treat await pipeline.run\_async() like a normal function call, as long as it's inside an async context.
-
-for pdf\_file in pdf\_files:
-
-asyncio.run(run\_pipeline\_on\_file(pdf\_file, pipeline))
-
-As you can see in the image below, the document and chunk nodes have been created and
-```
-
-#### First Read
-
-```text
-Process the PDF Document
-Running the pipeline involves I/O-heavy operations:
-
--  Calling the LLM to extract structured meaning from text
--  Generating embeddings via an external API
--  Writing data into Neo4j
-
-All of these are network-bound and would block the main thread in a normal synchronous setup. That's why the pipeline is designed to be asynchronous -  so these operations can run concurrently and efficiently. To execute it, you need to use Python's async / await syntax : The await keyword
-```
-
-#### Recursive Text
-
-```text
-Process the PDF Document
-Running the pipeline involves I/O-heavy operations:
-
--  Calling the LLM to extract structured meaning from text
--  Generating embeddings via an external API
--  Writing data into Neo4j
-
-All of these are network-bound and would block the main thread in a normal synchronous setup. That's why the pipeline is designed to be asynchronous -  so these operations can run concurrently and efficiently. To execute it, you need to use Python's async / await syntax : The await keyword
-```
-
-### 1.56 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55
-
-**Evaluation Time:** 2026-02-08T00:51:33.816836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "embedding" in chunk_text.lower():
-        return True
-    if "query" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Process the PDF Document
-nside an async context.
-
-for pdf\_file in pdf\_files:
-
-asyncio.run(run\_pipeline\_on\_file(pdf\_file, pipeline))
-
-As you can see in the image below, the document and chunk nodes have been created and written to the database. Note that there is now a property on the node called embedding , which represents the vector
-
-
-of the chunk text. This is how your retriever finds the relevant chunk in your application: by comparing the embedding of the query and the embeddings in your data store.
-
-Figure 10. Node details
-```
-
-#### First Read
-
-```text
-Process the PDF Document
-nside an async context.
-
-for pdf\_file in pdf\_files:
-
-asyncio.run(run\_pipeline\_on\_file(pdf\_file, pipeline))
-
-As you can see in the image below, the document and chunk nodes have been created and written to the database. Note that there is now a property on the node called embedding , which represents the vector
-
-
-of the chunk text. This is how your retriever finds the relevant chunk in your application: by comparing the embedding of the query and the embeddings in y
-```
-
-#### Recursive Text
-
-```text
-Process the PDF Document
-nside an async context.
-
-for pdf\_file in pdf\_files:
-
-asyncio.run(run\_pipeline\_on\_file(pdf\_file, pipeline))
-
-As you can see in the image below, the document and chunk nodes have been created and written to the database. Note that there is now a property on the node called embedding , which represents the vector
-
-
-of the chunk text. This is how your retriever finds the relevant chunk in your application: by comparing the embedding of the query and the embeddings in y
-```
-
-### 1.57 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56
-
-**Evaluation Time:** 2026-02-08T00:51:33.936836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "similarity" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    if "index" in chunk_text.lower() and "database" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Create the Vector Index
-A vector index is a type of database index that enables fast similarity search over high-dimensional vectors, such as embeddings from models like OpenAI's. Unlike traditional indexes that look for exact matches, vector indexes retrieve items most similar to a query vector using metrics like cosine similarity or Euclidean distance.
-
-In the context of Neo4j and RAG, here's what you need to know:
-```
-
-#### First Read
-
-```text
-Create the Vector Index
-A vector index is a type of database index that enables fast similarity search over high-dimensional vectors, such as embeddings from models like OpenAI's. Unlike traditional indexes that look for exact matches, vector indexes retrieve items most similar to a query vector using metrics like cosine similarity or Euclidean distance.
-
-In the context of Neo4j and RAG, here's what you need to know:
-```
-
-#### Recursive Text
-
-```text
-Create the Vector Index
-A vector index is a type of database index that enables fast similarity search over high-dimensional vectors, such as embeddings from models like OpenAI's. Unlike traditional indexes that look for exact matches, vector indexes retrieve items most similar to a query vector using metrics like cosine similarity or Euclidean distance.
-
-In the context of Neo4j and RAG, here's what you need to know:
-```
-
-### 1.58 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:57
-
-**Evaluation Time:** 2026-02-08T00:51:34.056836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "semantic" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    if "question" in chunk_text.lower() and "answering" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-This capability is essential for semantic search, question answering, and other AI-powered applications where meaning and context matter more than exact keywords.
-By using a vector index, Neo4j enables scalable, realtime retrieval of relevant knowledge from large and complex graphs.
-```
-
-#### First Read
-
-```text
-This capability is essential for semantic search, question answering, and other AI-powered applications where meaning and context matter more than exact keywords.
-By using a vector index, Neo4j enables scalable, realtime retrieval of relevant knowledge from large and complex graphs.
-```
-
-#### Recursive Text
-
-```text
-This capability is essential for semantic search, question answering, and other AI-powered applications where meaning and context matter more than exact keywords.
-By using a vector index, Neo4j enables scalable, realtime retrieval of relevant knowledge from large and complex graphs.
-```
-
-### 1.59 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58
-
-**Evaluation Time:** 2026-02-08T00:51:34.176836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "data" in chunk_text.lower() and "importer" in chunk_text.lower():
-        return True
-    if "neo4j" in chunk_text.lower() and "graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Getting Started With Data Importer
-Neo4j Data Importer provides a streamlined process for bringing structured data into your graph database. Here's how to use this powerful tool. The Neo4j Aura console includes a dedicated Data Importer feature that allows you to transform tabular data into graph structures without writing code. This tool works well in quickly populating your knowledge graph with data from existing datasets.
-```
-
-#### First Read
-
-```text
-Getting Started With Data Importer
-Neo4j Data Importer provides a streamlined process for bringing structured data into your graph database. Here's how to use this powerful tool. The Neo4j Aura console includes a dedicated Data Importer feature that allows you to transform tabular data into graph structures without writing code. This tool works well in quickly populating your knowledge graph with data from existing datasets.
-```
-
-#### Recursive Text
-
-```text
-Getting Started With Data Importer
-Neo4j Data Importer provides a streamlined process for bringing structured data into your graph database. Here's how to use this powerful tool. The Neo4j Aura console includes a dedicated Data Importer feature that allows you to transform tabular data into graph structures without writing code. This tool works well in quickly populating your knowledge graph with data from existing datasets.
-```
-
-### 1.60 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59
-
-**Evaluation Time:** 2026-02-08T00:51:34.296836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "model" in chunk_text.lower():
-        return True
-    if "create" in chunk_text.lower() and "new" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Create a new graph model.
-3.  A graph data model has been provided for your convenience. Note: Due to pathway differences between operating systems, please choose either Mac or Windows data models.
-```
-
-#### First Read
-
-```text
-Create a new graph model.
-3.  A graph data model has been provided for your convenience. Note: Due to pathway differences between operating systems, please choose either Mac or Windows data models.
-```
-
-#### Recursive Text
-
-```text
-Create a new graph model.
-3.  A graph data model has been provided for your convenience. Note: Due to pathway differences between operating systems, please choose either Mac or Windows data models.
-```
-
-### 1.61 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60
-
-**Evaluation Time:** 2026-02-08T00:51:34.416836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Once you've loaded the provided data model, click Browse and navigate to the data folder in your repository, selecting both the Asset\_ Manager\_Holdings.csv file and the Company\_ Filings.csv files.
-Figure 11. Neo4j Aura Data Importer
-
-
-Figure 12.  New graph model screen
-
-
-Figure 13.  Selecting model starting point screen
-
-
-
-Figure 14.  Browse to .csv files screen
-```
-
-#### First Read
-
-```text
-Once you've loaded the provided data model, click Browse and navigate to the data folder in your repository, selecting both the Asset\_ Manager\_Holdings.csv file and the Company\_ Filings.csv files.
-Figure 11. Neo4j Aura Data Importer
-
-
-Figure 12.  New graph model screen
-
-
-Figure 13.  Selecting model starting point screen
-
-
-
-Figure 14.  Browse to .csv files screen
-```
-
-#### Recursive Text
-
-```text
-Once you've loaded the provided data model, click Browse and navigate to the data folder in your repository, selecting both the Asset\_ Manager\_Holdings.csv file and the Company\_ Filings.csv files.
-Figure 11. Neo4j Aura Data Importer
-
-
-Figure 12.  New graph model screen
-
-
-Figure 13.  Selecting model starting point screen
-
-
-
-Figure 14.  Browse to .csv files screen
-```
-
-### 1.62 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61
-
-**Evaluation Time:** 2026-02-08T00:51:34.536836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Once the files are connected, you'll see that the data model has check marks for each entity and relationship. Click Run Import in the upper right-hand corner.
-Figure 15. Run import screen
-```
-
-#### First Read
-
-```text
-Once the files are connected, you'll see that the data model has check marks for each entity and relationship. Click Run Import in the upper right-hand corner.
-Figure 15. Run import screen
-```
-
-#### Recursive Text
-
-```text
-Once the files are connected, you'll see that the data model has check marks for each entity and relationship. Click Run Import in the upper right-hand corner.
-Figure 15. Run import screen
-```
-
-### 1.63 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
-
-**Evaluation Time:** 2026-02-08T00:51:34.656836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Mapping Your Data to Graph Structures
-To get you started, we've given you a full, completed data model for this exercise. When working with your own data, you'll create these data model maps yourself.
-
-If you'd like to work with your own dataset, here's how to get started.The Aura console provides a unified experience where you can manage your database instances, connect to diverse data sources, import structured data, model graphs visually, query your data with Cypher, explore your graph, and more.
-
-When navigating to Import &gt; New Data Sources, you're presented with many possible connectors. For our case, there are two CSVs in this dataset: Asset\_
-
-Manager\_Holdings.csv and Company\_Filings.csv.
-
-
-Figure 16.  New data source connectors screen
-
-
-Once you've uploaded these CSV files, you'll be given a choice as to how to proceed. Click Define Manually to begin building your data model.
-
-First, you'll see a blank node, and on the righthand side, you'll see the parameters for that node, including Label, Table, Properties.
-
-Figure 17.  Node parameters options screen
-
-
-Label refers to the type of node. Table points to the data source where the information is sourced (the tables you uploaded will appear on the left).
-```
-
-#### First Read
-
-```text
-Mapping Your Data to Graph Structures
-To get you started, we've given you a full, completed data model for this exercise. When working with your own data, you'll create these data model maps yourself.
-
-If you'd like to work with your own dataset, here's how to get started.The Aura console provides a unified experience where you can manage your database instances, connect to diverse data sources, import structured data, model graphs visually, query your data with Cypher, explore your graph, and m
-```
-
-#### Recursive Text
-
-```text
-Mapping Your Data to Graph Structures
-To get you started, we've given you a full, completed data model for this exercise. When working with your own data, you'll create these data model maps yourself.
-
-If you'd like to work with your own dataset, here's how to get started.The Aura console provides a unified experience where you can manage your database instances, connect to diverse data sources, import structured data, model graphs visually, query your data with Cypher, explore your graph, and m
-```
-
-### 1.64 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63
-
-**Evaluation Time:** 2026-02-08T00:51:34.776836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "data" in chunk_text.lower() and "mapping" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Mapping Your Data to Graph Structures
-es.
-
-Figure 17.  Node parameters options screen
-
-
-Label refers to the type of node. Table points to the data source where the information is sourced (the tables you uploaded will appear on the left). Properties refer to the values you want associated with that node. Let's start with the Company\_Filings.csv.
-```
-
-#### First Read
-
-```text
-Mapping Your Data to Graph Structures
-es.
-
-Figure 17.  Node parameters options screen
-
-
-Label refers to the type of node. Table points to the data source where the information is sourced (the tables you uploaded will appear on the left). Properties refer to the values you want associated with that node. Let's start with the Company\_Filings.csv.
-```
-
-#### Recursive Text
-
-```text
-Mapping Your Data to Graph Structures
-es.
-
-Figure 17.  Node parameters options screen
-
-
-Label refers to the type of node. Table points to the data source where the information is sourced (the tables you uploaded will appear on the left). Properties refer to the values you want associated with that node. Let's start with the Company\_Filings.csv.
-```
-
-### 1.65 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:64
-
-**Evaluation Time:** 2026-02-08T00:51:34.896836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'company' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Company Node
-Label:
-
-Company
-
-Table:
-
-Company\_Filings.csv
-
-Properties: name,  ticker
-
-ID(key): name
-
-You'll also need to identify the unique ID property for that node, akin to the primary key, which in this case is the name of the company. This is done by clicking the key icon next to the property name.
-
-
-Figure 18.  Company node screen
-```
-
-#### First Read
-
-```text
-Company Node
-Label:
-
-Company
-
-Table:
-
-Company\_Filings.csv
-
-Properties: name,  ticker
-
-ID(key): name
-
-You'll also need to identify the unique ID property for that node, akin to the primary key, which in this case is the name of the company. This is done by clicking the key icon next to the property name.
-
-
-Figure 18.  Company node screen
-```
-
-#### Recursive Text
-
-```text
-Company Node
-Label:
-
-Company
-
-Table:
-
-Company\_Filings.csv
-
-Properties: name,  ticker
-
-ID(key): name
-
-You'll also need to identify the unique ID property for that node, akin to the primary key, which in this case is the name of the company. This is done by clicking the key icon next to the property name.
-
-
-Figure 18.  Company node screen
-```
-
-### 1.66 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65
-
-**Evaluation Time:** 2026-02-08T00:51:35.016836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "document" in chunk_text.lower():
-        return True
-    if "path" in chunk_text.lower():
-        return True
-    if "companies" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Document Node
-Label:
-
-Document
-
-Table:
-
-Company\_Filings.csv
-
-Properties:
-
-path (this must match exactly -   read below)
-
-ID(key):
-
-path
-
-CRITICAL STEP: Rename Your Path Column to path
-
-The kg\_builder has already created Document nodes using a path property. To correctly link companies to their documents, your imported data must use the exact same property name: path .
-
-Figure 19.  Path property screen
-
-
-⚠ If you skip this renaming step, the relationship will NOT connect and your graph will be incomplete.
-
-The CSV includes two columns with OS-specific paths:
-
--  path\_Windows for Windows users
-- path\_Mac\_ix for macOS/Linux users
--  Choose the appropriate column based on your operating system and rename it to path during import
-
-Pick the column for your system:
-
-1. Rename that column to exactly: path (lowercase, no quotes).
-```
-
-#### First Read
-
-```text
-Document Node
-Label:
-
-Document
-
-Table:
-
-Company\_Filings.csv
-
-Properties:
-
-path (this must match exactly -   read below)
-
-ID(key):
-
-path
-
-CRITICAL STEP: Rename Your Path Column to path
-
-The kg\_builder has already created Document nodes using a path property. To correctly link companies to their documents, your imported data must use the exact same property name: path .
-
-Figure 19.  Path property screen
-
-
-⚠ If you skip this renaming step, the relationship will NOT connect and your graph will be
-```
-
-#### Recursive Text
-
-```text
-Document Node
-Label:
-
-Document
-
-Table:
-
-Company\_Filings.csv
-
-Properties:
-
-path (this must match exactly -   read below)
-
-ID(key):
-
-path
-
-CRITICAL STEP: Rename Your Path Column to path
-
-The kg\_builder has already created Document nodes using a path property. To correctly link companies to their documents, your imported data must use the exact same property name: path .
-
-Figure 19.  Path property screen
-
-
-⚠ If you skip this renaming step, the relationship will NOT connect and your graph will be
-```
-
-### 1.67 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:66
-
-**Evaluation Time:** 2026-02-08T00:51:35.136836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "assetmanager" in chunk_text.lower() or "manager" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Asset Manager Node
-Label:
-
-AssetManager
-
-Table: Asset\_Manager\_Holdings.csv
-
-Properties: managerName
-
-ID(key):
-
-managerName
-
-Figure 20.  AssetManager node screen
-```
-
-#### First Read
-
-```text
-Asset Manager Node
-Label:
-
-AssetManager
-
-Table: Asset\_Manager\_Holdings.csv
-
-Properties: managerName
-
-ID(key):
-
-managerName
-
-Figure 20.  AssetManager node screen
-```
-
-#### Recursive Text
-
-```text
-Asset Manager Node
-Label:
-
-AssetManager
-
-Table: Asset\_Manager\_Holdings.csv
-
-Properties: managerName
-
-ID(key):
-
-managerName
-
-Figure 20.  AssetManager node screen
-```
-
-### 1.68 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:67
-
-**Evaluation Time:** 2026-02-08T00:51:35.256836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "relationship" in chunk_text.lower() and "connect" in chunk_text.lower():
-        return True
-    if "entities" in chunk_text.lower() and "mapping" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Mapping Relationships
-Relationships are created with the following criteria:
-
-- Relationship Label: Describes the type of connection between the entities. It is common practice in knowledge graphs for the relationships to be in ALL\_CAPS with no spaces.
--  Table: Has identifiers for each node type contained in it. It is the way we connect the two nodes.
--  Node ID Mapping: Maps the columns in the relevant table to the IDs of the pertinent nodes.
-- Properties: Adds information to a relationship or entity.
-
-
-Next, let's create connections between and among these entities. In our domain, the Asset Managers own stock in various companies. Here's a sample from the Asset\_Manager\_Holdings.csv:
-
-| managerName           | companyName    | ticker   |   shares |
-|-----------------------|----------------|----------|----------|
-| ALLIANCEBERNSTEINL.P. | AMAZON         | AMZN     | 50065439 |
-| ALLIANCEBERNSTEINL.P. | APPLEINC       | AAPL     | 28143032 |
-| ALLIANCEBERNSTEINL.P. | INTELCORP      | INTC     |  5735993 |
-| ALLIANCEBERNSTEINL.P. | MCDONALDS CORP | MCD      |  1201960 |
-| ALLIANCEBERNSTEINL.P. | MICROSOFTCORP  | MSFT     | 46541943 |
-
-In a knowledge graph, we want to map the domain knowledge of
-```
-
-#### First Read
-
-```text
-Mapping Relationships
-Relationships are created with the following criteria:
-
-- Relationship Label: Describes the type of connection between the entities. It is common practice in knowledge graphs for the relationships to be in ALL\_CAPS with no spaces.
--  Table: Has identifiers for each node type contained in it. It is the way we connect the two nodes.
--  Node ID Mapping: Maps the columns in the relevant table to the IDs of the pertinent nodes.
-- Properties: Adds information to a relationship o
-```
-
-#### Recursive Text
-
-```text
-Mapping Relationships
-Relationships are created with the following criteria:
-
-- Relationship Label: Describes the type of connection between the entities. It is common practice in knowledge graphs for the relationships to be in ALL\_CAPS with no spaces.
--  Table: Has identifiers for each node type contained in it. It is the way we connect the two nodes.
--  Node ID Mapping: Maps the columns in the relevant table to the IDs of the pertinent nodes.
-- Properties: Adds information to a relationship o
-```
-
-### 1.69 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68
-
-**Evaluation Time:** 2026-02-08T00:51:35.376836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'mapping' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Mapping Relationships
-35993 |
-| ALLIANCEBERNSTEINL.P. | MCDONALDS CORP | MCD      |  1201960 |
-| ALLIANCEBERNSTEINL.P. | MICROSOFTCORP  | MSFT     | 46541943 |
-
-In a knowledge graph, we want to map the domain knowledge of structured data, which in this case is the Asset Managers' ownership of stock in a given company. If entities are nouns, then relationships are verbs. So let's create the relationship OWNS that goes from Asset Manager to Company.
-```
-
-#### First Read
-
-```text
-Mapping Relationships
-35993 |
-| ALLIANCEBERNSTEINL.P. | MCDONALDS CORP | MCD      |  1201960 |
-| ALLIANCEBERNSTEINL.P. | MICROSOFTCORP  | MSFT     | 46541943 |
-
-In a knowledge graph, we want to map the domain knowledge of structured data, which in this case is the Asset Managers' ownership of stock in a given company. If entities are nouns, then relationships are verbs. So let's create the relationship OWNS that goes from Asset Manager to Company.
-```
-
-#### Recursive Text
-
-```text
-Mapping Relationships
-35993 |
-| ALLIANCEBERNSTEINL.P. | MCDONALDS CORP | MCD      |  1201960 |
-| ALLIANCEBERNSTEINL.P. | MICROSOFTCORP  | MSFT     | 46541943 |
-
-In a knowledge graph, we want to map the domain knowledge of structured data, which in this case is the Asset Managers' ownership of stock in a given company. If entities are nouns, then relationships are verbs. So let's create the relationship OWNS that goes from Asset Manager to Company.
-```
-
-### 1.70 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:69
-
-**Evaluation Time:** 2026-02-08T00:51:35.496836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Hover over the outline until it turns gray:
-Figure 21. AssetManager blue outline
-
-
-
-Figure 22. AssetManager gray outline
-```
-
-#### First Read
-
-```text
-Hover over the outline until it turns gray:
-Figure 21. AssetManager blue outline
-
-
-
-Figure 22. AssetManager gray outline
-```
-
-#### Recursive Text
-
-```text
-Hover over the outline until it turns gray:
-Figure 21. AssetManager blue outline
-
-
-
-Figure 22. AssetManager gray outline
-```
-
-### 1.71 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:70
-
-**Evaluation Time:** 2026-02-08T00:51:35.616836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "company" in chunk_text.lower() or "relationship" in chunk_text.lower():
-        return True
-    if "edit" in chunk_text.lower() or "parameters" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Drag the outline of the AssetManager node to cover the Company node. When you release, you'll see a new relationship arrow between them:
-Figure 23. Drag and release for new relationship
-
-
-Clicking on this arrow allows you to edit the parameters of the relationship.
-```
-
-#### First Read
-
-```text
-Drag the outline of the AssetManager node to cover the Company node. When you release, you'll see a new relationship arrow between them:
-Figure 23. Drag and release for new relationship
-
-
-Clicking on this arrow allows you to edit the parameters of the relationship.
-```
-
-#### Recursive Text
-
-```text
-Drag the outline of the AssetManager node to cover the Company node. When you release, you'll see a new relationship arrow between them:
-Figure 23. Drag and release for new relationship
-
-
-Clicking on this arrow allows you to edit the parameters of the relationship.
-```
-
-### 1.72 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71
-
-**Evaluation Time:** 2026-02-08T00:51:35.736836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "company" in chunk_text.lower():
-        return True
-    if "assetmanager" in chunk_text.lower():
-        return True
-    if "additional" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-OWNS Relationship
-Relationship Type:
-
-OWNS
-
-Table:
-
-Asset\_Manager\_Holdings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-AssetManager
-
-ID: managerName
-
-ID column:
-
-managerName
-
-To:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-Properties:
-
-shares
-
-Figure 24. OWNS relationship
-
-
-The property shares represents the number of shares of the Company owned by the Asset Manager and for this book is an optional inclusion. Additional columns such as value or sharevalue are optional, as well. When working with your own data, it's best to consider if that property will have value to your use case. Will you be asking to rank based on shares owned? Does the total value of the holding have relevance to your application? Additional information on data modeling can be found at GraphAcademy.
-```
-
-#### First Read
-
-```text
-OWNS Relationship
-Relationship Type:
-
-OWNS
-
-Table:
-
-Asset\_Manager\_Holdings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-AssetManager
-
-ID: managerName
-
-ID column:
-
-managerName
-
-To:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-Properties:
-
-shares
-
-Figure 24. OWNS relationship
-
-
-The property shares represents the number of shares of the Company owned by the Asset Manager and for this book is an optional inclusion. Additional columns such as value or sharevalue are optional, as well. When working wi
-```
-
-#### Recursive Text
-
-```text
-OWNS Relationship
-Relationship Type:
-
-OWNS
-
-Table:
-
-Asset\_Manager\_Holdings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-AssetManager
-
-ID: managerName
-
-ID column:
-
-managerName
-
-To:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-Properties:
-
-shares
-
-Figure 24. OWNS relationship
-
-
-The property shares represents the number of shares of the Company owned by the Asset Manager and for this book is an optional inclusion. Additional columns such as value or sharevalue are optional, as well. When working wi
-```
-
-### 1.73 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72
-
-**Evaluation Time:** 2026-02-08T00:51:35.856836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "document" in chunk_text.lower():
-        return True
-    if "company" in chunk_text.lower():
-        return True
-    if "relationship" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-FILED Relationship
-Note that the relationship between Company and Document is the linchpin that connects the structured and the unstructured data in this GraphRAG application.
-
-Relationship Type:
-
-FILED
-
-Table:
-
-Company\_Filings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-To:
-
-Node:
-
-Document
-
-ID: path
-
-ID column:
-
-path\_Windows or path\_Mac\_ix
-
-Figure 25. FILED relationship
-
-
-As you see in the diagram above, each entity and relationship will have a green check mark when it has been properly mapped. Now you're ready to run the
-
-
-import. Click the blue Run import button in the upper right corner of the screen.
-
-Figure 26.  Run import button
-
-
-Now that your unstructured and structured data is loaded, you can use the Explore and Query functions to refine your graph structure and data to accurately represent your business domain. Use Explore to visualize and navigate your graph with Neo4j Bloom and Query to investigate the graph.
-
-For a detailed walkthrough of graph data modeling, see The Developer's Guide: How to Build a Knowledge Graph.
-
-## PART IV: Implementing GraphRAG Retrieval Patterns
-
-GraphRAG retrieval patterns are practical mechanisms that define how the
-```
-
-#### First Read
-
-```text
-FILED Relationship
-Note that the relationship between Company and Document is the linchpin that connects the structured and the unstructured data in this GraphRAG application.
-
-Relationship Type:
-
-FILED
-
-Table:
-
-Company\_Filings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-To:
-
-Node:
-
-Document
-
-ID: path
-
-ID column:
-
-path\_Windows or path\_Mac\_ix
-
-Figure 25. FILED relationship
-
-
-As you see in the diagram above, each entity and relationship will have a green che
-```
-
-#### Recursive Text
-
-```text
-FILED Relationship
-Note that the relationship between Company and Document is the linchpin that connects the structured and the unstructured data in this GraphRAG application.
-
-Relationship Type:
-
-FILED
-
-Table:
-
-Company\_Filings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-To:
-
-Node:
-
-Document
-
-ID: path
-
-ID column:
-
-path\_Windows or path\_Mac\_ix
-
-Figure 25. FILED relationship
-
-
-As you see in the diagram above, each entity and relationship will have a green che
-```
-
-### 1.74 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:73
-
-**Evaluation Time:** 2026-02-08T00:51:35.976836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower() and "graphrag" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower() and "is" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-FILED Relationship
-ta modeling, see The Developer's Guide: How to Build a Knowledge Graph.
-
-## PART IV: Implementing GraphRAG Retrieval Patterns
-
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-#### First Read
-
-```text
-FILED Relationship
-ta modeling, see The Developer's Guide: How to Build a Knowledge Graph.
-
-## PART IV: Implementing GraphRAG Retrieval Patterns
-
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-#### Recursive Text
-
-```text
-FILED Relationship
-ta modeling, see The Developer's Guide: How to Build a Knowledge Graph.
-
-## PART IV: Implementing GraphRAG Retrieval Patterns
-
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-### 1.75 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:74
-
-**Evaluation Time:** 2026-02-08T00:51:36.096836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower() and "is" in chunk_text.lower():
-        return True
-    if "accesses" in chunk_text.lower() and "context" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-PART IV: Implementing GraphRAG Retrieval Patterns
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-#### First Read
-
-```text
-PART IV: Implementing GraphRAG Retrieval Patterns
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-#### Recursive Text
-
-```text
-PART IV: Implementing GraphRAG Retrieval Patterns
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-### 1.76 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
-
-**Evaluation Time:** 2026-02-08T00:51:36.216836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Import Libraries
-This notebook imports the core libraries required for building and querying RAG pipelines with Neo4j and GraphRAG:
-
-- neo4j.GraphDatabase: The official Python driver for connecting to and querying a Neo4j database.
-- neo4j\_graphrag.llm.OpenAILLM : Integrates OpenAI language models for generating and processing natural language queries.
-- neo4j\_graphrag.embeddings. OpenAIEmbeddings : Provides access to OpenAI's embedding models for generating vector representations of text.
-- Neo4j\_graphrag.retrievers : Different retriever classes for semantic and hybrid search over graph data using vector similarity and Cypher queries:
-- VectorRetriever
-- VectorCypherRetriever
-- Text2CypherRetriever
-- neo4j\_graphrag.generation.GraphRAG : The main class for orchestrating RAG workflows over a Neo4j knowledge graph.
-- neo4j\_graphrag.schema.get\_schema : Utility to introspect and retrieve the schema of your Neo4j database.
-- dotenv.load\_dotenv : Loads environment variables (such as credentials and API keys) from an .env file for secure configuration.
-
-These imports enable advanced semantic search, retrieval, and GenAI capabilities directly on your Neo4j knowledge graph.
-```
-
-#### First Read
-
-```text
-Import Libraries
-This notebook imports the core libraries required for building and querying RAG pipelines with Neo4j and GraphRAG:
-
-- neo4j.GraphDatabase: The official Python driver for connecting to and querying a Neo4j database.
-- neo4j\_graphrag.llm.OpenAILLM : Integrates OpenAI language models for generating and processing natural language queries.
-- neo4j\_graphrag.embeddings. OpenAIEmbeddings : Provides access to OpenAI's embedding models for generating vector representations of text.
-- N
-```
-
-#### Recursive Text
-
-```text
-Import Libraries
-This notebook imports the core libraries required for building and querying RAG pipelines with Neo4j and GraphRAG:
-
-- neo4j.GraphDatabase: The official Python driver for connecting to and querying a Neo4j database.
-- neo4j\_graphrag.llm.OpenAILLM : Integrates OpenAI language models for generating and processing natural language queries.
-- neo4j\_graphrag.embeddings. OpenAIEmbeddings : Provides access to OpenAI's embedding models for generating vector representations of text.
-- N
-```
-
-### 1.77 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76
-
-**Evaluation Time:** 2026-02-08T00:51:36.336836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'api' in chunk_text.lower() or 'credentials' in chunk_text.lower() or 'database' in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Load Environment Variables and Initialize Neo4j Driver
-Here, you load sensitive configuration values (such as database credentials and API keys) from environment variables, ensuring that secrets aren't hardcoded in your notebook. The steps include:
-
-- load\_dotenv() : Loads environment variables from an .env file into your Python environment.
-- os.getenv() : Fetches the Neo4j connection URI, username, and password, as well as your OpenAI API key.
-- GraphDatabase.driver() : Initializes the Neo4j database driver with the provided credentials, allowing your notebook to connect and interact with your Neo4j instance securely.
-
-TIP: Make sure your .env file contains the correct values for NEO4J\_URI,  NEO4J\_USERNAME, NEO4J\_PASSWORD, and OPENAI\_API\_KEY before running this code. This approach keeps your credentials secure and makes your codebase easier to share and maintain.
-```
-
-#### First Read
-
-```text
-Load Environment Variables and Initialize Neo4j Driver
-Here, you load sensitive configuration values (such as database credentials and API keys) from environment variables, ensuring that secrets aren't hardcoded in your notebook. The steps include:
-
-- load\_dotenv() : Loads environment variables from an .env file into your Python environment.
-- os.getenv() : Fetches the Neo4j connection URI, username, and password, as well as your OpenAI API key.
-- GraphDatabase.driver() : Initializes the Neo4j
-```
-
-#### Recursive Text
-
-```text
-Load Environment Variables and Initialize Neo4j Driver
-Here, you load sensitive configuration values (such as database credentials and API keys) from environment variables, ensuring that secrets aren't hardcoded in your notebook. The steps include:
-
-- load\_dotenv() : Loads environment variables from an .env file into your Python environment.
-- os.getenv() : Fetches the Neo4j connection URI, username, and password, as well as your OpenAI API key.
-- GraphDatabase.driver() : Initializes the Neo4j
-```
-
-### 1.78 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77
-
-**Evaluation Time:** 2026-02-08T00:51:36.456836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "embedding" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Initialize the LLM and Embedder
-Just as you selected a specific LLM and embedding model when processing your PDFs, you should do the same when generating embeddings for your text data. It's important to keep track of the language model and embedding tools that you use during this process.
-
-For the retrievers to work correctly, the embedding model used during retrieval must match the one used to generate the dataset's embeddings. This ensures accurate and meaningful search results.
-
-llm = OPENAILLM (model\_name='gpt-4o', api\_key=OPENAI\_API\_KEY) embedder = OPENAIEmbeddings(api\_key=OPENAI\_API\_KEY)
-```
-
-#### First Read
-
-```text
-Initialize the LLM and Embedder
-Just as you selected a specific LLM and embedding model when processing your PDFs, you should do the same when generating embeddings for your text data. It's important to keep track of the language model and embedding tools that you use during this process.
-
-For the retrievers to work correctly, the embedding model used during retrieval must match the one used to generate the dataset's embeddings. This ensures accurate and meaningful search results.
-
-llm = OPENAIL
-```
-
-#### Recursive Text
-
-```text
-Initialize the LLM and Embedder
-Just as you selected a specific LLM and embedding model when processing your PDFs, you should do the same when generating embeddings for your text data. It's important to keep track of the language model and embedding tools that you use during this process.
-
-For the retrievers to work correctly, the embedding model used during retrieval must match the one used to generate the dataset's embeddings. This ensures accurate and meaningful search results.
-
-llm = OPENAIL
-```
-
-### 1.79 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78
-
-**Evaluation Time:** 2026-02-08T00:51:36.576836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower() and "basic" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower() and "requests" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Basic Retriever Pattern
-The basic retriever uses vector embeddings to find nodes that are semantically similar based on content. This retriever is useful only for handling specific information requests about topics contained in just one or a few chunks. It's a starting point for more complex graph-based retrievals, and it's easy to implement if you're familiar with RAG but new to GraphRAG.
-
-
-There are two components in the process:
-
--  Chunks as nodes: The pattern uses the already chunked data to create a graph, where each chunk becomes a node in the graph.
-- Retrieval: When a query is performed, the basic retriever pattern searches through these chunk nodes to find the most relevant information.
-
-Let's look at how you would implement this pattern using the SEC dataset.
-
-You can now execute vector similarity searches to retrieve a company's current challenges based on certain text in their filing. The retriever compares a query vector generated from the search prompt (i.e., the numeric representation of the question) against the indexed text embeddings of the chunks. Vector similarity searches work well for simple queries with a narrow focus, such as: 'What are the risks around cryptocurrency?'
-
-
-Be sure
-```
-
-#### First Read
-
-```text
-The Basic Retriever Pattern
-The basic retriever uses vector embeddings to find nodes that are semantically similar based on content. This retriever is useful only for handling specific information requests about topics contained in just one or a few chunks. It's a starting point for more complex graph-based retrievals, and it's easy to implement if you're familiar with RAG but new to GraphRAG.
-
-
-There are two components in the process:
-
--  Chunks as nodes: The pattern uses the already chunked da
-```
-
-#### Recursive Text
-
-```text
-The Basic Retriever Pattern
-The basic retriever uses vector embeddings to find nodes that are semantically similar based on content. This retriever is useful only for handling specific information requests about topics contained in just one or a few chunks. It's a starting point for more complex graph-based retrievals, and it's easy to implement if you're familiar with RAG but new to GraphRAG.
-
-
-There are two components in the process:
-
--  Chunks as nodes: The pattern uses the already chunked da
-```
-
-### 1.80 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79
-
-**Evaluation Time:** 2026-02-08T00:51:36.696836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "work" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Basic Retriever Pattern
-uestion) against the indexed text embeddings of the chunks. Vector similarity searches work well for simple queries with a narrow focus, such as: 'What are the risks around cryptocurrency?'
-
-
-Be sure to review your retrieval results before generating any text output. This step helps you confirm that your retriever is functioning as intended and returning relevant data from your knowledge graph. For example, in the query above, a sample of the retrieved content is displayed for inspection:
-
-```
-
-result_table=pd.DataFrame([(item.metadata['score'], item. content [10:80], item.metadata['id']) for item in result.items], columns=['Score', 'Content', 'ID']
-
-```
-
-
-
-|    Score | Content                                                                  | ID                |
-|----------|--------------------------------------------------------------------------|-------------------|
-| 0.913177 | cryptocurrency assets could be treated as a general unsecured claim ag.. | 6064a2f775a8:1724 |
-| 0.908264 | agencyofferings could subject us to additional regulations, licensing r… | 6064a2f775a8:1723 |
-| 0.903259 | cyberextortion, distributed denial- of-service attacks, ransomware, spe… |
-```
-
-#### First Read
-
-```text
-The Basic Retriever Pattern
-uestion) against the indexed text embeddings of the chunks. Vector similarity searches work well for simple queries with a narrow focus, such as: 'What are the risks around cryptocurrency?'
-
-
-Be sure to review your retrieval results before generating any text output. This step helps you confirm that your retriever is functioning as intended and returning relevant data from your knowledge graph. For example, in the query above, a sample of the retrieved content is disp
-```
-
-#### Recursive Text
-
-```text
-The Basic Retriever Pattern
-uestion) against the indexed text embeddings of the chunks. Vector similarity searches work well for simple queries with a narrow focus, such as: 'What are the risks around cryptocurrency?'
-
-
-Be sure to review your retrieval results before generating any text output. This step helps you confirm that your retriever is functioning as intended and returning relevant data from your knowledge graph. For example, in the query above, a sample of the retrieved content is disp
-```
-
-### 1.81 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:80
-
-**Evaluation Time:** 2026-02-08T00:51:36.816836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "basic" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Basic Retriever Pattern
-4 |
-| 0.908264 | agencyofferings could subject us to additional regulations, licensing r… | 6064a2f775a8:1723 |
-| 0.903259 | cyberextortion, distributed denial- of-service attacks, ransomware, spe… | 6064a2f775a8:1718 |
-| 0.898422 | While wemaintain insurance policies intended to help offset the\ nfina…  | 6064a2f775a8:1720 |
-| 0.896942 | financing, and branded credit card products; branded debit card and\ ns… | 6064a2f775a8:1731 |
-| 0.89476  | our customers unimpaired and unconstrained access to our online servic…  | 6064a2f775a8:1731 |
-| 0.894135 | changes in cryptocurrencies, government cryptocurrency policies and ,,,  | 6064a2f775a8:1251 |
-| 0.893723 | ct our reputation and revenue. Actual or perceived vulnerabilities may…  | 6064a2f775a8:2508 |
-| 0.893539 | the past andcould in the future have a material adverse effecton our…    | 6064a2f775a8:1254 |
-| 0.893402 | maycontinue to result\nin, disruption of and volatility in global fin…   | 6064a2f775a8:1260 |
-
-You should review the results, or at least check the number of returned items. If there's an error in your retriever and you proceed directly to natural language generation, your application may produce a generic LLM
-```
-
-#### First Read
-
-```text
-The Basic Retriever Pattern
-4 |
-| 0.908264 | agencyofferings could subject us to additional regulations, licensing r… | 6064a2f775a8:1723 |
-| 0.903259 | cyberextortion, distributed denial- of-service attacks, ransomware, spe… | 6064a2f775a8:1718 |
-| 0.898422 | While wemaintain insurance policies intended to help offset the\ nfina…  | 6064a2f775a8:1720 |
-| 0.896942 | financing, and branded credit card products; branded debit card and\ ns… | 6064a2f775a8:1731 |
-| 0.89476  | our customers unimpaire
-```
-
-#### Recursive Text
-
-```text
-The Basic Retriever Pattern
-4 |
-| 0.908264 | agencyofferings could subject us to additional regulations, licensing r… | 6064a2f775a8:1723 |
-| 0.903259 | cyberextortion, distributed denial- of-service attacks, ransomware, spe… | 6064a2f775a8:1718 |
-| 0.898422 | While wemaintain insurance policies intended to help offset the\ nfina…  | 6064a2f775a8:1720 |
-| 0.896942 | financing, and branded credit card products; branded debit card and\ ns… | 6064a2f775a8:1731 |
-| 0.89476  | our customers unimpaire
-```
-
-### 1.82 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81
-
-**Evaluation Time:** 2026-02-08T00:51:36.936836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "natural language generation" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Basic Retriever Pattern
-the results, or at least check the number of returned items. If there's an error in your retriever and you proceed directly to natural language generation, your application may produce a generic LLM response that isn't grounded in your data. This validation step ensures your outputs remain accurate and reflect the content of your underlying dataset.
-
-To get the natural language output, use the following code:
-
-
-
-The basic retriever will cause the LLM to generate a result like this:
-
-The main risks around cryptocurrency, as highlighted in the context, include:
-
-1. Regulatory Risks: The regulatory status of certain cryptocurrencies is unclear, which could subject businesses to additional licensing and regulatory obligations. If cryptocurrencies are deemed securities, this might necessitate securities brokerdealer registration under federal securities laws. Non-compliance could lead to regulatory actions, fines, and other consequences.
-2. Custodial Risks: Cryptocurrency assets held through a third-party custodian are susceptible to various risks, such as inappropriate access, theft, or destruction. Inadequate insurance coverage by custodians and their potential inability to maintain
-```
-
-#### First Read
-
-```text
-The Basic Retriever Pattern
-the results, or at least check the number of returned items. If there's an error in your retriever and you proceed directly to natural language generation, your application may produce a generic LLM response that isn't grounded in your data. This validation step ensures your outputs remain accurate and reflect the content of your underlying dataset.
-
-To get the natural language output, use the following code:
-
-
-
-The basic retriever will cause the LLM to generate a res
-```
-
-#### Recursive Text
-
-```text
-The Basic Retriever Pattern
-the results, or at least check the number of returned items. If there's an error in your retriever and you proceed directly to natural language generation, your application may produce a generic LLM response that isn't grounded in your data. This validation step ensures your outputs remain accurate and reflect the content of your underlying dataset.
-
-To get the natural language output, use the following code:
-
-
-
-The basic retriever will cause the LLM to generate a res
-```
-
-### 1.83 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:82
-
-**Evaluation Time:** 2026-02-08T00:51:37.056836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "custodian" in chunk_text.lower():
-        return True
-    if "access" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Basic Retriever Pattern
-gh a third-party custodian are susceptible to various risks, such as inappropriate access, theft, or destruction. Inadequate insurance coverage by custodians and their potential inability to maintain effective controls can expose customers to losses. In the event of a custodian's bankruptcy, the treatment of custodial holdings in proceedings remains uncertain, which could delay or prevent the return of assets.
-3. Third-Party Partner Risks: Dependence on third-party custodians and financial institutions means exposure to operational disruptions, inability to safeguard holdings, and financial defaults by these partners, which could harm business operations and customer trust.
-
-These risks underscore the need for robust regulatory compliance, secure custodial arrangements, and the management of thirdparty relationships to mitigate potential negative impacts on businesses offering cryptocurrency products.
-
-
-
-While the vector search provided useful information about cryptocurrency risks, it did not answer deeper, more actionable questions, such as:
-
--  Which specific companies are exposed to these risks?
--  What other risks may be occurring concurrently?
--  Which asset managers are
-```
-
-#### First Read
-
-```text
-The Basic Retriever Pattern
-gh a third-party custodian are susceptible to various risks, such as inappropriate access, theft, or destruction. Inadequate insurance coverage by custodians and their potential inability to maintain effective controls can expose customers to losses. In the event of a custodian's bankruptcy, the treatment of custodial holdings in proceedings remains uncertain, which could delay or prevent the return of assets.
-3. Third-Party Partner Risks: Dependence on third-party cu
-```
-
-#### Recursive Text
-
-```text
-The Basic Retriever Pattern
-gh a third-party custodian are susceptible to various risks, such as inappropriate access, theft, or destruction. Inadequate insurance coverage by custodians and their potential inability to maintain effective controls can expose customers to losses. In the event of a custodian's bankruptcy, the treatment of custodial holdings in proceedings remains uncertain, which could delay or prevent the return of assets.
-3. Third-Party Partner Risks: Dependence on third-party cu
-```
-
-### 1.84 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:83
-
-**Evaluation Time:** 2026-02-08T00:51:37.176836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieve" in chunk_text.lower():
-        return True
-    if "analyze" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Basic Retriever Pattern
-, it did not answer deeper, more actionable questions, such as:
-
--  Which specific companies are exposed to these risks?
--  What other risks may be occurring concurrently?
--  Which asset managers are associated with the affected companies?  (e.g., multi-hop relationships from risk to company to asset manager)
-
-In other words, the approach demonstrated here retrieves relevant text fragments. However, it doesn't use the graph's structure to connect the risks to companies or asset managers, nor does it show related or concurrent risks. There's no traversal or multi-hop reasoning, so you miss out on the rich, contextual insights that a knowledge graph can provide.
-
-To answer these more complex, relationship-driven questions, you need to combine vector search with graph-powered Cypher queries that can traverse and analyze connections between entities. This is where graph-enhanced retrieval patterns come in.
-```
-
-#### First Read
-
-```text
-The Basic Retriever Pattern
-, it did not answer deeper, more actionable questions, such as:
-
--  Which specific companies are exposed to these risks?
--  What other risks may be occurring concurrently?
--  Which asset managers are associated with the affected companies?  (e.g., multi-hop relationships from risk to company to asset manager)
-
-In other words, the approach demonstrated here retrieves relevant text fragments. However, it doesn't use the graph's structure to connect the risks to companie
-```
-
-#### Recursive Text
-
-```text
-The Basic Retriever Pattern
-, it did not answer deeper, more actionable questions, such as:
-
--  Which specific companies are exposed to these risks?
--  What other risks may be occurring concurrently?
--  Which asset managers are associated with the affected companies?  (e.g., multi-hop relationships from risk to company to asset manager)
-
-In other words, the approach demonstrated here retrieves relevant text fragments. However, it doesn't use the graph's structure to connect the risks to companie
-```
-
-### 1.85 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
-
-**Evaluation Time:** 2026-02-08T00:51:37.296836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "retrieval" in chunk_text or "augmented" in chunk_text:
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-The Graph-Enhanced Vector Search Pattern
-The basic retriever pattern typically relies on textbased embeddings, capturing only the semantic meaning of content. While this method is effective in identifying similar chunks, it leaves the LLM in the dark as to how those items interact in the real world.
-
-The Graph-Enhanced Vector Search Pattern, also known as augmented vector search, overcomes this limitation by drawing on the graph structure (i.e., using not just what items are but also how they connect). By embedding node positions and relationships within a graph, this approach generates contextually relevant nodes, integrating both:
-
--  Unstructured data: Product descriptions, customer reviews, and other text content via semantic similarity
--  Structured data: Purchase patterns, category relationships, and transaction records via explicit instructions
-
-The VectorCypherRetriever uses the full graph capabilities of Neo4j by combining vector-based similarity searches with graph traversal techniques. The retriever completes the following actions:
-```
-
-#### First Read
-
-```text
-The Graph-Enhanced Vector Search Pattern
-The basic retriever pattern typically relies on textbased embeddings, capturing only the semantic meaning of content. While this method is effective in identifying similar chunks, it leaves the LLM in the dark as to how those items interact in the real world.
-
-The Graph-Enhanced Vector Search Pattern, also known as augmented vector search, overcomes this limitation by drawing on the graph structure (i.e., using not just what items are but also how they co
-```
-
-#### Recursive Text
-
-```text
-The Graph-Enhanced Vector Search Pattern
-The basic retriever pattern typically relies on textbased embeddings, capturing only the semantic meaning of content. While this method is effective in identifying similar chunks, it leaves the LLM in the dark as to how those items interact in the real world.
-
-The Graph-Enhanced Vector Search Pattern, also known as augmented vector search, overcomes this limitation by drawing on the graph structure (i.e., using not just what items are but also how they co
-```
-
-### 1.86 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
-
-**Evaluation Time:** 2026-02-08T00:51:37.416836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    if "cryptocurrency" in chunk_text.lower():
-        return True
-    if "traverse" in chunk_text.lower() and "graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Executes a Cypher query to traverse the graph based on these nodes.
-To set up this particular query, you need to tell the graph where and how to traverse from the semantic nodes. In this example, the query is:
-
-'What are the risk factors for companies discussing cryptocurrency in their filings?'
-
-The following code creates a retriever to answer this query:
-
-
-Let's start by looking at the parts of the graph that help to answer this query. We start by identifying the Chunk that is semantically similar to the cryptocurrency query. Then we need to traverse the graph to identify the Document the Chunk comes from, the Company that FILED the Document and collect the other RiskFactors for that Company . Once this information is retrieved, it's converted to Cypher and set as the retrieval query.
-
-
-Figure 27.  VectorCypherRetriever example 1
-
-
-
-Next, let's add this new retrieval query to the VectorCypherRetriever parameters:
-```
-
-#### First Read
-
-```text
-Executes a Cypher query to traverse the graph based on these nodes.
-To set up this particular query, you need to tell the graph where and how to traverse from the semantic nodes. In this example, the query is:
-
-'What are the risk factors for companies discussing cryptocurrency in their filings?'
-
-The following code creates a retriever to answer this query:
-
-
-Let's start by looking at the parts of the graph that help to answer this query. We start by identifying the Chunk that is semantically sim
-```
-
-#### Recursive Text
-
-```text
-Executes a Cypher query to traverse the graph based on these nodes.
-To set up this particular query, you need to tell the graph where and how to traverse from the semantic nodes. In this example, the query is:
-
-'What are the risk factors for companies discussing cryptocurrency in their filings?'
-
-The following code creates a retriever to answer this query:
-
-
-Let's start by looking at the parts of the graph that help to answer this query. We start by identifying the Chunk that is semantically sim
-```
-
-### 1.87 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
-
-**Evaluation Time:** 2026-02-08T00:51:37.536836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'VectorCypher' in chunk_text and 'retrieval' in chunk_text:
-        return True
-    if 'cypher' in chunk_text and 'query' in chunk_text:
-        return True
-    if 'semantic' in chunk_text and 'search' in chunk_text:
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name : The name of the vector index (here, chunkEmbeddings ) used for semantic search
-- Embedder : The embedding model used to generate/query vector representations
-- Retrieval\_query : The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
-
-This setup enables you to start with a semantic search (e.g., for 'cryptocurrency risk') and automatically traverse your knowledge graph to reveal which companies are involved and what other risks they face. The resulting responses are both semantically relevant and graph-aware.
-```
-
-#### First Read
-
-```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name : The name of the vector index (here, chunkEmbeddings ) used for semantic search
-- Embedder : The embedding model used to generate/query vector representations
-- Retrieval\_query : The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
-
-This setup enables you to start with a semantic search (e.g., for 'cryptocurrency risk') and automatically traverse y
-```
-
-#### Recursive Text
-
-```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name : The name of the vector index (here, chunkEmbeddings ) used for semantic search
-- Embedder : The embedding model used to generate/query vector representations
-- Retrieval\_query : The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
-
-This setup enables you to start with a semantic search (e.g., for 'cryptocurrency risk') and automatically traverse y
-```
-
-### 1.88 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87
-
-**Evaluation Time:** 2026-02-08T00:51:37.656836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "cypher" in chunk_text:
-        return True
-    if "retriever" in chunk_text and "practice" in chunk_text:
-        return True
-    if "approach" in chunk_text and "any domain" in chunk_text:
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-VectorCypher Retriever in Practice
-The power of the Graph-Enhanced Vector Search Pattern lies in its flexibility. While the example above focuses on linking companies to risk factors in financial filings, the approach can be applied to any domain or vertical by customizing the graph schema and Cypher queries.
-
-How might this look for other industries?
-
-- Healthcare: Retrieve patient records, diagnoses, and treatment plans by combining semantic search of clinical notes with graph traversal across relationships like doctorpatient, medication-prescribed, or symptomdiagnosis.
--  Ecommerce: Connect customer reviews or product descriptions (unstructured text) to
-
-purchase behavior, category hierarchies, or supplier relationships (a structured graph), enabling recommendations and/or supply chain insights.
-
-- Law: Link case law or legal opinions to statutes, precedents, and involved parties, surfacing not just relevant text but also the legal context and network of citations.
--  Cybersecurity: Combine threat intelligence reports (text) with the graph relationships between vulnerabilities, affected assets, and mitigation strategies to provide a holistic view of your security posture.
--  Education: Map student essays or
-```
-
-#### First Read
-
-```text
-VectorCypher Retriever in Practice
-The power of the Graph-Enhanced Vector Search Pattern lies in its flexibility. While the example above focuses on linking companies to risk factors in financial filings, the approach can be applied to any domain or vertical by customizing the graph schema and Cypher queries.
-
-How might this look for other industries?
-
-- Healthcare: Retrieve patient records, diagnoses, and treatment plans by combining semantic search of clinical notes with graph traversal across
-```
-
-#### Recursive Text
-
-```text
-VectorCypher Retriever in Practice
-The power of the Graph-Enhanced Vector Search Pattern lies in its flexibility. While the example above focuses on linking companies to risk factors in financial filings, the approach can be applied to any domain or vertical by customizing the graph schema and Cypher queries.
-
-How might this look for other industries?
-
-- Healthcare: Retrieve patient records, diagnoses, and treatment plans by combining semantic search of clinical notes with graph traversal across
-```
-
-### 1.89 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
-
-**Evaluation Time:** 2026-02-08T00:51:37.776836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower() or "retriever" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-VectorCypher Retriever in Practice
-eports (text) with the graph relationships between vulnerabilities, affected assets, and mitigation strategies to provide a holistic view of your security posture.
--  Education: Map student essays or discussion posts to learning objectives, course materials, and assessment outcomes for personalized education analytics.
-
-Let's summarize the major tasks from  this example so you can apply it to your domain:
-
--  Adapt the Pattern Model Your Domain: Define the node types, relationships, and key properties relevant to your vertical (e.g., Patient, Diagnosis, Product, Supplier, Case, Asset, etc.).
-- Index the Right Data: Create vector indexes on the appropriate text or document nodes for semantic retrieval.
--  Craft Domain-Specific Cypher Queries: Write Cypher queries that traverse from the retrieved nodes to related entities and/or relationships that matter in your context.
--  Integrate With VectorCypherRetriever: Use the VectorCypherRetriever with your custom query to combine semantic and structural search.
-
-The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across
-```
-
-#### First Read
-
-```text
-VectorCypher Retriever in Practice
-eports (text) with the graph relationships between vulnerabilities, affected assets, and mitigation strategies to provide a holistic view of your security posture.
--  Education: Map student essays or discussion posts to learning objectives, course materials, and assessment outcomes for personalized education analytics.
-
-Let's summarize the major tasks from  this example so you can apply it to your domain:
-
--  Adapt the Pattern Model Your Domain: Define the node
-```
-
-#### Recursive Text
-
-```text
-VectorCypher Retriever in Practice
-eports (text) with the graph relationships between vulnerabilities, affected assets, and mitigation strategies to provide a holistic view of your security posture.
--  Education: Map student essays or discussion posts to learning objectives, course materials, and assessment outcomes for personalized education analytics.
-
-Let's summarize the major tasks from  this example so you can apply it to your domain:
-
--  Adapt the Pattern Model Your Domain: Define the node
-```
-
-### 1.90 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
-
-**Evaluation Time:** 2026-02-08T00:51:37.896836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher Retrieval" in chunk_text.lower():
-        return True
-    if "VectorCypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    if "context-aware" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-VectorCypher Retriever in Practice
-structural search.
-
-The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across structured and unstructured data to drive real-world understanding.
-
-With this in mind, let's look at another VectorCypherRetriever example.
-
-
-
-## VectorCypher Retrieval: A Working Example
-
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
-
-
-Figure 28. VectorCypherRetriever example 2
-
-
-Next, add this new retrieval query to the VectorCypherRetriever parameters:
-```
-
-#### First Read
-
-```text
-VectorCypher Retriever in Practice
-structural search.
-
-The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across structured and unstructured data to drive real-world understanding.
-
-With this in mind, let's look at another VectorCypherRetriever example.
-
-
-
-## VectorCypher Retrieval: A Working Example
-
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again s
-```
-
-#### Recursive Text
-
-```text
-VectorCypher Retriever in Practice
-structural search.
-
-The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across structured and unstructured data to drive real-world understanding.
-
-With this in mind, let's look at another VectorCypherRetriever example.
-
-
-
-## VectorCypher Retrieval: A Working Example
-
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again s
-```
-
-### 1.91 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
-
-**Evaluation Time:** 2026-02-08T00:51:38.016836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher Retrieval" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "example" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-VectorCypher Retrieval: A Working Example
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
-
-
-Figure 28. VectorCypherRetriever example 2
-
-
-Next, add this new retrieval query to the VectorCypherRetriever parameters:
-```
-
-#### First Read
-
-```text
-VectorCypher Retrieval: A Working Example
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
-
-
-Figure 28. VectorCypherRetriever example 2
-
-
-Next, add this new retrieval query to the VectorCyphe
-```
-
-#### Recursive Text
-
-```text
-VectorCypher Retrieval: A Working Example
-Which Asset Managers are most affected by reseller concerns?
-
-Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
-
-
-Figure 28. VectorCypherRetriever example 2
-
-
-Next, add this new retrieval query to the VectorCyphe
-```
-
-### 1.92 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
-
-**Evaluation Time:** 2026-02-08T00:51:38.136836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text and "Retrieval" in chunk_text:
-        return True
-    if "query" in chunk_text and "search" in chunk_text:
-        return True
-    if "neo4j" in chunk_text and "database" in chunk_text:
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name: The name of the vector index (here, chunkEmbeddings ) used for semantic search
-
-
-- Embedder: The embedding model used to generate/query vector representations
-- Retrieval\_query: The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
-
-```
-
-result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in result.items: print(item.content[:100])
-
-```
-
-```
-
-#### First Read
-
-```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name: The name of the vector index (here, chunkEmbeddings ) used for semantic search
-
-
-- Embedder: The embedding model used to generate/query vector representations
-- Retrieval\_query: The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
-
-```
-
-result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in result.items: print(item.content[:
-
-````
-
-#### Recursive Text
-```text
-VectorCypherRetriever parameters:
-- Driver : The Neo4j database connection
-- Index\_name: The name of the vector index (here, chunkEmbeddings ) used for semantic search
-
-
-- Embedder: The embedding model used to generate/query vector representations
-- Retrieval\_query: The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
-
-````
-
-result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in result.items: print(item.content[:
-
-````
-
-### 1.93 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:92
-
-**Evaluation Time:** 2026-02-08T00:51:38.256836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'vector' in chunk_text.lower():
-        return True
-    if 'apple' in chunk_text.lower() or 'amazon' in chunk_text.lower() or 'microsoft' in chunk_text.lower():
-        return True
-    return False
-````
-
-#### Chunk Text
-
-```text
-Let's look at the results:
-- &lt;Record company='APPLE INC' AssetManager='BlackRock Inc.' shares=1031407553&gt;
-- &lt;Record company='APPLE INC' AssetManager='Berkshire Hathaway Inc' shares=915560382&gt;
-- &lt;Record company='AMAZON' AssetManager='BlackRock Inc.' shares=613380364&gt;
-- &lt;Record company='APPLE INC' AssetManager='STATE STREET CORP' shares=569291690&gt;
-- &lt;Record company='MICROSOFT CORP' AssetManager='BlackRock Inc.' shares=533634606&gt;
-- &lt;Record company='AMAZON' AssetManager='STATE STREET CORP' shares=332449318&gt;
-- &lt;Record company='AMAZON' AssetManager='FMR LLC' shares=302101441&gt;
-- &lt;Record company='APPLE INC' AssetManager='FMR LLC' shares=298321726&gt;
-- &lt;Record company='APPLE INC' AssetManager='GEODE CAPITAL MANAGEMENT, LLC' shares=296103070&gt;
-
-
-
-Since these results look as expected, we proceed to the natural language output:
-
-result = GraphRag(llm=llm,retriever=vector\_cyper\_retriever) print(rag.search(query\_text=query\_text).answer)
-
-The Asset Managers most affected by cryptocurrency concerns are:
-```
-
-#### First Read
-
-```text
-Let's look at the results:
-- &lt;Record company='APPLE INC' AssetManager='BlackRock Inc.' shares=1031407553&gt;
-- &lt;Record company='APPLE INC' AssetManager='Berkshire Hathaway Inc' shares=915560382&gt;
-- &lt;Record company='AMAZON' AssetManager='BlackRock Inc.' shares=613380364&gt;
-- &lt;Record company='APPLE INC' AssetManager='STATE STREET CORP' shares=569291690&gt;
-- &lt;Record company='MICROSOFT CORP' AssetManager='BlackRock Inc.' shares=533634606&gt;
-- &lt;Record company='AMAZON' AssetMana
-```
-
-#### Recursive Text
-
-```text
-Let's look at the results:
-- &lt;Record company='APPLE INC' AssetManager='BlackRock Inc.' shares=1031407553&gt;
-- &lt;Record company='APPLE INC' AssetManager='Berkshire Hathaway Inc' shares=915560382&gt;
-- &lt;Record company='AMAZON' AssetManager='BlackRock Inc.' shares=613380364&gt;
-- &lt;Record company='APPLE INC' AssetManager='STATE STREET CORP' shares=569291690&gt;
-- &lt;Record company='MICROSOFT CORP' AssetManager='BlackRock Inc.' shares=533634606&gt;
-- &lt;Record company='AMAZON' AssetMana
-```
-
-### 1.94 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:93
-
-**Evaluation Time:** 2026-02-08T00:51:38.376836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower() or "cypher" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-WELLS FARGO &amp; COMPANY/MN
-This is where GraphRAG really shines. You may be wondering how to construct the retrieval query that traverses the graph. In this example, you can see that the retrieval\_query is a string of Cypher code, the language of graph querying. Now let's look at one last retriever pattern found in the Neo4j library: the Text2CypherRetriever .
-```
-
-#### First Read
-
-```text
-WELLS FARGO &amp; COMPANY/MN
-This is where GraphRAG really shines. You may be wondering how to construct the retrieval query that traverses the graph. In this example, you can see that the retrieval\_query is a string of Cypher code, the language of graph querying. Now let's look at one last retriever pattern found in the Neo4j library: the Text2CypherRetriever .
-```
-
-#### Recursive Text
-
-```text
-WELLS FARGO &amp; COMPANY/MN
-This is where GraphRAG really shines. You may be wondering how to construct the retrieval query that traverses the graph. In this example, you can see that the retrieval\_query is a string of Cypher code, the language of graph querying. Now let's look at one last retriever pattern found in the Neo4j library: the Text2CypherRetriever .
-```
-
-### 1.95 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:94
-
-**Evaluation Time:** 2026-02-08T00:51:38.496836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Text2CypherRetriever
-You can use Text2CypherRetriever to seamlessly generate Cypher queries from natural language questions. Instead of manually crafting each Cypher statement, the retriever uses an LLM to translate your plain-English queries into Cypher based on its understanding of your Neo4j schema.
-
-The process begins with a natural language question, such as:
-
-'What are the names of companies owned by BlackRock Inc.?'
-
-The retriever then uses the schema, described as a string outlining the main node types and relationships in your graph (for example, companies, risk factors, and asset managers), to guide the LLM in generating an appropriate Cypher query. While you could pass a hard-coded schema to the retriever, it's best practice to access the schema as it currently exists in your instance. Here's a sample of the full schema:
-
-```
-
-result = get*schema (driver) Node properties: Document {id: STRING, path: STRING, createdAt: STRING} Chunk {id: STRING, index: INTEGER, text: STRING, embedding: LIST} Company {id: STRING, name: STRING, chunk* index: INTEGER, ticker: STRING} Product {id: STRING, name: STRING, chunk\_ index: INTEGER} . . . Relationship properties: OWNS {position_status: STRING, Value:
-
-````
-
-#### First Read
-```text
-Text2CypherRetriever
-You can use Text2CypherRetriever to seamlessly generate Cypher queries from natural language questions. Instead of manually crafting each Cypher statement, the retriever uses an LLM to translate your plain-English queries into Cypher based on its understanding of your Neo4j schema.
-
-The process begins with a natural language question, such as:
-
-'What are the names of companies owned by BlackRock Inc.?'
-
-The retriever then uses the schema, described as a string outlining the
-````
-
-#### Recursive Text
-
-```text
-Text2CypherRetriever
-You can use Text2CypherRetriever to seamlessly generate Cypher queries from natural language questions. Instead of manually crafting each Cypher statement, the retriever uses an LLM to translate your plain-English queries into Cypher based on its understanding of your Neo4j schema.
-
-The process begins with a natural language question, such as:
-
-'What are the names of companies owned by BlackRock Inc.?'
-
-The retriever then uses the schema, described as a string outlining the
-```
-
-### 1.96 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95
-
-**Evaluation Time:** 2026-02-08T00:51:38.616836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "text2cypherretriev" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Text2CypherRetriever
-ompany {id: STRING, name: STRING, chunk_ index: INTEGER, ticker: STRING} Product {id: STRING, name: STRING, chunk_ index: INTEGER} . . . Relationship properties: OWNS {position_status: STRING, Value: FLOAT, shares: INTEGER, share_value: FLOAT} The relationships: .... (:Executive)-[:FROM_CHUNK]->(:Chunk) (:StockType)-[:FROM_CHUNK]->(:Chunk) (:AssetManager)-[:OWNS]->(:Company)
-```
-
-Now that you've defined the schema, you have everything you need to set the Text2CypherRetriever.
-
-```
-MATCH (a:AssetManager {managerName: 'BlackRock Inc.'})-[:OWNS]->(c:Company) RETURN c.name AS company_name
-```
-
-This approach has several advantages. It removes the need to write Cypher by hand for each query, making graph data accessible even to those without technical expertise. It's ideal for rapid prototyping, exploratory analysis, and building natural language interfaces to your knowledge graph, enabling a broader range of users to interact with complex graph data.
-
-Now you can pass that Cypher query directly to the driver to get the results:
-
-```
-result = driver.execute_query(cypher_query.metadata['cypher']) for record in result.records: print(record) <Record companyName='APPLE INC'> <Record
-```
-
-#### First Read
-
-```text
-Text2CypherRetriever
-ompany {id: STRING, name: STRING, chunk_ index: INTEGER, ticker: STRING} Product {id: STRING, name: STRING, chunk_ index: INTEGER} . . . Relationship properties: OWNS {position_status: STRING, Value: FLOAT, shares: INTEGER, share_value: FLOAT} The relationships: .... (:Executive)-[:FROM_CHUNK]->(:Chunk) (:StockType)-[:FROM_CHUNK]->(:Chunk) (:AssetManager)-[:OWNS]->(:Company)
-```
-
-Now that you've defined the schema, you have everything you need to set the Text2CypherRetriev
-
-````
-
-#### Recursive Text
-```text
-Text2CypherRetriever
-ompany {id: STRING, name: STRING, chunk_ index: INTEGER, ticker: STRING} Product {id: STRING, name: STRING, chunk_ index: INTEGER} . . . Relationship properties: OWNS {position_status: STRING, Value: FLOAT, shares: INTEGER, share_value: FLOAT} The relationships: .... (:Executive)-[:FROM_CHUNK]->(:Chunk) (:StockType)-[:FROM_CHUNK]->(:Chunk) (:AssetManager)-[:OWNS]->(:Company)
-````
-
-Now that you've defined the schema, you have everything you need to set the Text2CypherRetriev
-
-````
-
-### 1.97 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96
-
-**Evaluation Time:** 2026-02-08T00:51:38.736836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "text2cypher" in chunk_text.lower():
-        return True
-    return False
-````
-
-#### Chunk Text
-
-```text
-Text2CypherRetriever
-ery directly to the driver to get the results:
-
-```
-
-result = driver.execute_query(cypher_query.metadata['cypher']) for record in result.records: print(record) <Record companyName='APPLE INC'> <Record companyName='MICROSOFT CORP'> <Record companyName='INTEL CORP'> <Record companyName='AMAZON'> <Record companyName='PG&E CORP'> <Record companyName='NVIDIA CORPORATION'>
-
-```
-
-
-While the Text2Cypher functionality in the Neo4j GraphRAG library offers a powerful way to translate natural language queries into Cypher, there are important considerations to keep in mind when using it.
-
-First, because Text2Cypher relies on an LLM to generate queries dynamically, the same input may not always yield identical results. The model's responses can vary depending on context, training data, and even minor changes in phrasing. While the flexibility of Text2Cypher allows for more natural interactions, it can also introduce inconsistencies when precise, repeatable queries are required.
-
-Additionally, query optimization remains an important factor. While LLMs are capable of generating complex Cypher queries, they may not always produce the most efficient ones. Without human intervention or performance
-```
-
-#### First Read
-
-```text
-Text2CypherRetriever
-ery directly to the driver to get the results:
-
-```
-
-result = driver.execute_query(cypher_query.metadata['cypher']) for record in result.records: print(record) <Record companyName='APPLE INC'> <Record companyName='MICROSOFT CORP'> <Record companyName='INTEL CORP'> <Record companyName='AMAZON'> <Record companyName='PG&E CORP'> <Record companyName='NVIDIA CORPORATION'>
-
-```
-
-
-While the Text2Cypher functionality in the Neo4j GraphRAG library offers a powerful way to translate nat
-```
-
-#### Recursive Text
-
-```text
-Text2CypherRetriever
-ery directly to the driver to get the results:
-
-```
-
-result = driver.execute_query(cypher_query.metadata['cypher']) for record in result.records: print(record) <Record companyName='APPLE INC'> <Record companyName='MICROSOFT CORP'> <Record companyName='INTEL CORP'> <Record companyName='AMAZON'> <Record companyName='PG&E CORP'> <Record companyName='NVIDIA CORPORATION'>
-
-```
-
-
-While the Text2Cypher functionality in the Neo4j GraphRAG library offers a powerful way to translate nat
-```
-
-### 1.98 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97
-
-**Evaluation Time:** 2026-02-08T00:51:38.856836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() or "application" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Text2CypherRetriever
-y optimization remains an important factor. While LLMs are capable of generating complex Cypher queries, they may not always produce the most efficient ones. Without human intervention or performance tuning, these queries might not be optimized for speed or resource consumption, which could potentially slow application performance.
-
-
-Finally, high-stakes applications - such as those requiring strict reproducibility, financial computations, or regulatory compliance - may require standardized, manually crafted Cypher queries instead. In such cases, relying entirely on an AI-generated query could introduce risks, especially if the generated query structure does not fully align with business logic or data constraints.
-
-Despite these limitations, Text2Cypher is a valuable tool for making Neo4j more accessible, particularly for applications where flexibility, adaptability, and user-driven query formulation are more important than absolute precision. Understanding these
-
-
-
-trade-offs will help you integrate Text2Cypher effectively while ensuring that it is used in scenarios where its strengths outweigh its potential drawbacks.
-
-Check out the Text2Cypher Crowdsourcing App to explore
-```
-
-#### First Read
-
-```text
-Text2CypherRetriever
-y optimization remains an important factor. While LLMs are capable of generating complex Cypher queries, they may not always produce the most efficient ones. Without human intervention or performance tuning, these queries might not be optimized for speed or resource consumption, which could potentially slow application performance.
-
-
-Finally, high-stakes applications - such as those requiring strict reproducibility, financial computations, or regulatory compliance - may requ
-```
-
-#### Recursive Text
-
-```text
-Text2CypherRetriever
-y optimization remains an important factor. While LLMs are capable of generating complex Cypher queries, they may not always produce the most efficient ones. Without human intervention or performance tuning, these queries might not be optimized for speed or resource consumption, which could potentially slow application performance.
-
-
-Finally, high-stakes applications - such as those requiring strict reproducibility, financial computations, or regulatory compliance - may requ
-```
-
-### 1.99 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:98
-
-**Evaluation Time:** 2026-02-08T00:51:38.976836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "text2cypher" in chunk_text.lower():
-        return True
-    if "help" in chunk_text.lower() and "integrate" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Text2CypherRetriever
-ll help you integrate Text2Cypher effectively while ensuring that it is used in scenarios where its strengths outweigh its potential drawbacks.
-
-Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications and contribute to development projects.
-```
-
-#### First Read
-
-```text
-Text2CypherRetriever
-ll help you integrate Text2Cypher effectively while ensuring that it is used in scenarios where its strengths outweigh its potential drawbacks.
-
-Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications and contribute to development projects.
-```
-
-#### Recursive Text
-
-```text
-Text2CypherRetriever
-ll help you integrate Text2Cypher effectively while ensuring that it is used in scenarios where its strengths outweigh its potential drawbacks.
-
-Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications and contribute to development projects.
-```
-
-### 1.100 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99
-
-**Evaluation Time:** 2026-02-08T00:51:39.096836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "community" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Community Summary Pattern
-You may have heard the term GraphRAG and thought of the pattern popularized by Microsoft, where the text is used to summarize community or other knowledge (i.e., forum posts). This type of retriever is often called the Community Summary Pattern.
-
-While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A, Neo4j's approach focuses on domain-specific schema control and composable query generation. This focus expands GraphRAG from summarization into structured reasoning, decision tracing, and dynamic compliance use cases.
-```
-
-#### First Read
-
-```text
-Community Summary Pattern
-You may have heard the term GraphRAG and thought of the pattern popularized by Microsoft, where the text is used to summarize community or other knowledge (i.e., forum posts). This type of retriever is often called the Community Summary Pattern.
-
-While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A, Neo4j's approach focuses on domain-specific schema control and composable query generation. This focus expands GraphRAG from summarization into st
-```
-
-#### Recursive Text
-
-```text
-Community Summary Pattern
-You may have heard the term GraphRAG and thought of the pattern popularized by Microsoft, where the text is used to summarize community or other knowledge (i.e., forum posts). This type of retriever is often called the Community Summary Pattern.
-
-While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A, Neo4j's approach focuses on domain-specific schema control and composable query generation. This focus expands GraphRAG from summarization into st
-```
-
-### 1.101 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
-
-**Evaluation Time:** 2026-02-08T00:51:39.216836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Concluding Thoughts and Next Steps
-Integrating a knowledge graph with RAG gives GenAI systems structured context and relationships, improving the relevance and quality of generated results.
-
-This guide has equipped you with the foundational skills needed to implement GraphRAG. You learned how to use Neo4j's cloud-based graph database service, Neo4j Aura, to prepare a knowledge graph for GraphRAG, Data Importer, and the GraphRAG Python library to create a knowledge graph from unstructured data. You also learned how to implement foundational GraphRAG retrieval patterns, including the basic retriever, graph-enhanced vector search, and Text2Cypher.
-
-
-Like other AI technologies, GraphRAG is rapidly evolving. A few trends to watch:
-
--  More advanced, dynamic Cypher queries and sophisticated retrieval patterns that use graph algorithms and machine learning techniques are pushing the boundaries of what's possible in information retrieval and generation.
-- Deeper integration with other AI technologies, such as knowledge graph embeddings and graph neural networks, promises to enhance the semantic understanding and reasoning capabilities of GraphRAG systems.
--  Integrating GraphRAG with agentic systems and other multi-tool,
-```
-
-#### First Read
-
-```text
-Concluding Thoughts and Next Steps
-Integrating a knowledge graph with RAG gives GenAI systems structured context and relationships, improving the relevance and quality of generated results.
-
-This guide has equipped you with the foundational skills needed to implement GraphRAG. You learned how to use Neo4j's cloud-based graph database service, Neo4j Aura, to prepare a knowledge graph for GraphRAG, Data Importer, and the GraphRAG Python library to create a knowledge graph from unstructured data. Y
-```
-
-#### Recursive Text
-
-```text
-Concluding Thoughts and Next Steps
-Integrating a knowledge graph with RAG gives GenAI systems structured context and relationships, improving the relevance and quality of generated results.
-
-This guide has equipped you with the foundational skills needed to implement GraphRAG. You learned how to use Neo4j's cloud-based graph database service, Neo4j Aura, to prepare a knowledge graph for GraphRAG, Data Importer, and the GraphRAG Python library to create a knowledge graph from unstructured data. Y
-```
-
-### 1.102 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:101
-
-**Evaluation Time:** 2026-02-08T00:51:39.336836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    if "capabilities" in chunk_text.lower() and "intelligent" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Concluding Thoughts and Next Steps
-embeddings and graph neural networks, promises to enhance the semantic understanding and reasoning capabilities of GraphRAG systems.
--  Integrating GraphRAG with agentic systems and other multi-tool, multi-step RAG chains can result in more autonomous and intelligent systems capable of handling complex, multifaceted tasks with greater efficiency and accuracy.
--  Incorporating semantic layers in GraphRAG systems can provide even more nuanced understanding and context awareness in information retrieval and generation tasks.
-```
-
-#### First Read
-
-```text
-Concluding Thoughts and Next Steps
-embeddings and graph neural networks, promises to enhance the semantic understanding and reasoning capabilities of GraphRAG systems.
--  Integrating GraphRAG with agentic systems and other multi-tool, multi-step RAG chains can result in more autonomous and intelligent systems capable of handling complex, multifaceted tasks with greater efficiency and accuracy.
--  Incorporating semantic layers in GraphRAG systems can provide even more nuanced understanding and co
-```
-
-#### Recursive Text
-
-```text
-Concluding Thoughts and Next Steps
-embeddings and graph neural networks, promises to enhance the semantic understanding and reasoning capabilities of GraphRAG systems.
--  Integrating GraphRAG with agentic systems and other multi-tool, multi-step RAG chains can result in more autonomous and intelligent systems capable of handling complex, multifaceted tasks with greater efficiency and accuracy.
--  Incorporating semantic layers in GraphRAG systems can provide even more nuanced understanding and co
-```
-
-### 1.103 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102
-
-**Evaluation Time:** 2026-02-08T00:51:39.456836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "neo4j" in chunk_text.lower():
-        return True
-    if "genai" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Explore GenAI With Neo4j
-Neo4j uncovers hidden relationships and patterns across billions of data connections deeply, easily, and quickly, making graph databases an ideal choice for building your first GraphRAG application.
-
-Learn More
-
-
-
-Build on what you learned in this guide:
-
--  The Neo4j for GenAI use case page offers guides, tutorials, and best practices about GraphRAG implementation.
--  The GraphRAG site contains explanations of GraphRAG principles and step-bystep guides for various implementation scenarios.
--  Neo4j GraphAcademy offers free, handson online courses.
-```
-
-#### First Read
-
-```text
-Explore GenAI With Neo4j
-Neo4j uncovers hidden relationships and patterns across billions of data connections deeply, easily, and quickly, making graph databases an ideal choice for building your first GraphRAG application.
-
-Learn More
-
-
-
-Build on what you learned in this guide:
-
--  The Neo4j for GenAI use case page offers guides, tutorials, and best practices about GraphRAG implementation.
--  The GraphRAG site contains explanations of GraphRAG principles and step-bystep guides for various imple
-```
-
-#### Recursive Text
-
-```text
-Explore GenAI With Neo4j
-Neo4j uncovers hidden relationships and patterns across billions of data connections deeply, easily, and quickly, making graph databases an ideal choice for building your first GraphRAG application.
-
-Learn More
-
-
-
-Build on what you learned in this guide:
-
--  The Neo4j for GenAI use case page offers guides, tutorials, and best practices about GraphRAG implementation.
--  The GraphRAG site contains explanations of GraphRAG principles and step-bystep guides for various imple
-```
-
-### 1.104 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103
-
-**Evaluation Time:** 2026-02-08T00:51:39.576836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "data modeling" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Technical Resources in Workflow Order
-| Stage                            | Resource                                            | WhyIt's Useful                                                                                    |
-|----------------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| 1. Data Modeling                 | Designing a Graph Data Model for GenAI (Neo4j Blog) | Helps you define entity-relationship schemas (on- tology) that power GraphRAG context.            |
-| 2. Data Modeling                 | Neo4j Data Modeling Guide                           | Foundation for understanding how to structure both unstructured and structured data into a graph. |
-| 3. Environment Setup             | Neo4j Aura Free Tier                                | Spin up a secure cloud instance instantly-perfect for prototyping.                                |
-| 4. Data Ingestion (Structured)   | Neo4j Data Importer Tool                            | Visual UI for mapping CSVs and relational data to graph nodes and relationships.                  |
-| 5. Data Ingestion (Unstructured) | Neo4j GraphRAG
-```
-
-#### First Read
-
-```text
-Technical Resources in Workflow Order
-| Stage                            | Resource                                            | WhyIt's Useful                                                                                    |
-|----------------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| 1. Data Modeling                 | Designing a Graph Data Model for GenAI (Neo
-```
-
-#### Recursive Text
-
-```text
-Technical Resources in Workflow Order
-| Stage                            | Resource                                            | WhyIt's Useful                                                                                    |
-|----------------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| 1. Data Modeling                 | Designing a Graph Data Model for GenAI (Neo
-```
-
-### 1.105 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104
-
-**Evaluation Time:** 2026-02-08T00:51:39.696836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "data ingestion" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Technical Resources in Workflow Order
-Data Importer Tool                            | Visual UI for mapping CSVs and relational data to graph nodes and relationships.                  |
-| 5. Data Ingestion (Unstructured) | Neo4j GraphRAG Python Library                       | Convert PDFs and text to a knowledge graph using LLM-powered entity + relationship extraction.    |
-| 6. Data Ingestion (Unstructured) | KGBuilder Tutorial-SEC Filings Example              | Walkthrough for turning dense financial disclosu- res into structured graph nodes and edges.      |
-| 7. Embeddings + Vector Indexing  | Neo4j Vector Indexing Docs                          | Build and manage vector embeddings inside Neo4j for hybrid retrieval.                             |
-| 8. Retrieval: Basic + Vector     | Neo4j GraphRAGBasicRetriever Pattern                | First step: combine chunked content and embed- ding for basic semantic retrieval.                 |
-| 9. Retrieval: Graph-Enhanced     | Graph-EnhancedVector Search with Neo4               | Augment vector search with traversal logic to im- prove contextual accuracy.                      |
-| 10. Test2Cypher Automation       | Text2Cypher Documentation & Examples                |
-```
-
-#### First Read
-
-```text
-Technical Resources in Workflow Order
-Data Importer Tool                            | Visual UI for mapping CSVs and relational data to graph nodes and relationships.                  |
-| 5. Data Ingestion (Unstructured) | Neo4j GraphRAG Python Library                       | Convert PDFs and text to a knowledge graph using LLM-powered entity + relationship extraction.    |
-| 6. Data Ingestion (Unstructured) | KGBuilder Tutorial-SEC Filings Example              | Walkthrough for turning dense fi
-```
-
-#### Recursive Text
-
-```text
-Technical Resources in Workflow Order
-Data Importer Tool                            | Visual UI for mapping CSVs and relational data to graph nodes and relationships.                  |
-| 5. Data Ingestion (Unstructured) | Neo4j GraphRAG Python Library                       | Convert PDFs and text to a knowledge graph using LLM-powered entity + relationship extraction.    |
-| 6. Data Ingestion (Unstructured) | KGBuilder Tutorial-SEC Filings Example              | Walkthrough for turning dense fi
-```
-
-### 1.106 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:105
-
-**Evaluation Time:** 2026-02-08T00:51:39.816836
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower() and "accuracy" in chunk_text.lower():
-        return True
-    if "automatically" in chunk_text.lower() and "queries" in chunk_text.lower():
-        return True
-    return False
-```
-
-#### Chunk Text
-
-```text
-Technical Resources in Workflow Order
-| Augment vector search with traversal logic to im- prove contextual accuracy.                      |
-| 10. Test2Cypher Automation       | Text2Cypher Documentation & Examples                | Translate user queries into Cypher automatically using LLMs-ideal for dynamic GraphRAG.           |
-| 11. Agentic &Multi-Step Use      | GraphRAG + NeoConverse + Agents                     | Build multi-tool agents that query graphs autono- mously across task chains.                      |
-| 12. Semantic Enhancement         | Topic Extraction for Semantic RAG                   | Use LLMs to extract topics and themes into your graph to add interpretability.                    |
-| 13. Deployment + Ops             | Neo4j Deployment Best Practices                     | Tips for scaling and monitoring GraphRAG in pro- duction environments.                            |
-```
-
-#### First Read
-
-```text
-Technical Resources in Workflow Order
-| Augment vector search with traversal logic to im- prove contextual accuracy.                      |
-| 10. Test2Cypher Automation       | Text2Cypher Documentation & Examples                | Translate user queries into Cypher automatically using LLMs-ideal for dynamic GraphRAG.           |
-| 11. Agentic &Multi-Step Use      | GraphRAG + NeoConverse + Agents                     | Build multi-tool agents that query graphs autono- mously across task chains.
-```
-
-#### Recursive Text
-
-```text
-Technical Resources in Workflow Order
-| Augment vector search with traversal logic to im- prove contextual accuracy.                      |
-| 10. Test2Cypher Automation       | Text2Cypher Documentation & Examples                | Translate user queries into Cypher automatically using LLMs-ideal for dynamic GraphRAG.           |
-| 11. Agentic &Multi-Step Use      | GraphRAG + NeoConverse + Agents                     | Build multi-tool agents that query graphs autono- mously across task chains.
-```
+#### Keywords
+`including, world, telecommunication, market, management, fixed, field, development, cellular, argentina, worldwide, usa, unit, system, spain, solutions, software, share, rico, research, puerto, proprietary, projects, project, products, product, predominant, pr, patents, orders, order, operating, obtained, locations, leader, italy, international, hungary, hardware, england, embedded, design, countries, caguas, biggest, become, awarded, author, aug, assemble`
 
 ---

@@ -1,12 +1,12 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-08T00:51:27.330996
+**Execution Time:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
-**Query Hash:** `97d6b33c` (use to verify artifacts match current query)
+**Query Hash:** `4b459d00` (use to verify artifacts match current query)
 
-**Total Inspection Programs:** 106
+**Total Inspection Programs:** 16
 
 **Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation
 
@@ -31,1533 +31,693 @@ These functions (evaluate_chunk_relevance(chunk_text: str) -> bool) are executed
 
 ---
 
-## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf)
+## 1. File (ID: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf)
 
 
-### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0
+### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:0
 
-**Query:** What is VectorCypher Retrieval
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "developer" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "how" in chunk_text.lower() and "works" in chunk_text.lower():
-        return True
-    if "access" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'data' in chunk_text.lower() and 'structured' in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher Retrieval" in chunk_text.lower():
-        return True
-    if "VectorCypher Retriever" in chunk_text.lower():
-        return True
-    if "AWorking Example" in chunk_text:
-        return True
-    return False
-```
-
-### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() and "system" in chunk_text.lower():
-        return True
-    if "embedded" in chunk_text.lower() and "docs" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    if "developers" in chunk_text.lower() and "context" in chunk_text.lower():
-        return True
-    if "current" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "question" in chunk_text.lower():
-        return True
-    if "system" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:10
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "architecture" in chunk_text.lower():
-        return True
-    if "retrieve" in chunk_text.lower() and "semantically" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "retrieval" in chunk_text.lower():
-        return True
-    if "RAG" in chunk_text and "retrieves" in chunk_text:
-        return True
-    return False
-```
-
-### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "how" in chunk_text.lower() and "fit" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower() and "customer" in chunk_text.lower():
-        return True
-    if "retrieve" in chunk_text.lower() and "text" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:14
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() and "retrieves" in chunk_text.lower():
-        return True
-    if "guide" in chunk_text.lower() and "further" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorizes" in chunk_text.lower() or "similarity" in chunk_text.lower() or "retrieves" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieves" in chunk_text.lower() and "understanding" in chunk_text.lower():
-        return True
-    if "core issue" in chunk_text.lower() and "customer" in chunk_text.lower():
-        return True
-    if "mental model" in chunk_text.lower() and "business" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "answer" in chunk_text.lower() and "support" in chunk_text.lower():
-        return True
-    if "explain" in chunk_text.lower() and "contract" in chunk_text.lower():
-        return True
-    if "interpret" in chunk_text.lower() and "customer" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "dynamic" in chunk_text.lower() and "query" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower() and "pull" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "Retrieval" in chunk_text:
-        return True
-    if "RAG" in chunk_text and "retrieve" in chunk_text:
-        return True
-    if "business" in chunk_text and "customer" in chunk_text:
-        return True
-    return False
-```
-
-### 1.21 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "support question" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.22 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.23 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:22
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() or "graphs" in chunk_text.lower():
-        return True
-    if "understand" in chunk_text.lower() and "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.24 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "accuracy" in chunk_text.lower() or "chatbots" in chunk_text.lower() or "generates" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.25 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.26 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "query" in chunk_text.lower() and "database" in chunk_text.lower():
-        return True
-    if "semantic" in chunk_text.lower() and "similar" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.27 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:26
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.28 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graph" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.29 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "graphrag" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower() and "relevant" in chunk_text.lower():
-        return True
-    if "accurate" in chunk_text.lower() and "information" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.30 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "explainability" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.31 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "rag" in chunk_text.lower() and "structured" in chunk_text.lower():
-        return True
-    if "integrates" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.32 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:31
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "vector" in chunk_text.lower():
-        return True
-    if "how" in chunk_text.lower() and "works" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.33 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "documents" in chunk_text.lower() or "unstructured" in chunk_text.lower():
-        return True
-    if "knowledge" in chunk_text.lower() or "graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.34 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:33
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "implementing" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.35 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
-        return True
-    if "effective" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.36 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35
-
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'how' in chunk_text.lower() and 'organized' in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.37 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "business" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.38 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "unstructured" in chunk_text.lower() and "structured" in chunk_text.lower():
-        return True
-    if "data" in chunk_text.lower() and "content" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.39 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "data" in chunk_text.lower() and "documents" in chunk_text.lower():
-        return True
-    if "structured" in chunk_text.lower() and "unstructured" in chunk_text.lower():
-        return True
-    if "context" in chunk_text.lower():
-        return True
-    return False
-```
-
-### 1.40 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
-
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    return False
+```text
+Introduction
+<!-- image -->
 ```
 
-### 1.41 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "extract" in chunk_text.lower():
-        return True
-    return False
+```text
+Introduction
+<!-- image -->
 ```
 
-### 1.42 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`introduction, image`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    if "dynamic" in chunk_text.lower() and "cypher" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:1
 
-### 1.43 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "database" in chunk_text.lower():
-        return True
-    if "create" in chunk_text.lower():
-        return True
-    if "free" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.44 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
+```text
+Alexis Torres Senior Technical Consultant
+Email ID:
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'database' in chunk_text.lower():
-        return True
-    return False
+alexis.torres@dxc.com
 ```
 
-### 1.45 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
+```text
+Alexis Torres Senior Technical Consultant
+Email ID:
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "ingest" in chunk_text.lower() and "unstructured" in chunk_text.lower():
-        return True
-    if "knowledge" in chunk_text.lower() and "graph" in chunk_text.lower():
-        return True
-    return False
+alexis.torres@dxc.com
 ```
 
-### 1.46 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`torres, alexis, technical, senior, id, email, dxc, consultant, com`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "vector indexing" in chunk_text.lower():
-        return True
-    if "semantic search" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:2
 
-### 1.47 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:46
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "search" in chunk_text.lower() and "neo4j" in chunk_text.lower():
-        return True
-    if "extraction" in chunk_text.lower() and "entity" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.48 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'connect' in chunk_text.lower() and 'database' in chunk_text.lower():
-        return True
-    return False
+```text
+Contact no.:
+787-405-1855
 ```
 
-### 1.49 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:48
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "gpt" in chunk_text.lower() and "embeddings" in chunk_text.lower():
-        return True
-    if "semantic" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    return False
+```text
+Contact no.:
+787-405-1855
 ```
 
-### 1.50 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`contact, 787, 405, 1855`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'define' in chunk_text.lower() or 'defining' in chunk_text.lower():
-        return True
-    if 'entities' in chunk_text.lower():
-        return True
-    return False
-```
+### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:3
 
-### 1.51 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "define" in chunk_text.lower() and "node" in chunk_text.lower():
-        return True
-    if "relationship" in chunk_text.lower() and "types" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.52 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:51
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
+```text
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
 ```
 
-### 1.53 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'how' in chunk_text.lower() and 'relate' in chunk_text.lower():
-        return True
-    if 'company' in chunk_text.lower() and 'risk' in chunk_text.lower():
-        return True
-    if 'information' in chunk_text.lower() and 'answer' in chunk_text.lower():
-        return True
-    return False
+```text
+Profile summary
+I  have  a  broad  background  in  Computer  Engineer  with  15+  years  of  proven  tracked  record  in Software/Hardware  Development,  Business  Analyst,  and  Project  Management  in  the  technology industry.  I have  developed/implemented  projects  in different  industries  including  telecommunication, finance,  health, and  government  for an accumulative  value of over $250  Millions of on-time  and onbudget projects. During my career, I have had the opportunity to regi
 ```
 
-### 1.54 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`projects, years, tracked, time, telecommunication, technology, summary, software, register, record, proven, project, profile, patents, over, opportunity, onbudget, my, millions, management, industry, industries, including, implemented, health, hardware, government, four, finance, engineer, different, development, developed, computer, career, business, broad, background, analyst, accumulative, 250, 15`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "similarity-based" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "knowledge" in chunk_text.lower() and "extracting" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:4
 
-### 1.55 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower() or 'retrieval' in chunk_text.lower() or 'asynchronous' in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.56 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "embedding" in chunk_text.lower():
-        return True
-    if "query" in chunk_text.lower():
-        return True
-    return False
+```text
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
-### 1.57 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "similarity" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    if "index" in chunk_text.lower() and "database" in chunk_text.lower():
-        return True
-    return False
+```text
+Technical expertise
+| Primary skills       | Experience   |
+|----------------------|--------------|
+| Project Management   | 25 years     |
+| Software Development | 15 years     |
+| Business Analyst     | 14 years     |
 ```
 
-### 1.58 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:57
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`years, technical, software, skills, project, primary, management, expertise, experience, development, business, analyst, 25, 15, 14`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "semantic" in chunk_text.lower() and "search" in chunk_text.lower():
-        return True
-    if "question" in chunk_text.lower() and "answering" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:5
 
-### 1.59 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "data" in chunk_text.lower() and "importer" in chunk_text.lower():
-        return True
-    if "neo4j" in chunk_text.lower() and "graph" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.60 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "model" in chunk_text.lower():
-        return True
-    if "create" in chunk_text.lower() and "new" in chunk_text.lower():
-        return True
-    return False
+```text
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
-### 1.61 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
+```text
+Skills
+Waterfall, Agile (SCRUM &amp; KANBAN), SDLC, JIRA, MS Project, Java, C#, JavaScript, Cursor, Foundry AI, Agent Framework, Azure, AWS, HTML5, CSS, Bootstrap, Ajax, JSON, SQL, MongoDB, Python, React, Angular Node, MVC, Spring Boot, Django Docker, Kubernetes, GitHub, OpenShift Project, AMQ Message Broker, Camel, Prometheus, Grafana. Management (PMI guides). People Oriented. Excellent communication skills at different.
 ```
 
-### 1.62 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`skills, project, waterfall, sql, spring, sdlc, scrum, react, python, prometheus, pmi, people, oriented, openshift, node, mvc, ms, mongodb, message, management, kubernetes, kanban, json, jira, javascript, java, html5, guides, grafana, github, framework, foundry, excellent, docker, django, different, cursor, css, communication, camel, broker, bootstrap, boot, azure, aws, angular, amq, amp, ajax, ai`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:6
 
-### 1.63 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "data" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.64 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "data" in chunk_text.lower() and "mapping" in chunk_text.lower():
-        return True
-    return False
+```text
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
-### 1.65 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:64
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'company' in chunk_text.lower():
-        return True
-    return False
+```text
+Education background
+| Degree   | Qualification     | College/university                        |   Year attained |
+|----------|-------------------|-------------------------------------------|-----------------|
+| BS       | Computer Engineer | University of Puerto Rico Mayaguez (UPRM) |            1987 |
 ```
 
-### 1.66 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`university, year, uprm, rico, qualification, puerto, mayaguez, engineer, education, degree, computer, college, bs, background, attained, 1987`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "document" in chunk_text.lower():
-        return True
-    if "path" in chunk_text.lower():
-        return True
-    if "companies" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:7
 
-### 1.67 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:66
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "assetmanager" in chunk_text.lower() or "manager" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.68 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:67
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
+```text
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "relationship" in chunk_text.lower() and "connect" in chunk_text.lower():
-        return True
-    if "entities" in chunk_text.lower() and "mapping" in chunk_text.lower():
-        return True
-    return False
+<!-- image -->
 ```
 
-### 1.69 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
+```text
+Professional activities, certifications, and trainings
+- AWS Cloud Practitioner 2022
+- Software Development C#, Sprint Boot, Java, Python, React, Angular
+- MES 2021, iBaset
+- AI Agentic
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'vectorcypher' in chunk_text.lower():
-        return True
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'mapping' in chunk_text.lower():
-        return True
-    return False
+<!-- image -->
 ```
 
-### 1.70 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:69
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`trainings, sprint, software, react, python, professional, practitioner, mes, java, image, ibaset, development, cloud, certifications, boot, aws, angular, ai, agentic, activities, 2022, 2021`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:8
 
-### 1.71 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:70
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "company" in chunk_text.lower() or "relationship" in chunk_text.lower():
-        return True
-    if "edit" in chunk_text.lower() or "parameters" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
-
-### 1.72 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71
 
-**Query:** What is VectorCypher Retrieval
+#### First Read
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "company" in chunk_text.lower():
-        return True
-    if "assetmanager" in chunk_text.lower():
-        return True
-    if "additional" in chunk_text.lower():
-        return True
-    return False
+```text
+Employment history
 ```
-
-### 1.73 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72
 
-**Query:** What is VectorCypher Retrieval
+#### Recursive Text
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "document" in chunk_text.lower():
-        return True
-    if "company" in chunk_text.lower():
-        return True
-    if "relationship" in chunk_text.lower():
-        return True
-    return False
+```text
+Employment history
 ```
 
-### 1.74 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:73
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`history, employment`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower() and "graphrag" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower() and "is" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:9
 
-### 1.75 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:74
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower():
-        return True
-    if "what" in chunk_text.lower() and "is" in chunk_text.lower():
-        return True
-    if "accesses" in chunk_text.lower() and "context" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.76 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    return False
-```
+```text
+DXC Technology
+Senior Technical Consultant
 
-### 1.77 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76
+Isabela, PR
 
-**Query:** What is VectorCypher Retrieval
+August 2021 -Present
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'api' in chunk_text.lower() or 'credentials' in chunk_text.lower() or 'database' in chunk_text.lower():
-        return True
-    return False
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
 ```
 
-### 1.78 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "embedding" in chunk_text.lower():
-        return True
-    return False
-```
+```text
+DXC Technology
+Senior Technical Consultant
 
-### 1.79 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78
+Isabela, PR
 
-**Query:** What is VectorCypher Retrieval
+August 2021 -Present
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vector" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower() and "basic" in chunk_text.lower():
-        return True
-    if "information" in chunk_text.lower() and "requests" in chunk_text.lower():
-        return True
-    return False
+- Multiple development efforts for the Solumina application, including front-end, back-end, database, XML mapping, and interface components.
+- AI RAG Agentic.
+- Business analysis and technical specification documents for various projects.
+- Project Manager for the migration of multiple projects, including V2V and lift-and-shift.
+- Project Manager for the migration of a Health Care Applications, including V2V and P2V m
 ```
 
-### 1.80 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`project, manager, migration, including, end, development, application, xml, v2v, technical, projects, multiple, mapping, group, front, dxc, business, ai, transportation, tools, technology, system, stack, spring, specification, solution, solumina, software, shift, senior, redis, react, rag, prometheus, process, present, pr, p2v, openshift, new, message, mes, manufacturing, manufactory, lift, lead, java, isabela, internal, interface`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "work" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:10
 
-### 1.81 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:80
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "basic" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.82 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
+```text
+Bridgewater
+Full Stack Developer
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "natural language generation" in chunk_text.lower():
-        return True
-    return False
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
 ```
 
-### 1.83 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:82
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
+```text
+Bridgewater
+Full Stack Developer
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "custodian" in chunk_text.lower():
-        return True
-    if "access" in chunk_text.lower():
-        return True
-    return False
+- Application migration from on-premises to AWS cloud.
+- Full  stack developer for the company WEB application using Agile technics and  tools such as Java, Javascript, JQuery, HTML, CSS, MySQL, Tomcat, Eclipse, Git and Clickup.
+- Project Management for a complete development life cycle, including Scrum planning, development, test plan and deployment.
 ```
 
-### 1.84 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:83
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`stack, full, development, developer, application, web, tools, tomcat, test, technics, scrum, project, premises, planning, plan, mysql, migration, management, life, jquery, javascript, java, including, html, git, eclipse, deployment, cycle, css, complete, company, cloud, clickup, bridgewater, aws, as, agile`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieve" in chunk_text.lower():
-        return True
-    if "analyze" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:11
 
-### 1.85 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "retrieval" in chunk_text or "augmented" in chunk_text:
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
-
-### 1.86 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
 
-**Query:** What is VectorCypher Retrieval
+#### First Read
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    if "cryptocurrency" in chunk_text.lower():
-        return True
-    if "traverse" in chunk_text.lower() and "graph" in chunk_text.lower():
-        return True
-    return False
-```
+```text
+Consultant
+Senior Consultant
 
-### 1.87 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
 
-**Query:** What is VectorCypher Retrieval
+Jan 2016 -March  2020
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'VectorCypher' in chunk_text and 'retrieval' in chunk_text:
-        return True
-    if 'cypher' in chunk_text and 'query' in chunk_text:
-        return True
-    if 'semantic' in chunk_text and 'search' in chunk_text:
-        return True
-    return False
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
 ```
-
-### 1.88 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87
 
-**Query:** What is VectorCypher Retrieval
+#### Recursive Text
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text or "cypher" in chunk_text:
-        return True
-    if "retriever" in chunk_text and "practice" in chunk_text:
-        return True
-    if "approach" in chunk_text and "any domain" in chunk_text:
-        return True
-    return False
-```
+```text
+Consultant
+Senior Consultant
 
-### 1.89 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
 
-**Query:** What is VectorCypher Retrieval
+Jan 2016 -March  2020
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text.lower() or "retriever" in chunk_text.lower():
-        return True
-    return False
+- Full stack developer for a WEB application (Health Care Provider) to register participants' merchant to the Mi Compra program using C#, SQL, HTML, CSS, IIS and Visual Studio.
+- Full stack developer for a WEB application for an e-commerce using Python, PostgreSQL, Bootstrap, JSON, JavaScript, NLP, Django, HTML, CSS, and Visual Studio Code.
+- Project Management for e-commerce application.
+- Project Management for the implementation of the new
 ```
 
-### 1.90 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`application, web, provider, project, management, health, commerce, care, visual, studio, stack, new, implementation, html, full, developer, departments, css, consultant, business, units, triple, structure, sql, service, senior, restructuring, reporting, report, register, record, python, program, processes, process, postgresql, payment, participants, nlp, multiple, mmm, mi, merchant, medicare, medical, march, json, javascript, jan, increase`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher Retrieval" in chunk_text.lower():
-        return True
-    if "VectorCypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    if "context-aware" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:12
 
-### 1.91 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher Retrieval" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "example" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.92 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
+```text
+Caguas, PR
+Oct 2002 -Jan 2016
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "VectorCypher" in chunk_text and "Retrieval" in chunk_text:
-        return True
-    if "query" in chunk_text and "search" in chunk_text:
-        return True
-    if "neo4j" in chunk_text and "database" in chunk_text:
-        return True
-    return False
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
 ```
 
-### 1.93 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:92
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
+```text
+Caguas, PR
+Oct 2002 -Jan 2016
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if 'retrieval' in chunk_text.lower():
-        return True
-    if 'vector' in chunk_text.lower():
-        return True
-    if 'apple' in chunk_text.lower() or 'amazon' in chunk_text.lower() or 'microsoft' in chunk_text.lower():
-        return True
-    return False
+- Transform the  development  team  from  a  Waterfall  to  an  Agile/Scrum/Kanban/Hybrid development methodology. Scrum methodology was mainly used during application development while Kanban was used on hardware/software development. The use of this methodologies combined with other DevOps strategies improved the resources utilization while provided a faster and better-quality product delivery.
+- IT architecture and Project  manager for the implementation of comp
 ```
 
-### 1.94 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:93
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`development, project, including, implementation, security, management, wan, systems, system, software, scrum, product, network, methodology, lan, kanban, iot, hardware, data, center, wireless, waterfall, virtual, variety, utilization, transform, testing, telecommunication, team, surveillance, strategies, storage, solutions, solution, servers, resources, quality, provided, pr, oct, networking, monitoring, methodologies, market, mar, manager, mainly, latin, jan, ip`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() or "retrieval" in chunk_text.lower() or "cypher" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:13
 
-### 1.95 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:94
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "retriever" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.96 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "text2cypherretriev" in chunk_text.lower():
-        return True
-    return False
+```text
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
 ```
 
-### 1.97 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
-
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() and "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "text2cypher" in chunk_text.lower():
-        return True
-    return False
+```text
+Caguas, PR
+re development, documentation, testing and product market introduction.
+- Project management for the implementation of IOT solutions through US and Latin America including a variety of network system including LAN, WAN, Wireless,
+- Business Analyst and Software developer for a video transaction ATM security system (PCI compliance) for the finance industry which dominated the Latin America market and transform the way the security and customer care department managed the ATM claims and
 ```
 
-### 1.98 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`market, security, system, latin, iot, industry, including, finance, atm, america, wireless, way, wan, video, variety, transform, transaction, testing, technology, technologies, solutions, solution, software, several, robbery, responsible, re, project, product, pr, pci, patents, new, network, needs, management, managed, lan, introduction, implementation, field, dominated, documentation, development, developer, develop, department, customer, compliance, claims`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower() or "application" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:14
 
-### 1.99 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:98
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower() and "retrieval" in chunk_text.lower():
-        return True
-    if "text2cypher" in chunk_text.lower():
-        return True
-    if "help" in chunk_text.lower() and "integrate" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.100 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
+```text
+San Juan, PR
+Apr 1996 -Oct 2002
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "community" in chunk_text.lower():
-        return True
-    return False
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
 ```
 
-### 1.101 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
+```text
+San Juan, PR
+Apr 1996 -Oct 2002
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "knowledge graph" in chunk_text.lower():
-        return True
-    return False
+- Project management  for  the  implementation  of  Telecommunication networks including CO  (Central offices), Wireless Cell sites, LAN, WAN, data center, power  system among other telecommunication equipment's.
+- IT Architecture and Project Management for the implementation 3G technologies infrastructure.
+- Project Management for multimillionaire telecommunication networks including coordination with many supporting  departments  including  Customer,  Dimension
 ```
 
-### 1.102 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:101
+#### Keywords
 
-**Query:** What is VectorCypher Retrieval
+`telecommunication, including, project, management, support, networks, implementation, etc, customer, coordination, wireless, wan, technologies, technical, tac, system, supporting, solution, software, sites, service, san, sale, rico, resources, requirements, puerto, provide, presentation, preparation, pre, pr, power, our, optimization, offices, offer, oct, new, multimillionaire, many, lan, juan, infrastructure, hardware, group, equipment, engineering, employees, dimensioning`
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "graph" in chunk_text.lower() and "rag" in chunk_text.lower():
-        return True
-    if "capabilities" in chunk_text.lower() and "intelligent" in chunk_text.lower():
-        return True
-    return False
-```
+### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\Resume\Alexis Torres - DXC Resume.pdf:chunk:15
 
-### 1.103 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102
+**Analyzed At:** 2026-02-09T21:53:41.394130
 
-**Query:** What is VectorCypher Retrieval
+**Query:** tell me about Alexis Torres
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "graphrag" in chunk_text.lower():
-        return True
-    if "neo4j" in chunk_text.lower():
-        return True
-    if "genai" in chunk_text.lower():
-        return True
-    return False
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
+    if not chunk_text.strip():
+        return False
+    text_lower = chunk_text.lower()
+    query_terms = ['alexis', 'torres']
+    if not query_terms:
+        return False
+    # Require at least one content token match
+    return any(term in text_lower for term in query_terms)
 ```
 
-### 1.104 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103
+#### First Read
 
-**Query:** What is VectorCypher Retrieval
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "data modeling" in chunk_text.lower():
-        return True
-    return False
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
 ```
 
-### 1.105 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104
+#### Recursive Text
 
-**Query:** What is VectorCypher Retrieval
+```text
+Caguas, PR
+Aug 1990 -Apr 1996
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "vectorcypher" in chunk_text.lower():
-        return True
-    if "retrieval" in chunk_text.lower():
-        return True
-    if "data ingestion" in chunk_text.lower():
-        return True
-    return False
+- Research and Product Development of telecommunication products using embedded unit hardware and software development using Assemble and C including a proprietary operating system.
+- Management of international  projects including locations such as USA, Puerto Rico, England, Italy and  Argentina  in order  to obtained  predominant  world market  share  in the fixed  cellular market.
+- Design and Project management of fixed cellular solutions which become the world
 ```
-
-### 1.106 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:105
 
-**Query:** What is VectorCypher Retrieval
+#### Keywords
 
-```python
-def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    if "cypher" in chunk_text.lower():
-        return True
-    if "vector" in chunk_text.lower() and "accuracy" in chunk_text.lower():
-        return True
-    if "automatically" in chunk_text.lower() and "queries" in chunk_text.lower():
-        return True
-    return False
-```
+`including, world, telecommunication, market, management, fixed, field, development, cellular, argentina, worldwide, usa, unit, system, spain, solutions, software, share, rico, research, puerto, proprietary, projects, project, products, product, predominant, pr, patents, orders, order, operating, obtained, locations, leader, italy, international, hungary, hardware, england, embedded, design, countries, caguas, biggest, become, awarded, author, aug, assemble`
 
 ---

@@ -229,13 +229,24 @@ def run_foundry_agent(agent_id: str, user_content: str, *, system_hint: str | No
         ) from e
     agents = client.agents
 
+
+    # Use the available thread creation method from the current SDK
     try:
-        create_thread = _resolve(agents, "create_thread", "threads.create")
-        thread = _with_retries(lambda: create_thread(logging_enable=False))
-        thread_id = _get_id(thread)
+        create_thread_and_run = _resolve(agents, "create_thread_and_run", "create_thread_and_process_run")
+        thread_run = _with_retries(lambda: create_thread_and_run(agent_id=agent_id, logging_enable=False))
+        # Extract thread_id and run_id from the response
+        thread_id = getattr(thread_run, "thread_id", None) or (thread_run.get("thread_id") if isinstance(thread_run, dict) else None)
+        run_id = getattr(thread_run, "id", None) or getattr(thread_run, "run_id", None) or (thread_run.get("id") if isinstance(thread_run, dict) else None)
+        if not thread_id:
+            # Fallback: try to extract from nested attributes or log for debugging
+            thread_id = _get_id(thread_run)
+        if not thread_id or not str(thread_id).startswith("thread"):
+            raise RuntimeError(f"Could not extract valid thread_id from create_thread_and_run response: {thread_run}")
+        # Wait for run to complete before adding messages
+        get_run = _resolve(agents, "get_run", "runs.get")
+        _poll_run(get_run, thread_id=thread_id, run_id=run_id)
     except Exception as e:
         error_msg = str(e)
-        # Check for authentication/authorization errors
         status_code = getattr(e, 'status_code', None)
         if status_code == 401 or status_code == 403 or "authentication" in error_msg.lower() or "unauthorized" in error_msg.lower():
             raise RuntimeError(

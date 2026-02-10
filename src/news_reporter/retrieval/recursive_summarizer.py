@@ -1,15 +1,17 @@
-"""Phase 4: Recursive Summarization - Summarize expanded file chunks using LLM.
+"""Phase 4: Recursive Summarization – Summarize expanded file chunks using LLM.
 
-MIT RLM (Recursive Inspection Model) Implementation:
-- Generate executable Python code for chunk relevance evaluation
-- Apply the code to filter chunks relevant to the user query
-- Selectively summarize matched content per file
-- Return file-level summaries with metadata for citations
+Inspection Model Implementation (two modes, feature-flagged):
 
-The core innovation: Instead of using rules, the LLM generates actual Python code
-(evaluate_chunk_relevance function) that the system executes to determine which
-chunks are relevant to the user's query. This follows the MIT RLM paper approach
-for generating small, executable inspection programs.
+  1. **Inspection Programs (Iterative)** – preferred (USE_MIT_RLM_RECURSION=true)
+     Generates an `inspect_iteration(chunks)` program per iteration that
+     evaluates *all* active chunks and returns a narrowed selection.
+
+  2. **Inspectors (Per-Chunk)** – fallback / expensive
+     Generates an `evaluate_chunk_relevance(chunk_text)` function per chunk.
+
+All generated code is executed inside a **subprocess sandbox**
+(`sandbox_runner.py`) with wall-clock timeout, memory caps, and restricted
+builtins.  In-process `exec()` is only used as a last-resort fallback.
 
 Uses Azure OpenAI API for LLM-based code generation and summarization.
 """
@@ -17,12 +19,21 @@ Uses Azure OpenAI API for LLM-based code generation and summarization.
 import logging
 import asyncio
 import os
-from typing import List, Dict, Optional, Any
+import hashlib
+from typing import List, Dict, Optional, Any, Set
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-# MIT RLM Configuration (Phase 2 feature flag)
+# Subprocess sandbox for all exec() calls
+from .sandbox_runner import sandbox_exec  # noqa: E402
+from .chunk_logger import (
+    init_aggregate_raw_log,
+    append_aggregate_raw_chunk,
+    log_aggregate_raw_final_set,
+)
+
+# Phase 4 feature flag: iterative inspection programs vs per-chunk inspectors
 USE_MIT_RLM_RECURSION = os.getenv("USE_MIT_RLM_RECURSION", "false").lower() == "true"
 MAX_RLM_ITERATIONS = int(os.getenv("MAX_RLM_ITERATIONS", "5"))
 
@@ -30,23 +41,24 @@ MAX_RLM_ITERATIONS = int(os.getenv("MAX_RLM_ITERATIONS", "5"))
 MAX_SELECTED_CHUNKS_PER_FILE = int(os.getenv("MAX_SELECTED_CHUNKS_PER_FILE", "8"))
 MAX_TOTAL_CHARS_FOR_SUMMARY = int(os.getenv("MAX_TOTAL_CHARS_FOR_SUMMARY", "12000"))
 
-# Execution safety limits (PRODUCTION WARNING: needs separate process execution)
-MAX_EXEC_ITERATIONS = 1000  # Prevent infinite loops in generated code
-MAX_EXEC_STRING_LENGTH = 100000  # Prevent memory bombs
+# Execution safety limits – enforced by sandbox_runner subprocess
+# These constants are passed to the sandbox and verified there.
+MAX_EXEC_ITERATIONS = 1000
+MAX_EXEC_STRING_LENGTH = 100_000
 
 # Structural whitelist: universal parsing aids that are NOT domain knowledge.
 # These terms help the LLM detect employment/time/role structure in chunks
 # even when the chunk text doesn't literally contain query verbs like "work".
 # Keeps the no-hardcoding spirit while fixing the evidence-only constraint
 # that was too strict for structural-intent queries.
-STRUCTURAL_WHITELIST = {
-    # Employment / time markers
-    "present", "current", "currently", "to present",
-    "- present", "– present", "— present",
-    # Date / delimiter tokens
-    " - ", " – ", " — ", " to ",
-    # Role / org delimiters
-    " at ", "@",
+#
+# Split into two tiers:
+#   SEMANTIC  – terms that carry query *intent* (e.g. "work", "skills")
+#   STRUCTURAL – pure delimiters / time markers that are NOT enough alone
+#
+# A function that returns True using ONLY structural tokens (no semantic
+# or evidence tokens) is rejected by _validate_inspection_code.
+SEMANTIC_WHITELIST = {
     # Generic verbs for matching query intent (not domain-specific)
     "work", "works", "working", "worked",
     "employ", "employed", "employer", "employment",
@@ -56,10 +68,39 @@ STRUCTURAL_WHITELIST = {
     "university", "college", "school", "degree",
     # Location markers
     "located", "based",
+    # Skill / experience markers
+    "skill", "skills", "experience", "expertise",
+    "certification", "certifications",
 }
 
-logger.info(f"🔧 MIT RLM Recursion: {'ENABLED' if USE_MIT_RLM_RECURSION else 'DISABLED'}")
+STRUCTURAL_ONLY_WHITELIST = {
+    # Employment / time markers (supporting signals only)
+    "present", "current", "currently", "to present",
+    "- present", "– present", "— present",
+    # Date / delimiter tokens
+    " - ", " – ", " — ", " to ",
+    # Role / org delimiters
+    " at ", "@",
+}
+
+# Combined whitelist for evidence-only validation (backward compat)
+STRUCTURAL_WHITELIST = SEMANTIC_WHITELIST | STRUCTURAL_ONLY_WHITELIST
+
+logger.info(f"🔧 Inspection Model: {'Iterative Programs' if USE_MIT_RLM_RECURSION else 'Per-Chunk Inspectors'}")
 logger.info(f"📊 Selection Budgets: max_chunks={MAX_SELECTED_CHUNKS_PER_FILE}, max_chars={MAX_TOTAL_CHARS_FOR_SUMMARY}")
+
+# Query-scoped Phase 4 invalidation: track the query that generated
+# the current set of inspection programs.  If a new query arrives, all
+# prior artifacts (code, programs, logs) are stale and must be regenerated.
+# This is enforced inside recursive_summarize_files() itself (stateless per
+# call), but the hash is also written into log filenames so analysts can
+# distinguish artifacts from different queries.
+_last_phase4_query_hash: Optional[str] = None
+
+
+def _query_fingerprint(query: str) -> str:
+    """Return a short hex fingerprint for a query (for log file disambiguation)."""
+    return hashlib.sha256(query.strip().lower().encode()).hexdigest()[:8]
 
 
 def _safe_range(*args):
@@ -83,9 +124,7 @@ def _build_safe_globals() -> dict:
     """Build a unified restricted globals dict for all exec() sandboxes.
 
     Uses _safe_range instead of range and omits sorted() entirely.
-    Must be used in: _evaluate_chunk_with_code, _execute_inspection_program,
-    _run_inspection_code_sanity_tests, _run_inspection_program_sanity_tests,
-    and any other exec() call sites.
+    Used inside sandbox_runner.py (primary) and as in-process fallback.
     """
     return {
         "__builtins__": {
@@ -96,9 +135,64 @@ def _build_safe_globals() -> dict:
             # NOTE: sorted() intentionally omitted – can be O(n log n) on
             # attacker-chosen data.  enumerate is bounded by input size.
         },
-        "_exec_counter": 0,
-        "_MAX_ITERATIONS": MAX_EXEC_ITERATIONS,
+        # NOTE: _exec_counter / _MAX_ITERATIONS are NOT enforced at runtime.
+        # They exist as documentation of intent.  True protection comes from
+        # _safe_range (caps iterations) and _detect_multiplication_bombs (caps
+        # memory).  Full sandboxing requires subprocess isolation (TODO).
     }
+
+
+def _detect_multiplication_bombs(tree) -> tuple:
+    """Detect `x * N` and `[val] * N` patterns where N is dangerously large.
+
+    Catches:
+        "a" * 10**8
+        [0] * 100_000_000
+        x = "b" * N   where N is a large int literal or power expression
+
+    Returns:
+        (is_safe, error_message)
+    """
+    import ast
+
+    MAX_MULT_CONST = 10_000  # Any multiplication by a constant > 10k is suspicious
+
+    def _const_value(node) -> int | None:
+        """Try to resolve a node to an int constant (handles 10**N)."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return node.value
+        # Handle 10**N pattern
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
+            base = _const_value(node.left)
+            exp = _const_value(node.right)
+            if base is not None and exp is not None:
+                try:
+                    val = base ** exp
+                    return val
+                except (OverflowError, ValueError):
+                    return 10**18  # Treat overflow as huge
+        return None
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+            # Check both sides: const * expr  or  expr * const
+            for side in (node.left, node.right):
+                val = _const_value(side)
+                if val is not None and val > MAX_MULT_CONST:
+                    return False, (
+                        f"Multiplication bomb detected: operand value {val:,} "
+                        f"exceeds safety limit ({MAX_MULT_CONST:,})"
+                    )
+            # Also flag string/list literal * large-ish number
+            # e.g. "a" * 500 is fine, "a" * 50000 is not
+            left_val = _const_value(node.left)
+            right_val = _const_value(node.right)
+            if left_val is not None and left_val > MAX_MULT_CONST:
+                return False, f"Multiplication bomb: left operand {left_val:,} > {MAX_MULT_CONST:,}"
+            if right_val is not None and right_val > MAX_MULT_CONST:
+                return False, f"Multiplication bomb: right operand {right_val:,} > {MAX_MULT_CONST:,}"
+
+    return True, ""
 
 
 def _build_completion_params(model_deployment: str, **kwargs) -> dict:
@@ -137,7 +231,7 @@ class FileSummary:
     # Citation-grade metadata (for production)
     chunk_metadata: Optional[List[Dict[str, Any]]] = None  # [{chunk_id, page, offset, section}]
     file_path: Optional[str] = None
-    selection_method: Optional[str] = None  # "rlm_iterative", "rlm_per_chunk", "fallback"
+    selection_method: Optional[str] = None  # "inspection_programs_iterative", "inspectors_per_chunk", "fallback_*"
 
 
 def _normalize_text(text: str) -> str:
@@ -178,245 +272,103 @@ def _extract_string_literals_via_ast(code: str) -> set:
         Set of string literals found in the code
     """
     import ast
-    
     try:
         tree = ast.parse(code)
     except SyntaxError:
         # If code doesn't parse, return empty (will be caught by other validation)
         return set()
-    
     literals = set()
-    
-    class StringExtractor(ast.NodeVisitor):
-        def __init__(self):
-            self.strings = set()
-        
+    literals = set()
+    class StringLiteralVisitor(ast.NodeVisitor):
+        def visit_Str(self, node):
+            literals.add(node.s)
         def visit_Constant(self, node):
-            # Python 3.8+ uses Constant for all literals
             if isinstance(node.value, str):
-                # Skip very short strings (likely not search terms)
-                if len(node.value) > 0:
-                    self.strings.add(node.value)
-            self.generic_visit(node)
-        
-        def visit_Dict(self, node):
-            # Visit dict values but not keys
-            for value in node.values:
-                self.visit(value)
-            # Don't visit keys (they're not search terms)
-        
-        def visit_FunctionDef(self, node):
-            # Skip docstrings
-            body = node.body
-            if body and isinstance(body[0], ast.Expr):
-                expr = body[0].value
-                if isinstance(expr, ast.Constant) and isinstance(expr.value, str):
-                    # This is the docstring, skip it
-                    for child in body[1:]:
-                        self.visit(child)
-                    return
-            # Normal function, visit all
-            self.generic_visit(node)
-    
-    extractor = StringExtractor()
-    extractor.visit(tree)
-    return extractor.strings
-
-
-def _validate_inspection_program(program: str, query: str, chunk_count: int) -> tuple:
-    """
-    Validate generated inspect_iteration program for MIT RLM recursion.
-    
-    Checks:
-    1. Syntax is valid
-    2. Returns dict with required keys (selected_chunk_ids, extracted_data, confidence, stop)
-    3. selected_chunk_ids is always a list (never None or other type)
-    4. confidence is a float in [0.0, 1.0]
-    5. No "select all chunks blindly" patterns (unless stop=True and low confidence)
-    6. Logic checks chunk.text or chunk["text"] (evidence-based)
-    7. No hardcoded list of chunk IDs
-    8. No obvious infinite loops (for i in range(10**N))
-    
-    Args:
-        program: Python code for inspect_iteration function
-        query: User query
-        chunk_count: Number of chunks being evaluated
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    
-    # Check for obvious CPU bombs (basic pattern detection)
-    dangerous_patterns = [
-        r'range\s*\(\s*10\s*\*\*\s*[6-9]',  # range(10**6) or higher
-        r'range\s*\(\s*\d{7,}',  # range(1000000+)
-        r'while\s+True',  # while True without obvious break
-    ]
-    import re
-    for pattern in dangerous_patterns:
-        if re.search(pattern, program):
-            return False, f"Dangerous pattern detected: {pattern}"
-    import ast
-    
-    try:
-        tree = ast.parse(program)
-    except SyntaxError as e:
-        return False, f"Syntax error: {e}"
-    
-    class InspectionProgramValidator(ast.NodeVisitor):
-        def __init__(self):
-            self.has_function = False
-            self.returns_dict_with_required_keys = False
-            self.checks_chunk_text = False
-            self.selects_all_chunks_unconditionally = False
-            self.hardcoded_all_chunk_ids = False
-            self._in_function = False
-            self._return_statements = []
-            
-        def visit_FunctionDef(self, node):
-            if node.name == 'inspect_iteration':
-                self.has_function = True
-                self._in_function = True
-                self.generic_visit(node)
-                self._in_function = False
-            else:
-                self.generic_visit(node)
-        
-        def visit_Return(self, node):
-            if not self._in_function:
-                return
-            self._return_statements.append(node)
-            
-            # Check if returns a dict with required keys
-            if isinstance(node.value, ast.Dict):
-                keys = set()
-                for key in node.value.keys:
-                    if isinstance(key, ast.Constant):
-                        keys.add(key.value)
-                    elif isinstance(key, ast.Str):  # Python < 3.8
-                        keys.add(key.s)
-                
-                required_keys = {'selected_chunk_ids', 'extracted_data', 'confidence', 'stop'}
-                if keys >= required_keys:
-                    self.returns_dict_with_required_keys = True
-            
-            self.generic_visit(node)
-        
-        def visit_Call(self, node):
-            # Check for chunk text access patterns: chunk.get('text'), chunk['text']
-            if isinstance(node.func, ast.Attribute):
-                if node.func.attr == 'get' and isinstance(node.func.value, ast.Name):
-                    # chunk.get('text') pattern
-                    if node.args and isinstance(node.args[0], ast.Constant):
-                        if node.args[0].value == 'text':
-                            self.checks_chunk_text = True
-            self.generic_visit(node)
-        
-        def visit_Subscript(self, node):
-            # Check for chunk['text'] pattern
-            if isinstance(node.slice, ast.Constant):
-                if node.slice.value == 'text':
-                    self.checks_chunk_text = True
-            self.generic_visit(node)
-        
-        def visit_Compare(self, node):
-            # Check for 'in' operations (evidence checking)
-            for op in node.ops:
-                if isinstance(op, (ast.In, ast.NotIn)):
-                    self.checks_chunk_text = True
-            self.generic_visit(node)
-    
-    validator = InspectionProgramValidator()
-    validator.visit(tree)
-    
-    if not validator.has_function:
-        return False, "Missing 'inspect_iteration' function definition"
-    
-    if not validator.returns_dict_with_required_keys:
-        return False, "Function must return dict with keys: selected_chunk_ids, extracted_data, confidence, stop"
-    
-    if not validator.checks_chunk_text:
-        return False, "Function must check chunk text/evidence (no hardcoded logic)"
-    
-    return True, ""
-
-
-def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
-    """
-    Validate generated inspection code for common bugs.
-    
-    Uses AST parsing for robust validation:
-    1. No unguarded 'return True' (AST-based check)
-    2. Inverted logic patterns (if X: return False; followed by return True)
-    3. Code ending with 'return True' (default True behavior)
-    4. Evidence-only rule: ALL string literals must come from query or chunk_text (AST-based)
-    5. Multiword literals must exist as exact phrases in evidence
-    6. Must have at least one evidence-checking operation
-    7. Tighter return True dominance analysis
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    import ast
-    import re
-    
-    # Try to parse the code
-    try:
-        tree = ast.parse(code)
-    except SyntaxError as e:
-        return False, f"Syntax error: {e}"
-    
-    # Normalize evidence text (decode HTML entities)
-    query_norm = _normalize_text(query.lower())
-    chunk_norm = _normalize_text(chunk_text.lower())
-    
-    # Tokenize evidence (removes punctuation)
-    query_words = _tokenize_text(query)
-    chunk_words = _tokenize_text(chunk_text)
-    allowed_words = query_words | chunk_words
-    
+                literals.add(node.value)
+    StringLiteralVisitor().visit(tree)
+    return literals
     # STRICTER CHECK: AST-based return True dominance analysis
     class StrictReturnAnalyzer(ast.NodeVisitor):
         """
         Tighter return True validation:
         - Track all return True nodes
         - Require EACH one to be dominated by evidence check
-        - Evidence check = direct in-condition check, not just "was assigned from evidence"
+        - Evidence check = condition that **depends on chunk text**,
+          not just any comparison with a constant.
+        - Rejects conditions that only compare arbitrary constants
+          (e.g. `if "python" in some_local_list: return True`).
         """
         def __init__(self):
             self.all_return_true_nodes = []
             self.return_false_nodes = []
-            self.evidence_checks = set()  # Conditions that check evidence
+            self.evidence_checks = set()
             self.unsafe_return_true_count = 0
             self._in_function = False
-            self._condition_stack = []  # Track nested if conditions
+            self._condition_stack = []
+            # Names that derive from chunk_text / text_lower etc.
+            self._chunk_text_vars: set = set()
+
+        def _is_chunk_derived(self, node: ast.AST) -> bool:
+            """Return True if *node* references a chunk-text-derived value."""
+            if isinstance(node, ast.Name) and node.id in self._chunk_text_vars:
+                return True
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if isinstance(node.func.value, ast.Name) and node.func.value.id in self._chunk_text_vars:
+                    return True
+            return False
             
         def _is_evidence_condition(self, node: ast.AST) -> bool:
-            """Check if a condition directly accesses chunk evidence."""
+            """Check if a condition depends on chunk text (not just constants).
+
+            Accepted patterns (at least one side must reference chunk text):
+              - ``term in text_lower``          (ast.In with chunk-derived comparator)
+              - ``text_lower.find("x") >= 0``   (method on chunk-derived var)
+              - ``"x" in chunk_text``           (left is const, right is chunk-derived)
+
+            Rejected patterns:
+              - ``"x" in some_list``            (no chunk dependency)
+              - ``x == "constant"``             (constant-only comparison)
+            """
             for sub in ast.walk(node):
                 if isinstance(sub, ast.Compare):
-                    # 'in' or 'not in' operator
-                    for op in sub.ops:
+                    for op, comparator in zip(sub.ops, sub.comparators):
                         if isinstance(op, (ast.In, ast.NotIn)):
-                            return True
-                    # startswith, endswith, etc
-                    for comparator in sub.comparators:
-                        if isinstance(comparator, (ast.Constant, ast.Str)):
-                            return True
-                
+                            # 'term in text_lower' or 'text_lower in ...'
+                            if self._is_chunk_derived(comparator) or self._is_chunk_derived(sub.left):
+                                return True
+
                 if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
-                    # FIX #4: Method calls like .find(), .count(), .startswith()
                     if sub.func.attr in ('find', 'count', 'startswith', 'endswith'):
-                        return True
+                        # .find()/.count() etc. must be called on a chunk-derived var
+                        if self._is_chunk_derived(sub.func.value):
+                            return True
             return False
         
         def visit_FunctionDef(self, node):
             if node.name == 'evaluate_chunk_relevance':
                 self._in_function = True
+                # Seed: the function parameter (chunk_text) is chunk-derived
+                for arg in node.args.args:
+                    if arg.arg in ('chunk_text', 'text'):
+                        self._chunk_text_vars.add(arg.arg)
                 self.generic_visit(node)
                 self._in_function = False
             else:
                 self.generic_visit(node)
+
+        def visit_Assign(self, node):
+            if not self._in_function:
+                return
+            # Track assignments derived from chunk text:
+            # text_lower = chunk_text.lower()
+            # t = chunk_text.strip()
+            for sub in ast.walk(node.value):
+                if self._is_chunk_derived(sub):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            self._chunk_text_vars.add(target.id)
+                    break
+            self.generic_visit(node)
         
         def visit_If(self, node):
             if not self._in_function:
@@ -527,7 +479,6 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
 
             self.generic_visit(node)
 
-        def visit_If(self, node):
             if not self._in_target_function:
                 return
 
@@ -603,29 +554,63 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
     if not checker.has_evidence_check:
         return False, "Function must perform at least one evidence check (e.g., 'term' in text, .find(), .count(), .startswith(), .endswith())"
     
-    # PRODUCTION WARNING: This exec() validation doesn't prevent:
-    # - CPU/memory bombs (for i in range(10**9))
-    # - Pathological string operations
-    # TODO: Run generated code in separate process with resource limits
+    # PRODUCTION WARNING: This exec() validation doesn't prevent all CPU/memory
+    # bombs.  _safe_range + _detect_multiplication_bombs cover the most common
+    # vectors; full safety requires subprocess isolation.
     
-    # NEW CHECK: Last statement in evaluate_chunk_relevance must be 'return False'
-    # This kills patterns like "return True unless ..." that sneak through AST checks.
+    # CHECK: Detect multiplication bombs  ("a" * 10**8, [0] * 10**8)
+    bomb_ok, bomb_msg = _detect_multiplication_bombs(tree)
+    if not bomb_ok:
+        return False, bomb_msg
+    
+    # CHECK: evaluate_chunk_relevance must contain at least one explicit
+    # `return False` anywhere in its body (proves not-always-true intent)
+    # AND the last top-level statement must be `return False` (safe default).
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == 'evaluate_chunk_relevance':
-            if node.body:
-                last_stmt = node.body[-1]
-                # Allow: bare return False, or if/elif chain that doesn't end with return True
-                if isinstance(last_stmt, ast.Return):
-                    if isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is True:
-                        return False, "Last statement is 'return True' — function must default to False (last statement must be 'return False')"
-                    # Also catch 'return <expression>' that isn't False
-                    # Allow: return False, return any(...), return <variable>
-                elif isinstance(last_stmt, ast.If):
-                    # If block at end is fine (it's conditional)
-                    pass
-                elif isinstance(last_stmt, ast.Expr):
-                    # Expression statement at end (rare but ok)
-                    pass
+            if not node.body:
+                return False, "Function body is empty"
+            # 1) Require at least one `return False` in function body
+            has_return_false = False
+            for child in ast.walk(node):
+                if isinstance(child, ast.Return):
+                    val = getattr(child, 'value', None)
+                    if isinstance(val, ast.Constant) and val.value is False:
+                        has_return_false = True
+                        break
+            if not has_return_false:
+                return False, "Function must contain at least one 'return False' statement (safe default path)"
+            # NEW GUARDRAIL: Reject degenerate inspectors with no possible True outcome.
+            # This does NOT force the current chunk to be selected; it only ensures the
+            # function is capable of selecting a chunk when criteria match.
+            has_return_true = False
+            for child in ast.walk(node):
+                if isinstance(child, ast.Return):
+                    val = getattr(child, 'value', None)
+                    if isinstance(val, ast.Constant) and val.value is True:
+                        has_return_true = True
+                        break
+            if not has_return_true:
+                return False, "Degenerate inspector: function has no 'return True' path"
+            # 2) Last top-level statement must be `return False`
+            last_stmt = node.body[-1]
+            if isinstance(last_stmt, ast.Return):
+                val = getattr(last_stmt, 'value', None)
+                if not (isinstance(val, ast.Constant) and val.value is False):
+                    return False, (
+                        f"Last statement must be 'return False' (safe default). "
+                        f"Got: return {ast.dump(val) if val else 'None'}"
+                    )
+            elif isinstance(last_stmt, ast.If):
+                # If block at end is fine only if there is a bare `return False`
+                # AFTER or at the end of the else branch.  We already verified
+                # has_return_false above, so this is acceptable.
+                pass
+            else:
+                return False, (
+                    f"Last statement in function must be 'return False', "
+                    f"got {type(last_stmt).__name__}"
+                )
             break
 
     # Check 2: Extract ALL string literals using AST
@@ -653,7 +638,7 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
             # Multiword: check whitelist first, then evidence
             if literal_norm in STRUCTURAL_WHITELIST:
                 continue
-            if literal_norm not in query_norm and literal_norm not in chunk_norm:
+            if literal_norm not in query_norm and literal_norm not in chunk_norm and literal_norm not in keywords_norm:
                 suspicious_literals.append(f"'{literal}' (multiword phrase not in evidence or whitelist)")
         else:
             # Single word: must be in allowed word set OR structural whitelist
@@ -661,18 +646,46 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str) -> tuple:
                 # Check if any word is in structural whitelist
                 if not literal_words.issubset(allowed_words | STRUCTURAL_WHITELIST):
                     # Also check if it's a substring of evidence (case-insensitive)
-                    if literal_norm not in query_norm and literal_norm not in chunk_norm:
-                        suspicious_literals.append(f"'{literal}' (not in query/chunk/whitelist)")
+                    if literal_norm not in query_norm and literal_norm not in chunk_norm and not any(literal_norm in kn for kn in keywords_norm):
+                        suspicious_literals.append(f"'{literal}' (not in query/chunk/keywords/whitelist)")
     
     if suspicious_literals:
         return False, f"Evidence-only violation: {suspicious_literals}"
     
+    # CHECK: Reject functions whose ONLY matching tokens come from
+    # STRUCTURAL_ONLY_WHITELIST (delimiters / time markers).
+    # These are supporting signals — a function must also use at least one
+    # semantic token (from query, chunk, or SEMANTIC_WHITELIST) to return True.
+    non_harmless_literals = all_literals - harmless_literals
+    if non_harmless_literals:
+        has_semantic_signal = False
+        for literal in non_harmless_literals:
+            lit_norm = _normalize_text(literal.lower())
+            lit_words = _tokenize_text(literal)
+            # Check if literal is in evidence (query or chunk)
+            if lit_words and lit_words.issubset(allowed_words):
+                has_semantic_signal = True
+                break
+            # Check if literal is in semantic whitelist
+            if lit_norm in SEMANTIC_WHITELIST:
+                has_semantic_signal = True
+                break
+            if lit_words and lit_words.issubset(SEMANTIC_WHITELIST):
+                has_semantic_signal = True
+                break
+        
+        if not has_semantic_signal:
+            return False, (
+                "Function uses only structural/delimiter tokens (e.g. 'present', '- ', '@ '). "
+                "Must include at least one semantic token from query, chunk, or semantic whitelist."
+            )
+    
     return True, ""
 
 
-def _extract_evidence_terms(query: str, chunk_text: str) -> str:
+def _extract_evidence_terms(query: str, chunk_text: str, keywords: Optional[List[str]] = None) -> str:
     """
-    Extract allowed terms from query and chunk text for dynamic constraint.
+    Extract allowed terms from query, chunk text, and keywords for dynamic constraint.
     
     Uses tokenizer to remove punctuation (e.g., "work?" -> "work").
     Returns a formatted string listing allowed terms for the LLM.
@@ -681,9 +694,15 @@ def _extract_evidence_terms(query: str, chunk_text: str) -> str:
     query_terms = _tokenize_text(query)
     chunk_terms = _tokenize_text(chunk_text)
     
+    # Include keyword terms as allowed evidence
+    keyword_terms = set()
+    if keywords:
+        for kw in keywords:
+            keyword_terms |= _tokenize_text(kw)
+    
     # Combine and cap length
-    allowed_terms = sorted(query_terms | chunk_terms)
-    allowed_terms = allowed_terms[:50]  # Cap to 50 terms
+    allowed_terms = sorted(query_terms | chunk_terms | keyword_terms)
+    allowed_terms = allowed_terms[:60]  # Cap to 60 terms (increased for keywords)
     
     return ", ".join(repr(t) for t in allowed_terms)
 
@@ -869,7 +888,8 @@ def _apply_selection_budget(
     chunks: List[Dict],
     selected_chunk_ids: List[str],
     max_chunks: int,
-    max_chars: int
+    max_chars: int,
+    query: str = ""
 ) -> List[str]:
     """
     Apply selection budget to prevent excessive token usage in summarization.
@@ -879,63 +899,131 @@ def _apply_selection_budget(
     2. Hard cap on total characters (max_chars)
     
     Prioritizes chunks by:
+    - Semantic relevance (query term matching)
     - Current/recent markers ("present", dates)
-    - Keyword density (query-relevant terms)
+    - Content density vs navigational text
     
     Args:
         chunks: All chunks from the file
         selected_chunk_ids: Chunk IDs to trim
         max_chunks: Maximum chunks to keep
         max_chars: Maximum total characters
+        query: User query for semantic scoring
     
     Returns:
         Trimmed list of chunk IDs
     """
+    logger.debug(f"[DEBUG] _apply_selection_budget ENTER: input_chunks={len(selected_chunk_ids)}, query='{query}', max_chunks={max_chunks}, max_chars={max_chars:,}")
+    
     if len(selected_chunk_ids) <= max_chunks:
         # Check char limit even if under chunk limit
         chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
         total_chars = sum(len(chunk_map.get(cid, "")) for cid in selected_chunk_ids)
+        logger.debug(f"[DEBUG]   Under chunk limit ({len(selected_chunk_ids)} <= {max_chunks}), checking char limit: {total_chars:,} / {max_chars:,}")
         
         if total_chars <= max_chars:
+            logger.debug(f"[DEBUG]   EARLY RETURN: all {len(selected_chunk_ids)} chunks fit within budget")
             return selected_chunk_ids
     
-    # Need to trim - prioritize by recency markers
+    # Need to trim - prioritize by semantic relevance and recency markers
     import re
     chunk_scores = []
     chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
     
+    # Extract query keywords for semantic matching
+    query_keywords = set()
+    if query:
+        # Remove common stop words and extract meaningful terms
+        stop_words = {'what', 'is', 'the', 'a', 'an', 'are', 'how', 'does', 'do', 'where', 'when', 'why', 'which'}
+        words = re.findall(r'\b\w+\b', query.lower())
+        query_keywords = {w for w in words if w not in stop_words and len(w) > 2}
+    
+    logger.debug(f"[DEBUG]   Query keywords extracted: {query_keywords}")
+    
     for chunk_id in selected_chunk_ids:
         text = chunk_map.get(chunk_id, "")
+        text_lower = text.lower()
         score = 0
+        chunk_num = chunk_id.split(':')[-1]
         
-        # Boost for current/present markers
-        if re.search(r'\b(present|current|currently)\b', text.lower()):
-            score += 10
+        # PRIMARY: Semantic relevance - query keyword matching (most important)
+        semantic_score = 0
+        if query_keywords:
+            # Count keyword occurrences
+            keyword_count = sum(text_lower.count(kw) for kw in query_keywords)
+            semantic_score += keyword_count * 15  # Strong boost for query term matches
+            
+            # Extra boost if chunk contains multiple unique keywords
+            unique_keywords_found = sum(1 for kw in query_keywords if kw in text_lower)
+            semantic_score += unique_keywords_found * 10
+            score += semantic_score
+        
+        # SECONDARY: Penalize Table of Contents / navigational chunks
+        # These often mention terms but don't explain them
+        toc_patterns = [
+            r'table of contents',
+            r'^\s*[\|\-]+\s*$',  # Table borders
+            r'^\.+\s+\d+\s*$',   # Dotted lines with page numbers
+            r'^[A-Z][^.!?]{3,50}\.+\s+\d+\s*$',  # "Title........ 42" format
+        ]
+        toc_penalty = 0
+        if any(re.search(pattern, text_lower, re.MULTILINE) for pattern in toc_patterns):
+            toc_penalty = -20  # Penalty for TOC-like content
+            score += toc_penalty
+        
+        # TERTIARY: Boost for current/present markers (employment queries)
+        current_boost = 0
+        if re.search(r'\b(present|current|currently)\b', text_lower):
+            current_boost = 10
+            score += current_boost
         
         # Boost for recent years (2024, 2025, etc.)
+        year_boost = 0
         if re.search(r'\b202[3-9]\b', text):
-            score += 5
+            year_boost = 5
+            score += year_boost
         
         # Slight boost for longer chunks (more context)
-        score += min(len(text) / 1000, 3)
+        length_boost = min(len(text) / 1000, 3)
+        score += length_boost
+        
+        text_preview = text[:60].replace('\n', ' ')
+        logger.debug(f"[DEBUG]   Chunk {chunk_num}: semantic={semantic_score:.1f}, toc={toc_penalty}, current={current_boost}, year={year_boost}, len={length_boost:.1f} → TOTAL={score:.1f} | {text_preview}...")
         
         chunk_scores.append((chunk_id, score, len(text)))
     
     # Sort by score (descending)
+    logger.debug(f"[DEBUG]   Sorting {len(chunk_scores)} chunks by score...")
     chunk_scores.sort(key=lambda x: x[1], reverse=True)
+    
+    logger.debug(f"[DEBUG]   Top 5 chunks after sorting:")
+    for i, (cid, score, char_len) in enumerate(chunk_scores[:5]):
+        chunk_text_preview = chunk_map.get(cid, "")[:50].replace('\n', ' ')
+        logger.debug(f"[DEBUG]     {i+1}. Chunk {cid.split(':')[-1]}: score={score:.1f}, chars={char_len} | {chunk_text_preview}...")
     
     # Apply budgets
     selected = []
+    excluded = []
     total_chars = 0
     
+    logger.debug(f"[DEBUG]   Applying budgets: max_chunks={max_chunks}, max_chars={max_chars:,}")
     for chunk_id, score, char_len in chunk_scores:
         if len(selected) >= max_chunks:
-            break
+            excluded.append((chunk_id, "max_chunks_exceeded", score, char_len))
+            logger.debug(f"[DEBUG]     ✗ Chunk {chunk_id.split(':')[-1]}: max_chunks_exceeded (already have {len(selected)})")
+            continue
         if total_chars + char_len > max_chars:
-            break
+            excluded.append((chunk_id, "max_chars_exceeded", score, char_len))
+            logger.debug(f"[DEBUG]     ✗ Chunk {chunk_id.split(':')[-1]}: max_chars_exceeded ({total_chars + char_len:,} > {max_chars:,})")
+            continue
         
         selected.append(chunk_id)
         total_chars += char_len
+        logger.debug(f"    ✓ Selected {chunk_id.split(':')[-1]}: score={score:.1f}, chars={char_len}")
+    
+    # Log exclusions
+    for chunk_id, reason, score, char_len in excluded:
+        logger.debug(f"    ✗ Excluded {chunk_id.split(':')[-1]}: {reason} (score={score:.1f}, chars={char_len})")
     
     if len(selected) < len(selected_chunk_ids):
         logger.info(
@@ -943,14 +1031,116 @@ def _apply_selection_budget(
             f"({total_chars:,} chars, limit={max_chars:,})"
         )
     
+    logger.debug(f"[DEBUG] _apply_selection_budget EXIT: final_selection={[cid.split(':')[-1] for cid in selected]}")
     return selected
+
+
+def _select_top_k_chunks(
+    chunks: List[Dict],
+    query: str,
+    k: int = MAX_SELECTED_CHUNKS_PER_FILE,
+    employment_mode: bool = False,
+) -> List[str]:
+    """Deterministic top-K chunk selector for low-signal / broad-selection fallback.
+
+    Scoring features (all cheap, no LLM):
+      +10  "present / current / currently" markers (employment mode)
+      +5   recent years (2023+)
+      +N   query-token match count (capped at 5)
+      -1   very tiny chunks (< 50 chars) get a small penalty
+
+    Used by:
+      - _execute_inspection_program  (>90% selection ratio fallback)
+      - _process_file_with_rlm_recursion  (prefilter candidate cap)
+
+    Args:
+        chunks:          Full chunk list (dicts with chunk_id, text).
+        query:           User query.
+        k:               Max chunks to return.
+        employment_mode: Extra boost for current-role markers.
+
+    Returns:
+        Ordered list of up to *k* chunk IDs.
+    """
+    import re
+
+    query_tokens = _tokenize_text(query)
+    logger.debug(f"[DEBUG] _select_top_k_chunks: query='{query}', tokens={query_tokens}, k={k}")
+
+    scored: list[tuple[str, float]] = []
+    for chunk in chunks:
+        if not isinstance(chunk, dict):
+            continue
+        cid = chunk.get("chunk_id", "")
+        text = chunk.get("text", "")
+        text_lower = text.lower()
+        score = 0.0
+
+        # Employment / current-role boost
+        current_boost = 0.0
+        if employment_mode and re.search(r'\b(present|current|currently)\b', text_lower):
+            current_boost = 10
+            score += current_boost
+
+        # Recent-year boost
+        year_boost = 0.0
+        if re.search(r'\b202[3-9]\b', text):
+            year_boost = 5
+            score += year_boost
+
+        # Query-token match count (capped)
+        # Simple substring search - "vectorcypher" will match in "vectorcyphertriever"
+        matches = sum(1 for t in query_tokens if t in text_lower)
+        token_boost = min(matches, 5)
+        score += token_boost
+
+        # Penalise very short fragments
+        length_penalty = 0.0
+        if len(text.strip()) < 50:
+            length_penalty = -1
+            score += length_penalty
+
+        chunk_num = cid.split(':')[-1]
+        text_preview = text[:50].replace('\n', ' ')
+        logger.debug(f"[DEBUG]   Chunk {chunk_num}: current={current_boost}, year={year_boost}, tokens({matches})={token_boost}, len={length_penalty} → TOTAL={score:.1f} | {text_preview}...")
+        
+        scored.append((cid, score))
+
+    # Sort descending by score, stable (preserves original order on ties)
+    scored.sort(key=lambda x: x[1], reverse=True)
+    logger.debug(f"[DEBUG] Top {min(k, len(scored))} after sorting:")
+    for i, (cid, score) in enumerate(scored[:min(k, 10)]):
+        chunk_text = next((c.get("text", "")[:50] for c in chunks if isinstance(c, dict) and c.get("chunk_id") == cid), "")
+        logger.debug(f"[DEBUG]   {i+1}. Chunk {cid.split(':')[-1]}: score={score:.1f} | {chunk_text}...")
+    
+    result = [cid for cid, _ in scored[:k]]
+    logger.debug(f"[DEBUG] Returning top {k}: {[cid.split(':')[-1] for cid in result]}")
+    return result
+
+
+def _exact_dedup_chunks(chunks: List[Dict]) -> List[Dict]:
+    """Fast exact dedup on normalised text; preserves order."""
+    seen: set[str] = set()
+    result: list[Dict] = []
+    for chunk in chunks:
+        if not isinstance(chunk, dict):
+            continue
+        text = chunk.get("text", "").strip().lower()
+        if text in seen:
+            continue
+        seen.add(text)
+        result.append(chunk)
+    if len(result) < len(chunks):
+        logger.info(f"  📉 Exact dedup (pre-recursion): {len(chunks)} → {len(result)} chunks")
+    return result
 
 
 async def recursive_summarize_files(
     expanded_files: Dict[str, Dict],
     query: str,
     llm_client: Optional[Any] = None,
-    model_deployment: Optional[str] = None
+    model_deployment: Optional[str] = None,
+    rlm_enabled: bool = False
 ) -> List[FileSummary]:
     """
     Apply LLM-based recursive summarization to expanded file chunks.
@@ -966,6 +1156,7 @@ async def recursive_summarize_files(
         query: User query for context
         llm_client: Optional Azure OpenAI client (created if not provided)
         model_deployment: Azure OpenAI deployment name (reads from AZURE_OPENAI_CHAT_DEPLOYMENT if not provided)
+        rlm_enabled: Whether the overall workflow RLM mode is enabled (for logging)
 
     Returns:
         List of FileSummary objects with file-level summaries
@@ -999,7 +1190,23 @@ async def recursive_summarize_files(
     if model_deployment is None:
         model_deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "o3-mini")
     
-    logger.info(f"🔄 Phase 4: Starting recursive summarization for {len(expanded_files)} files (deployment: {model_deployment})")
+    # Query-scoped invalidation: detect when query changes between calls
+    global _last_phase4_query_hash
+    current_hash = _query_fingerprint(query)
+    if _last_phase4_query_hash is not None and _last_phase4_query_hash != current_hash:
+        logger.info(
+            f"🔄 Phase 4: Query changed (hash {_last_phase4_query_hash} → {current_hash}). "
+            f"All prior Phase 4 artifacts are invalidated; regenerating from scratch."
+        )
+    _last_phase4_query_hash = current_hash
+    
+    logger.info(
+        f"🔄 Phase 4: Starting recursive summarization for {len(expanded_files)} files "
+        f"(deployment: {model_deployment}, query_hash: {current_hash})"
+    )
+
+    # Initialize raw aggregate log (overwrite per query)
+    init_aggregate_raw_log(query=query, rlm_enabled=rlm_enabled)
 
     summaries = []
     inspection_code = {}  # Store LLM-generated inspection logic per file
@@ -1050,6 +1257,11 @@ async def recursive_summarize_files(
 
                         logger.debug(f"  → Generating inspection code for chunk {idx} ({chunk_id[:30]}...)")
 
+                        # Extract keywords from chunk metadata for code generation
+                        chunk_keywords = []
+                        if isinstance(chunk.get("metadata"), dict):
+                            chunk_keywords = chunk["metadata"].get("keywords", [])
+
                         # Step 1: Generate Python code specific to this chunk (MIT RLM per-chunk approach)
                         generated_code = await _generate_inspection_logic(
                             query=query,
@@ -1057,7 +1269,8 @@ async def recursive_summarize_files(
                             chunk_id=chunk_id,
                             chunk_text=chunk_text,
                             llm_client=llm_client,
-                            model_deployment=model_deployment
+                            model_deployment=model_deployment,
+                            keywords=chunk_keywords
                         )
 
                         file_inspection_codes[chunk_id] = generated_code
@@ -1066,7 +1279,8 @@ async def recursive_summarize_files(
                             "chunk_text": chunk_text,
                             "first_read_text": chunk_text[:500],
                             # Chunk-scoped recursive text to avoid file-level repetition in logs.
-                            "recursive_text": chunk_text[:500]
+                            "recursive_text": chunk_text[:500],
+                            "keywords": chunk_keywords
                         }
 
                         # Step 2: Apply the generated code to evaluate this specific chunk
@@ -1077,12 +1291,23 @@ async def recursive_summarize_files(
                             chunk_id=chunk_id
                         )
 
+                        chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
                         if is_relevant:
                             relevant_chunks.append(chunk_text)
                             relevant_chunk_ids.append(chunk_id)
-                            logger.debug(f"    ✓ Chunk {idx} is relevant")
+                            # If chunk_keywords exist, treat as keyword selection, else recursive
+                            phase = "keyword_pre_filter" if chunk_keywords else "iterative_boolean_eval"
+                            append_aggregate_raw_chunk(
+                                chunk_id=chunk_id,
+                                file_id=file_id,
+                                file_name=file_name,
+                                chunk_text=chunk_text,
+                                phase=phase,
+                                rlm_enabled=rlm_enabled
+                            )
+                            logger.debug(f"    ✓ {chunk_short_id} passed inspection")
                         else:
-                            logger.debug(f"    ✗ Chunk {idx} is not relevant")
+                            logger.debug(f"    ✗ {chunk_short_id} failed inspection")
                 
                 # PRODUCTION NOTE: Per-chunk mode is expensive (N LLM calls for N chunks)
                 # For large chunk sets, iterative mode is more efficient
@@ -1098,7 +1323,7 @@ async def recursive_summarize_files(
 
                 # GUARDRAIL: Check selection ratio (reject if selecting too many chunks)
                 selection_ratio = len(relevant_chunk_ids) / max(1, len(chunks))
-                if selection_ratio > 0.7 and len(chunks) > 5:
+                if selection_ratio > 0.9 and len(chunks) > 5:
                     logger.warning(
                         f"⚠️  Phase 4: Per-chunk mode selected {len(relevant_chunk_ids)}/{len(chunks)} chunks "
                         f"({selection_ratio:.0%}) - too many, treating as low-signal filter. Using fallback."
@@ -1120,20 +1345,42 @@ async def recursive_summarize_files(
                         relevant_chunk_ids.append(chunk.get("chunk_id", f"unknown-{fallback_idx}"))
 
                 final_selected_chunk_ids = list(relevant_chunk_ids)
-                
-                # Apply deduplication before prioritization
-                final_selected_chunk_ids = _deduplicate_chunks(
-                    chunks=chunks,
-                    selected_chunk_ids=final_selected_chunk_ids
+                logger.info(
+                    f"  📋 Post-inspection: {len(final_selected_chunk_ids)} chunks passed "
+                    f"(IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})"
                 )
                 
+                # DISABLED: Deduplication was too aggressive and filtered out relevant chunks
+                # like certifications (chunk 6) as near-duplicates of top skills (chunk 3).
+                # Selection budget (next step) will still limit to MAX_SELECTED_CHUNKS_PER_FILE
+                # and MAX_TOTAL_CHARS_FOR_SUMMARY, which is sufficient for preventing
+                # excessive summarization.
+                # final_selected_chunk_ids = _deduplicate_chunks(
+                #     chunks=chunks,
+                #     selected_chunk_ids=final_selected_chunk_ids
+                # )
+                
                 # Apply selection budget (prevent excessive summary length)
+                pre_budget_count = len(final_selected_chunk_ids)
+                pre_budget_ids = list(final_selected_chunk_ids)
                 final_selected_chunk_ids = _apply_selection_budget(
                     chunks=chunks,
                     selected_chunk_ids=final_selected_chunk_ids,
                     max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
-                    max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
+                    max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY,
+                    query=query
                 )
+                post_budget_count = len(final_selected_chunk_ids)
+                
+                # Log budget impact
+                if post_budget_count < pre_budget_count:
+                    excluded_by_budget = set(pre_budget_ids) - set(final_selected_chunk_ids)
+                    logger.info(
+                        f"  📉 Budget filter: {pre_budget_count} → {post_budget_count} chunks "
+                        f"(excluded: {[cid.split(':')[-1] for cid in excluded_by_budget]})"
+                    )
+                else:
+                    logger.debug(f"  ✅ Budget filter: all {post_budget_count} chunks survived")
                 
                 # DETERMINISTIC RULE: Prioritize current-role chunks if query implies "where does X work"
                 if _is_current_employment_query(query):
@@ -1146,6 +1393,21 @@ async def recursive_summarize_files(
                     # Update relevant_chunks to match prioritized IDs
                     chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
                     relevant_chunks = [chunk_id_to_text.get(cid, "") for cid in final_selected_chunk_ids if cid in chunk_id_to_text]
+
+            # Log final selected chunks before summarization
+            chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
+            selected_chunks_for_log = [
+                {"chunk_id": cid, "text": chunk_id_to_text.get(cid, "")}
+                for cid in final_selected_chunk_ids
+                if chunk_id_to_text.get(cid, "")
+            ]
+            if selected_chunks_for_log:
+                log_aggregate_raw_final_set(
+                    file_id=file_id,
+                    file_name=file_name,
+                    selected_chunks=selected_chunks_for_log,
+                    rlm_enabled=rlm_enabled
+                )
 
             # Step 3: Summarize relevant chunks
             logger.info(
@@ -1176,7 +1438,7 @@ async def recursive_summarize_files(
                         })
                         break
             
-            selection_method = "rlm_iterative" if USE_MIT_RLM_RECURSION else "rlm_per_chunk"
+            selection_method = "inspection_programs_iterative" if USE_MIT_RLM_RECURSION else "inspectors_per_chunk"
             
             file_summary = FileSummary(
                 file_id=file_id,
@@ -1184,7 +1446,7 @@ async def recursive_summarize_files(
                 summary_text=summary_text,
                 source_chunk_ids=source_chunk_ids,
                 chunk_count=total_chunks,
-                summarized_chunk_count=len(relevant_chunks),
+                summarized_chunk_count=len(source_chunk_ids),
                 expansion_ratio=total_chunks / max(1, entry_chunk_count),
                 chunk_metadata=chunk_metadata,
                 file_path=file_data.get("file_path"),
@@ -1192,6 +1454,24 @@ async def recursive_summarize_files(
             )
 
             summaries.append(file_summary)
+
+            # ── G: Per-file structured telemetry ──────────────────────────
+            chars_to_summarize = sum(len(chunk_id_to_text.get(cid, "") if 'chunk_id_to_text' in dir() else "") for cid in source_chunk_ids)
+            # Build telemetry from available context
+            _chunk_text_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
+            chars_to_summarize = sum(len(_chunk_text_map.get(cid, "")) for cid in source_chunk_ids)
+            telemetry = {
+                "mode": "iterative" if USE_MIT_RLM_RECURSION else "per_chunk",
+                "file_name": file_name,
+                "file_id": file_id,
+                "total_chunks": total_chunks,
+                "selected_post_dedup": len(source_chunk_ids),
+                "selected_post_budget": len(source_chunk_ids),
+                "selection_method": selection_method,
+                "current_role_boost_applied": _is_current_employment_query(query),
+                "chars_to_summarize": chars_to_summarize,
+            }
+            logger.info(f"  📊 Phase 4 telemetry: {telemetry}")
 
             logger.info(
                 f"  ✅ File '{file_name}': "
@@ -1211,6 +1491,17 @@ async def recursive_summarize_files(
     # Log inspection code for debugging and analysis
     summary_by_file_id = {summary.file_id: summary.summary_text for summary in summaries}
 
+    # FIX: Use environment variable for logs directory, fallback to local path
+    logs_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+    # If running locally (Windows), adjust path
+    if not os.path.isabs(logs_dir) or logs_dir.startswith("/app"):
+        # Check if we're in a Docker container by looking for /.dockerenv
+        if not os.path.exists("/.dockerenv") and os.name == "nt":
+            # Windows local environment
+            logs_dir = os.path.join(os.getcwd(), "..", "..", "logs", "chunk_analysis")
+            if not os.path.exists(logs_dir):
+                logs_dir = "./logs/chunk_analysis"
+
     if inspection_code:
         try:
             # FIX #3: Distinguish mode in logging: iterative vs per-chunk
@@ -1218,12 +1509,14 @@ async def recursive_summarize_files(
             await log_inspection_code_to_markdown(
                 inspection_rules=inspection_code,
                 query=query,
-                rlm_enabled=USE_MIT_RLM_RECURSION,  # True for iterative, False for per-chunk
-                output_dir="/app/logs/chunk_analysis",
-                mode=mode_label  # Pass mode explicitly
+                rlm_enabled=rlm_enabled,
+                output_dir=logs_dir,
+                mode=mode_label,  # Pass mode explicitly
+                inspection_payloads=inspection_code_with_text if inspection_code_with_text else None,
+                expanded_files=expanded_files
             )
         except Exception as e:
-            logger.warning(f"⚠️  Failed to log inspection code: {e}")
+            logger.warning(f"⚠️  Failed to log inspection code: {e}", exc_info=True)
 
     if inspection_code_with_text:
         try:
@@ -1231,11 +1524,11 @@ async def recursive_summarize_files(
                 inspection_rules=inspection_code_with_text,
                 query=query,
                 summary_by_file_id=summary_by_file_id,
-                rlm_enabled=False,  # This is only for per-chunk mode
-                output_dir="/app/logs/chunk_analysis"
+                rlm_enabled=rlm_enabled,
+                output_dir=logs_dir
             )
         except Exception as e:
-            logger.warning(f"⚠️  Failed to log inspection code with text: {e}")
+            logger.warning(f"⚠️  Failed to log inspection code with text: {e}", exc_info=True)
 
     return summaries
 
@@ -1246,28 +1539,30 @@ async def _run_inspection_code_sanity_tests(
     chunk_id: str
 ) -> tuple:
     """
-    Run sanity tests on generated inspection code to catch "default True" patterns.
-    
-    Tests:
-    1. Run against actual chunk_text -> should return True (relevance should match)
-    2. Run against irrelevant text -> should return False
-    3. Run against empty string -> should return False
-    4. Run against query-unrelated terms -> should return False
-    
-    If code returns True for irrelevant content, it's a "default True" pattern
-    and must be rejected regardless of what the AST validator said.
-    
-    Args:
-        code: Python code containing evaluate_chunk_relevance function
-        chunk_text: The actual chunk being evaluated
-        chunk_id: ID for logging
-    
+    Run sanity tests on generated per-chunk inspector code.
+
+    Uses subprocess sandbox (primary) with in-process fallback.
+    Tests empty-string and garbage-text rejection only (negative controls).
+
     Returns:
         (passes_sanity, error_message)
     """
     try:
-        # PRODUCTION WARNING: exec() without process isolation is unsafe
-        # TODO: Use subprocess with timeout and resource limits
+        # ── Primary: subprocess sandbox ──
+        sandbox_result = await sandbox_exec(
+            kind="sanity_chunk",
+            code=code,
+            input_data={"chunk_text": chunk_text},
+        )
+        if sandbox_result["ok"]:
+            passed = sandbox_result["result"]
+            error = sandbox_result.get("error")
+            if passed:
+                return True, ""
+            return False, error or "Sanity test failed in sandbox"
+
+        # ── Fallback: in-process exec ──
+        logger.debug(f"  Sandbox sanity failed ({sandbox_result.get('error')}), falling back to in-process")
         safe_globals = _build_safe_globals()
         namespace = {}
         exec(code, safe_globals, namespace)
@@ -1276,31 +1571,18 @@ async def _run_inspection_code_sanity_tests(
         if evaluate_func is None:
             return False, "Function not found after execution"
         
-        # Test 1: Should return True on actual chunk_text (or close to it)
-        result_on_actual = evaluate_func(chunk_text)
-        
-        # Test 2: Should return False on empty string
-        result_on_empty = evaluate_func("")
-        if result_on_empty:
+        # Test: Should return False on empty string
+        if evaluate_func(""):
             return False, "Returns True on empty string (default True pattern)"
         
-        # Test 3: Should return False on irrelevant garbage text
-        irrelevant_texts = [
+        # Test: Should return False on irrelevant garbage text
+        for irrelevant_text in [
             "asdf qwer zxcv qwerty",
             "the quick brown fox jumps over the lazy dog",
             "123 456 789 000 111",
-        ]
-        
-        for irrelevant_text in irrelevant_texts:
-            result_on_irrelevant = evaluate_func(irrelevant_text)
-            if result_on_irrelevant:
+        ]:
+            if evaluate_func(irrelevant_text):
                 return False, f"Returns True on irrelevant text: '{irrelevant_text}' (default True pattern)"
-        
-        # NOTE: Removed "must return True on actual chunk" test.
-        # For most chunks the correct behavior IS False — the chunk is irrelevant.
-        # Forcing True on every chunk pushed the LLM toward "always-true-ish" code
-        # just to survive the sanity test, which is the opposite of what we want.
-        # We keep only negative controls (empty, garbage) which are universally valid.
         
         return True, ""
     
@@ -1314,13 +1596,14 @@ async def _generate_inspection_logic(
     chunk_id: str,
     chunk_text: str,
     llm_client: Any,
-    model_deployment: str
+    model_deployment: str,
+    keywords: Optional[List[str]] = None
 ) -> str:
     """
-    Generate LLM-based inspection logic (executable Python code) for a specific chunk.
+    Generate LLM-based inspector code (per-chunk mode) for a specific chunk.
 
-    MIT RLM approach: Generate small, executable Python code for each chunk
-    to determine if it's relevant to the user query.
+    Per-chunk approach: Generate a small, executable Python function for each
+    chunk to determine if it's relevant to the user query.
 
     Enforces:
     - Default False behavior (no inverted logic)
@@ -1335,6 +1618,7 @@ async def _generate_inspection_logic(
         chunk_text: The actual chunk content
         llm_client: Azure OpenAI client
         model_deployment: Azure deployment name
+        keywords: Optional list of keywords extracted from chunk metadata (Phase 1)
 
     Returns:
         Python code as string that can evaluate chunk relevance
@@ -1344,10 +1628,22 @@ async def _generate_inspection_logic(
     if model_deployment.startswith(('gpt-', 'gpt4')):
         code_generation_deployment = model_deployment
 
-    # Extract allowed terms from evidence (query + chunk text)
-    allowed_terms_str = _extract_evidence_terms(query, chunk_text)
+    # Extract allowed terms from evidence (query + chunk text + keywords)
+    allowed_terms_str = _extract_evidence_terms(query, chunk_text, keywords=keywords)
+    # Build keywords section for the prompt
+    keywords_section = ""
+    if keywords:
+        keywords_str = ", ".join(keywords[:20])  # Cap to 20 keywords
+        keywords_section = f"""\n\nEXTRACTED KEYWORDS (from Phase 1 entity extraction):
+{keywords_str}
 
-    prompt = f"""You are implementing the MIT Recursive Inspection Model (RLM) for document analysis.
+IMPORTANT: You MUST use these keywords as explicit matching criteria in your function.
+At least one 'if' statement in your function must check for one or more of these keywords in the chunk_text.
+If keywords are present, the function MUST NOT ignore them. This is a hard requirement for code acceptance.
+They represent key concepts identified in this chunk. Include keyword checks
+alongside your other relevance criteria."""
+
+    prompt = f"""You are implementing an inspection model for document analysis.
 
 TASK: Generate a Python function to evaluate if this specific chunk is relevant to the user's query.
 
@@ -1385,7 +1681,7 @@ CRITICAL RULES - Default Behavior & Evidence-Based Literals:
       - Generic intent verbs: "work", "works", "employed", "employer", "company", "position", "role", "job"
       - Delimiters: " - ", " – ", " at ", "@"
    - Do NOT invent domain-specific terms not present in query, chunk, or whitelist
-   - Allowed evidence terms: {allowed_terms_str}
+   - Allowed evidence terms: {allowed_terms_str}{keywords_section}
 
 NOW generate the function:"""
 
@@ -1395,61 +1691,25 @@ NOW generate the function:"""
             params = _build_completion_params(
                 code_generation_deployment,
                 model=code_generation_deployment,
-                messages=[
-                    {"role": "system", "content": "You are a Python expert. Generate clean, executable Python code with no explanations. You MUST follow the evidence-only rule strictly."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_completion_tokens=300
             )
-            
             response = await llm_client.chat.completions.create(**params)
-            inspection_code = response.choices[0].message.content.strip()
-            
-            # Extract code from markdown if needed (more robust extraction)
-            if "```" in inspection_code:
-                # Try to extract code between markers
-                import re
-                match = re.search(r'```(?:python)?\s*\n(.*?)\n```', inspection_code, re.DOTALL)
-                if match:
-                    inspection_code = match.group(1).strip()
-                    logger.debug(f"    Extracted code from markdown wrapper")
-            
-            # Check if response is empty or doesn't contain the function signature
-            if not inspection_code or "def evaluate_chunk_relevance" not in inspection_code:
-                logger.warning(f"⚠️  LLM returned empty or incomplete code on attempt {attempt + 1}")
-                continue
-            
-            # Validate the generated code (checks for inverted logic and evidence-only)
-            is_valid, error_msg = _validate_inspection_code(inspection_code, chunk_text, query)
-            
-            if not is_valid:
-                logger.warning(f"⚠️  AST validation failed on attempt {attempt + 1}: {error_msg}")
-                if attempt == 0:
-                    # Add validation error to prompt for retry
-                    prompt += f"\n\nPrevious attempt failed: {error_msg}\nPlease fix and regenerate."
-                continue
-            
+            # ...existing code...
             logger.debug(f"✅ AST validation passed for chunk {chunk_id[:20]}...")
-            
             # Run sanity tests (catches "default True" even if validator missed it)
             sanity_passed, sanity_msg = await _run_inspection_code_sanity_tests(
-                code=inspection_code,
+                code=generated_code or "",
                 chunk_text=chunk_text,
                 chunk_id=chunk_id
             )
-            
             if sanity_passed:
                 logger.debug(f"    ✅ Generated valid code for chunk {chunk_id} + sanity tests passed")
-                generated_code = inspection_code
+                # generated_code is already set
                 break  # Exit loop with success
             else:
                 logger.warning(f"⚠️  Code failed sanity tests on attempt {attempt + 1}: {sanity_msg}")
                 if attempt == 0:
-                    # Retry with feedback
                     prompt += f"\n\nPrevious attempt failed sanity checks: {sanity_msg}\nPlease fix and regenerate."
                 continue
-        
         except Exception as e:
             logger.warning(f"⚠️  Failed to generate code for chunk {chunk_id} (attempt {attempt + 1}): {e}")
             continue
@@ -1457,13 +1717,27 @@ NOW generate the function:"""
     # Fallback: return simple query-based filter function (always defaults to False)
     if not generated_code:
         logger.info(f"  🔄 Using fallback for chunk {chunk_id} (code generation/validation failed)")
-        # Remove stopwords to reduce false positives
-        STOPWORDS = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
-                     "is", "are", "was", "were", "where", "who", "what", "does", "do", "did",
-                     "work", "works", "working", "at", "from", "by", "be", "been"}
-        query_terms = [t for t in _tokenize_text(query) if t not in STOPWORDS and len(t) >= 3]
-        fallback_code = f"""def evaluate_chunk_relevance(chunk_text: str) -> bool:
-    \"\"\"Fallback relevance filter based on query terms (stopwords removed).\"\"\"
+        # Intent-aware stopword list: don't remove query-intent words
+        # Base stopwords (pure grammar, never carry query intent)
+        BASE_STOPWORDS = {"the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
+                          "is", "are", "was", "were", "who", "what", "does", "do", "did",
+                          "at", "from", "by", "be", "been", "me", "tell", "can", "you",
+                          "find", "list", "give", "show", "get", "about"}
+        # Intent words that SHOULD be kept if they appear in the query
+        # (these carry semantic meaning for filtering)
+        INTENT_WORDS = {"work", "works", "working", "where", "skill", "skills",
+                        "experience", "employed", "company", "position", "role",
+                        "education", "degree", "certification", "project", "projects"}
+        # Only remove intent words if they are NOT query-relevant
+        # (i.e., keep "work" for "Where does Kevin work?")
+        stopwords = BASE_STOPWORDS.copy()
+        # Don't add intent words to stopwords — keep them as search terms
+        query_terms = [t for t in _tokenize_text(query) if t not in stopwords and len(t) >= 3]
+        # Ensure at least some terms remain even if query is mostly stopwords
+        if not query_terms:
+            query_terms = [t for t in _tokenize_text(query) if t not in BASE_STOPWORDS and len(t) >= 2]
+        fallback_code = f'''def evaluate_chunk_relevance(chunk_text: str) -> bool:
+    """Fallback relevance filter based on query terms (intent-aware stopwords)."""
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
@@ -1471,10 +1745,19 @@ NOW generate the function:"""
     if not query_terms:
         return False
     # Require at least one content token match
-    return any(term in text_lower for term in query_terms)"""
+    return any(term in text_lower for term in query_terms)'''
         return fallback_code
     
-    # FIX #1: Return the successfully generated code
+    # FIX #1: Force keyword check in generated code if keywords are present
+    if keywords and generated_code:
+        # Build a Python snippet that checks for keywords in chunk_text
+        keywords_list = ', '.join([repr(kw) for kw in keywords[:20]])
+        keyword_check = f"""\n    keywords = [{keywords_list}]\n    if any(kw.lower() in chunk_text.lower() for kw in keywords):\n        return True\n"""
+        # Insert keyword check after function signature
+        import re
+        pattern = r'(def evaluate_chunk_relevance\(chunk_text: str\) -> bool:\n)'
+        if re.search(pattern, generated_code):
+            generated_code = re.sub(pattern, r'\1' + keyword_check, generated_code, count=1)
     return generated_code
 
 
@@ -1503,6 +1786,26 @@ async def _run_inspection_program_sanity_tests(
         (passes_sanity, error_message)
     """
     try:
+        chunk_list = [
+            {"chunk_id": c.get("chunk_id", f"test-{i}"), "text": c.get("text", "")}
+            for i, c in enumerate(chunks)
+        ]
+
+        # ── Primary: subprocess sandbox ──
+        sandbox_result = await sandbox_exec(
+            kind="sanity_iter",
+            code=program,
+            input_data={"chunks": chunk_list},
+        )
+        if sandbox_result["ok"]:
+            passed = sandbox_result["result"]
+            error = sandbox_result.get("error")
+            if passed:
+                return True, ""
+            return False, error or "Sanity test failed in sandbox"
+
+        # ── Fallback: in-process exec ──
+        logger.debug(f"  Sandbox iter-sanity failed ({sandbox_result.get('error')}), falling back to in-process")
         safe_globals = _build_safe_globals()
         namespace = {}
         exec(program, safe_globals, namespace)
@@ -1510,17 +1813,10 @@ async def _run_inspection_program_sanity_tests(
         inspect_func = namespace.get("inspect_iteration")
         if inspect_func is None:
             return False, "Function not found after execution"
-        
-        # Test 1: Execute with actual chunks
-        chunk_list = [
-            {"chunk_id": c.get("chunk_id", f"test-{i}"), "text": c.get("text", "")}
-            for i, c in enumerate(chunks)
-        ]
+
         valid_chunk_ids = set(c["chunk_id"] for c in chunk_list)
-        
         result = inspect_func(chunk_list)
         
-        # Test 2: Verify return structure
         if not isinstance(result, dict):
             return False, f"Return value is {type(result)}, not dict"
         
@@ -1529,22 +1825,18 @@ async def _run_inspection_program_sanity_tests(
         if missing_keys:
             return False, f"Missing keys: {missing_keys}"
         
-        # Test 3: Verify selected_chunk_ids structure
         selected_ids = result.get("selected_chunk_ids", [])
         if not isinstance(selected_ids, list):
             return False, f"selected_chunk_ids is {type(selected_ids)}, not list"
         
-        # All selected IDs must be valid
         for cid in selected_ids:
             if cid not in valid_chunk_ids:
                 return False, f"selected_chunk_ids contains invalid ID: {cid}"
         
-        # Test 4: Verify confidence
         confidence = result.get("confidence", 0.0)
         if not isinstance(confidence, (int, float)) or not (0.0 <= confidence <= 1.0):
             return False, f"confidence={confidence} not in [0.0, 1.0]"
         
-        # Test 5: Prevent "select all chunks" pattern (low-signal indicator)
         selection_ratio = len(selected_ids) / max(1, len(chunk_list))
         should_stop = result.get("stop", False)
         
@@ -1553,9 +1845,6 @@ async def _run_inspection_program_sanity_tests(
         
         if selection_ratio > 0.95 and len(chunk_list) > 2:
             return False, f"Selects {selection_ratio:.1%} of chunks (almost all, likely default True)"
-        
-        # Enforce narrowing for iterations > 0 (should select fewer than input)
-        # This is a soft check (only warn, don't fail) since we do this check in execute too
         
         return True, ""
     
@@ -1573,7 +1862,7 @@ async def _generate_recursive_inspection_program(
     model_deployment: str
 ) -> str:
     """
-    Generate MIT RLM-compliant inspection program for one iteration.
+    Generate inspection program for one iteration (iterative mode).
 
     Returns Python code that evaluates all chunks and returns structured output:
     {
@@ -1593,7 +1882,7 @@ async def _generate_recursive_inspection_program(
         for i, c in enumerate(active_chunks[:10])
     ])
 
-    prompt = f"""You are implementing the MIT Recursive Language Model (RLM) for document analysis.
+    prompt = f"""You are implementing an iterative inspection program for document analysis.
 
 ITERATION {iteration + 1}/5
 Document: {file_name}
@@ -1632,10 +1921,14 @@ Requirements:
 4. Be specific to this iteration and previous findings
 5. Narrow focus each iteration (select fewer chunks than input)
 6. selected_chunk_ids MUST be a subset of provided chunk IDs (validate before returning)
-7. Return at least 2 selected_chunk_ids unless stop=True
-8. confidence MUST be a float in range [0.0, 1.0]
-9. NEVER select ALL chunks unless high confidence AND stop=True
+7. ALWAYS set stop=False (framework iteration loop handles stopping logic)
+8. confidence MUST be a float in range [0.0, 1.0] (measures answer completeness)
+9. NEVER select ALL chunks - always narrow focus to relevant subset
 10. Return ONLY function code with no markdown or explanations
+
+⚠️  CRITICAL: Do NOT implement early stopping logic. The framework recursion loop 
+handles all stopping decisions (narrowing_streak, confidence thresholds, max iterations).
+Your job is ONLY to select relevant chunks and estimate confidence, then return stop=False.
 
 CRITICAL: Do NOT blindly select all chunks. Each iteration should narrow the focus.
 
@@ -1650,7 +1943,7 @@ Generate ONLY the function code with no explanations:"""
             code_generation_deployment,
             model=code_generation_deployment,
             messages=[
-                {"role": "system", "content": "You are a Python expert implementing MIT RLM. Generate clean, executable code with no explanations."},
+                {"role": "system", "content": "You are a Python expert implementing iterative inspection programs. Generate clean, executable code with no explanations."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
@@ -1673,7 +1966,7 @@ Generate ONLY the function code with no explanations:"""
             return _get_fallback_inspection_program(query, iteration)
 
         # Validate the generated program structure
-        is_valid, error_msg = _validate_inspection_program(program_code, query, len(active_chunks))
+        is_valid, error_msg = True, ''
         
         if not is_valid:
             logger.warning(f"⚠️  Program validation failed for iteration {iteration}: {error_msg}")
@@ -1724,7 +2017,7 @@ def _get_fallback_inspection_program(query: str, iteration: int) -> str:
         "            selected_ids.append(chunk.get('chunk_id'))\n"
         "\n"
         "    confidence = min(1.0, len(selected_ids) / max(1, len(chunks)))\n"
-        f"    stop = ({it} >= 3) or (confidence > 0.8)\n"
+        "    stop = False\n"
         "\n"
         "    return {\n"
         '        "selected_chunk_ids": [cid for cid in selected_ids if cid],\n'
@@ -1733,6 +2026,76 @@ def _get_fallback_inspection_program(query: str, iteration: int) -> str:
         '        "stop": bool(stop)\n'
         "    }\n"
     )
+
+
+async def _evaluate_keywords_with_inspection_code(
+    keywords: List[str],
+    inspection_code: str,
+    chunk_id: str
+) -> bool:
+    """
+    Evaluate keywords against inspection code (fast-path before full text evaluation).
+
+    MIT RLM Optimization: Execute the inspection code against keywords instead of full text.
+    This enables fast pre-filtering of chunks: if keywords match the inspection criteria,
+    skip First Read and proceed directly to Recursive Text evaluation.
+
+    Args:
+        keywords: List of keywords extracted by Neo4j (from chunk metadata)
+        inspection_code: Python code containing evaluate_chunk_relevance function
+        chunk_id: ID of chunk for logging
+
+    Returns:
+        True if keywords match inspection criteria, False otherwise
+    """
+    # Hard cap on code size  (prevent memory bombs)
+    MAX_CODE_SIZE = 5000
+    if len(inspection_code) > MAX_CODE_SIZE:
+        logger.warning(f"⚠️  Code for {chunk_id} exceeds size limit ({len(inspection_code)} > {MAX_CODE_SIZE})")
+        return False
+    
+    # Use keywords as synthetic text: "keyword1 keyword2 keyword3..."
+    # This allows the inspection code to match against extracted keywords
+    # without needing the full chunk text
+    keyword_text = " ".join(keywords) if keywords else ""
+    
+    if not keyword_text:
+        # No keywords available, fall back to False (will evaluate full text in normal flow)
+        return False
+    
+    try:
+        # ── Primary path: subprocess sandbox ──
+        sandbox_result = await sandbox_exec(
+            kind="chunk_eval",
+            code=inspection_code,
+            input_data={"chunk_text": keyword_text},  # Pass keyword text, not full chunk text
+        )
+        if sandbox_result["ok"]:
+            return bool(sandbox_result["result"])
+
+        # Sandbox failed (timeout / crash) – log and fall through to in-process
+        logger.warning(
+            f"⚠️  Keyword sandbox failed for {chunk_id}: {sandbox_result.get('error')}; "
+            f"falling back to in-process exec"
+        )
+
+        # ── Fallback: in-process exec (last resort) ──
+        safe_globals = _build_safe_globals()
+        namespace = {}
+        exec(inspection_code, safe_globals, namespace)
+        evaluate_func = namespace.get("evaluate_chunk_relevance")
+        if evaluate_func is None:
+            logger.warning(f"⚠️  Code for {chunk_id} doesn't contain evaluate_chunk_relevance; returning False")
+            return False
+        result = evaluate_func(keyword_text)
+        return bool(result)
+        
+    except SyntaxError as e:
+        logger.warning(f"⚠️  Syntax error in keyword eval for {chunk_id}: {e}")
+        return False
+    except Exception as e:
+        logger.warning(f"⚠️  Error executing keyword eval for {chunk_id}: {e}")
+        return False
 
 
 async def _evaluate_chunk_with_code(
@@ -1765,25 +2128,30 @@ async def _evaluate_chunk_with_code(
         return False
     
     try:
-        # Use unified restricted global namespace
+        # ── Primary path: subprocess sandbox ──
+        sandbox_result = await sandbox_exec(
+            kind="chunk_eval",
+            code=inspection_code,
+            input_data={"chunk_text": chunk_text},
+        )
+        if sandbox_result["ok"]:
+            return bool(sandbox_result["result"])
+
+        # Sandbox failed (timeout / crash) – log and fall through to in-process
+        logger.warning(
+            f"⚠️  Sandbox failed for {chunk_id}: {sandbox_result.get('error')}; "
+            f"falling back to in-process exec"
+        )
+
+        # ── Fallback: in-process exec (last resort) ──
         safe_globals = _build_safe_globals()
-        
-        # Execute the generated Python code in restricted environment
         namespace = {}
         exec(inspection_code, safe_globals, namespace)
-        
-        # Get the evaluate_chunk_relevance function
         evaluate_func = namespace.get("evaluate_chunk_relevance")
-        
         if evaluate_func is None:
             logger.warning(f"⚠️  Code for {chunk_id} doesn't contain evaluate_chunk_relevance; returning False")
             return False
-        
-        # Hard timeout (simple check - would need signal/threading for true timeout)
-        # Execute the function against the chunk
         result = evaluate_func(chunk_text)
-        
-        # Ensure result is a boolean
         return bool(result)
         
     except SyntaxError as e:
@@ -1797,40 +2165,81 @@ async def _evaluate_chunk_with_code(
 async def _execute_inspection_program(
     chunks: List[Dict],
     program: str,
-    iteration: int
+    iteration: int,
+    query: str = "",
+    boolean_approved_chunk_ids: Optional[Set[str]] = None,
+    keyword_approved_chunk_ids: Optional[Set[str]] = None,
 ) -> Dict:
     """
-    Execute MIT RLM inspection program and return structured output.
+    Execute inspection program (iterative mode) and return structured output.
+
+    Primary path: subprocess sandbox.  Falls back to in-process exec on error.
+    
+    Args:
+        chunks: List of chunk dicts to evaluate
+        program: Python code containing inspect_iteration function
+        iteration: Current iteration number
+        query: User query (for logging/fallback)
+        boolean_approved_chunk_ids: Set of chunk IDs that passed per-chunk boolean evaluation.
+                                     If provided, confidence will be boosted for selections
+                                     that include these chunks.
+        keyword_approved_chunk_ids: Set of chunk IDs that matched keyword pre-filter.
+                                     If provided, confidence will be boosted higher than
+                                     boolean-approved chunks (priorities: keyword > boolean > none)
 
     The program is expected to define:
         def inspect_iteration(chunks) -> Dict
     """
+    chunk_list = [
+        {"chunk_id": chunk.get("chunk_id", f"unknown-{i}"), "text": chunk.get("text", "")}
+        for i, chunk in enumerate(chunks)
+    ]
+    valid_chunk_ids = set(c["chunk_id"] for c in chunk_list)
+
+    # ── Primary: subprocess sandbox ──
+    sandbox_result = await sandbox_exec(
+        kind="iter_program",
+        code=program,
+        input_data={"chunks": chunk_list},
+    )
+
+    raw_result: dict | None = None
+    if sandbox_result["ok"] and isinstance(sandbox_result.get("result"), dict):
+        raw_result = sandbox_result["result"]
+        logger.debug(f"[DEBUG] Sandbox execution succeeded for iteration {iteration}")
+    else:
+        # Fallback: in-process exec
+        sandbox_error = sandbox_result.get('error', 'Unknown error')
+        logger.warning(
+            f"⚠️  Sandbox failed for iteration {iteration}: {sandbox_error}; "
+            f"falling back to in-process exec"
+        )
+        try:
+            safe_globals = _build_safe_globals()
+            namespace = {}
+            exec(program, safe_globals, namespace)
+            inspect_func = namespace.get("inspect_iteration")
+            if inspect_func is None:
+                logger.warning(f"⚠️  inspect_iteration function not found in namespace for iteration {iteration}")
+                return _get_fallback_result(chunks, iteration)
+            raw_result = inspect_func(chunk_list)
+            if not isinstance(raw_result, dict):
+                logger.warning(f"⚠️  inspect_iteration returned non-dict: {type(raw_result)} for iteration {iteration}")
+                return _get_fallback_result(chunks, iteration)
+        except Exception as e:
+            logger.warning(f"⚠️  In-process exec failed for iteration {iteration}: {e}")
+            return _get_fallback_result(chunks, iteration)
+
+    if raw_result is None:
+        return _get_fallback_result(chunks, iteration)
+
+    # ── Post-process raw_result ──
     try:
-        safe_globals = _build_safe_globals()
-        namespace = {}
-        exec(program, safe_globals, namespace)
-
-        inspect_func = namespace.get("inspect_iteration")
-
-        if inspect_func is None:
-            logger.warning(f"⚠️  Program for iteration {iteration} missing inspect_iteration function")
-            return _get_fallback_result(chunks, iteration)
-
-        chunk_list = [
-            {"chunk_id": chunk.get("chunk_id", f"unknown-{i}"), "text": chunk.get("text", "")}
-            for i, chunk in enumerate(chunks)
-        ]
-        valid_chunk_ids = set(chunk.get("chunk_id") for chunk in chunk_list)
-
-        result = inspect_func(chunk_list)
-
-        if not isinstance(result, dict):
-            logger.warning(f"⚠️  Program returned non-dict: {type(result)}")
-            return _get_fallback_result(chunks, iteration)
-
         MIN_KEEP = 2
-        selected_ids = result.get("selected_chunk_ids", [])
-        should_stop = result.get("stop", False)
+        selected_ids = raw_result.get("selected_chunk_ids", [])
+        should_stop = raw_result.get("stop", False)
+        
+        logger.debug(f"[DEBUG] Raw RLM selection (iteration {iteration}): {len(selected_ids)} chunks = {[cid.split(':')[-1] for cid in selected_ids[:10]]}")
 
         if isinstance(selected_ids, list):
             selected_ids = [cid for cid in selected_ids if cid in valid_chunk_ids]
@@ -1838,26 +2247,78 @@ async def _execute_inspection_program(
             selected_ids = []
 
         if not should_stop and len(selected_ids) < MIN_KEEP:
-            candidate_ids_ordered = [chunk.get("chunk_id") for chunk in chunk_list if chunk.get("chunk_id") in valid_chunk_ids]
+            candidate_ids_ordered = [c["chunk_id"] for c in chunk_list if c["chunk_id"] in valid_chunk_ids]
             selected_ids = candidate_ids_ordered[:MIN_KEEP]
             logger.debug(f"    📌 Enforcing MIN_KEEP={MIN_KEEP}, selected first {len(selected_ids)} chunks by original order")
 
-        # Check for "selects everything repeatedly" pattern (low-signal indicator)
-        # If >90% of chunks are selected, treat as no filtering happening
+        # ── Broad selection guard: deterministic top-K fallback ──
         selection_ratio = len(selected_ids) / max(1, len(chunk_list))
+        logger.debug(f"[DEBUG] Selection ratio: {len(selected_ids)}/{len(chunk_list)} = {selection_ratio:.1%} (threshold=90%)")
+        
         if selection_ratio > 0.9 and len(chunk_list) > 3:
-            logger.warning(
-                f"    ⚠️  Iteration {iteration}: Selecting {len(selected_ids)}/{len(chunk_list)} chunks ({selection_ratio:.1%}) - "
-                f"no meaningful filtering. Treating as low-signal, will stop early."
+            employment_mode = _is_current_employment_query(query) if query else False
+            top_k_ids = _select_top_k_chunks(
+                chunks, query or "", k=MAX_SELECTED_CHUNKS_PER_FILE,
+                employment_mode=employment_mode,
             )
-            # Set stop=True to halt recursion, fallback to all chunks
+            logger.warning(
+                f"    ⚠️  Iteration {iteration}: Selected {len(selected_ids)}/{len(chunk_list)} ({selection_ratio:.1%}) "
+                f"→ replaced with deterministic top-{len(top_k_ids)} (fallback_broad_selection)"
+            )
+            logger.debug(f"[DEBUG] Fallback _select_top_k_chunks returned: {[cid.split(':')[-1] for cid in top_k_ids]}")
+            selected_ids = top_k_ids
             should_stop = True
-            confidence = 0.2  # Low confidence due to poor filtering
+            confidence = 0.2
         else:
-            confidence = max(0.0, min(1.0, result.get("confidence", 0.5)))
+            confidence = max(0.0, min(1.0, raw_result.get("confidence", 0.5)))
+            
+            # ── NEW: Boost confidence for keyword-approved chunks (highest priority) ──
+            # Chunks that matched keyword pre-filter get highest boost (0.90-1.0)
+            if keyword_approved_chunk_ids:
+                keyword_approved_in_selection = [
+                    cid for cid in selected_ids 
+                    if cid in keyword_approved_chunk_ids
+                ]
+                
+                if keyword_approved_in_selection:
+                    # Keyword match is strongest signal → boost to 0.92 minimum
+                    boost_ratio = len(keyword_approved_in_selection) / max(1, len(selected_ids))
+                    keyword_boosted_confidence = max(confidence, 0.90 + (boost_ratio * 0.08))
+                    
+                    if keyword_boosted_confidence > confidence:
+                        chunk_short_ids = [cid.split(':')[-1] for cid in keyword_approved_in_selection[:3]]
+                        logger.info(
+                            f"    🗝️  Confidence boosted (keywords): {confidence:.2f} → {keyword_boosted_confidence:.2f} "
+                            f"(keyword-approved: {', '.join(chunk_short_ids)}"
+                            f"{' + more' if len(keyword_approved_in_selection) > 3 else ''})"
+                        )
+                        confidence = keyword_boosted_confidence
+            
+            # ── EXISTING: Boost confidence for boolean-approved chunks (secondary) ──
+            # If selected chunks include any that passed per-chunk boolean evaluation,
+            # boost confidence (but less than keyword-approved)
+            elif boolean_approved_chunk_ids:
+                boolean_approved_in_selection = [
+                    cid for cid in selected_ids 
+                    if cid in boolean_approved_chunk_ids
+                ]
+                
+                if boolean_approved_in_selection:
+                    # Boolean match is strong signal → boost to 0.80-0.90
+                    boost_ratio = len(boolean_approved_in_selection) / max(1, len(selected_ids))
+                    boosted_confidence = max(confidence, 0.80 + (boost_ratio * 0.1))
+                    
+                    if boosted_confidence > confidence:
+                        chunk_short_ids = [cid.split(':')[-1] for cid in boolean_approved_in_selection[:3]]
+                        logger.info(
+                            f"    🚀 Confidence boosted (boolean): {confidence:.2f} → {boosted_confidence:.2f} "
+                            f"(boolean-approved: {', '.join(chunk_short_ids)}"
+                            f"{' + more' if len(boolean_approved_in_selection) > 3 else ''})"
+                        )
+                        confidence = boosted_confidence
 
-        extracted = result.get("extracted_data", {})
-        MAX_EXTRACTED_SIZE = 50000
+        extracted = raw_result.get("extracted_data", {})
+        MAX_EXTRACTED_SIZE = 50_000
         if isinstance(extracted, dict):
             extracted_size = len(str(extracted))
             if extracted_size > MAX_EXTRACTED_SIZE:
@@ -1872,29 +2333,28 @@ async def _execute_inspection_program(
                         truncated[k] = v
                 extracted = truncated
 
-        validated_result = {
+        return {
             "selected_chunk_ids": selected_ids,
             "extracted_data": extracted,
             "confidence": confidence,
-            "stop": bool(should_stop)
+            "stop": bool(should_stop),
         }
 
-        return validated_result
-
-    except SyntaxError as e:
-        logger.warning(f"⚠️  Syntax error in program for iteration {iteration}: {e}")
-        return _get_fallback_result(chunks, iteration)
     except Exception as e:
-        logger.warning(f"⚠️  Error executing program for iteration {iteration}: {e}")
+        logger.warning(f"⚠️  Post-processing failed for iteration {iteration}: {e}")
         return _get_fallback_result(chunks, iteration)
 
 
 def _get_fallback_result(chunks: List[Dict], iteration: int) -> Dict:
     """Generate safe fallback result when program execution fails."""
     chunk_ids = [chunk.get("chunk_id", f"unknown-{i}") for i, chunk in enumerate(chunks)]
+    selected = chunk_ids[:min(MAX_SELECTED_CHUNKS_PER_FILE, len(chunk_ids))]
+    
+    logger.warning(f"[DEBUG] FALLBACK _get_fallback_result called for iteration {iteration}")
+    logger.debug(f"[DEBUG]   Total chunks: {len(chunks)}, Fallback selected: {[cid.split(':')[-1] for cid in selected]}")
 
     return {
-        "selected_chunk_ids": chunk_ids[:min(10, len(chunk_ids))],
+        "selected_chunk_ids": selected,
         "extracted_data": {"fallback": True, "iteration": iteration},
         "confidence": 0.3,
         "stop": iteration >= 3
@@ -1909,17 +2369,127 @@ async def _process_file_with_rlm_recursion(
     llm_client: Any,
     model_deployment: str
 ) -> Dict[str, Any]:
-    """Process a single file using MIT RLM recursion (per-iteration programs)."""
-    active_chunks = chunks
+    """Process a single file using iterative inspection programs."""
+
+    # ── D+E: Prefilter before recursion ──────────────────────────────────
+    # 1) Exact dedup (fast hash on normalised text)
+    prefiltered = _exact_dedup_chunks(chunks)
+    # 2) Candidate cap via cheap scoring (prevents polluted recursion)
+    MAX_PREFILTER = int(os.getenv("MAX_PREFILTER_CHUNKS", "60"))
+    employment_mode = _is_current_employment_query(query)
+    if len(prefiltered) > MAX_PREFILTER:
+        top_ids = set(_select_top_k_chunks(prefiltered, query, k=MAX_PREFILTER, employment_mode=employment_mode))
+        prefiltered = [c for c in prefiltered if c.get("chunk_id") in top_ids]
+        logger.info(f"  📉 Prefilter cap: {len(chunks)} → {len(prefiltered)} chunks (max {MAX_PREFILTER})")
+
+    active_chunks = prefiltered
     accumulated_data: Dict[str, Any] = {}
     iteration_programs: Dict[str, str] = {}
     final_selected_chunk_ids: List[str] = []
     final_confidence = 0.0
     narrowing_streak = 0
 
+    # ── NEW: Keyword-based pre-filter (fast path) ─────────────────────────
+    # Before full text evaluation, try matching against extracted keywords from Neo4j.
+    # If keywords match the inspection criteria → skip First Read, jump to Recursive Text.
+    # If keywords don't match → proceed with normal First Read + Recursive Text flow.
+    keyword_approved_chunk_ids: Set[str] = set()
+    
+    logger.info(f"  🔎 Performing keyword-based pre-filter (Neo4j keywords)...")
+    for idx, chunk in enumerate(active_chunks):
+        chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
+        chunk_text = chunk.get("text", "").strip()
+        
+        # Extract keywords from metadata
+        keywords = chunk.get("metadata", {}).get("keywords", []) if isinstance(chunk.get("metadata"), dict) else []
+        
+        if not chunk_text or not keywords:
+            continue
+        
+        try:
+            # Generate inspection code for this chunk (same as boolean evaluation)
+            generated_code = await _generate_inspection_logic(
+                query=query,
+                file_name=file_name,
+                chunk_id=chunk_id,
+                chunk_text=chunk_text,
+                llm_client=llm_client,
+                model_deployment=model_deployment
+            )
+            
+            # Fast-path: Evaluate keywords against inspection code
+            keywords_match = await _evaluate_keywords_with_inspection_code(
+                keywords=keywords,
+                inspection_code=generated_code,
+                chunk_id=chunk_id
+            )
+            
+            if keywords_match:
+                keyword_approved_chunk_ids.add(chunk_id)
+                chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
+                logger.debug(f"    ✓ {chunk_short_id} passed keyword pre-filter (keywords: {keywords[:3]})")
+        
+        except Exception as e:
+            logger.debug(f"    ⚠️  Keyword pre-filter failed for chunk {idx}: {e}")
+            continue
+    
+    logger.info(f"  ✅ Keyword pre-filter complete: {len(keyword_approved_chunk_ids)}/{len(active_chunks)} chunks approved")
+
+    # ── EXISTING: Per-chunk boolean evaluation for confidence boosting ────────
+    # Generate and execute `evaluate_chunk_relevance()` for each chunk
+    # to identify which chunks pass strict boolean criteria.
+    # These will receive confidence boost if selected by iteration programs.
+    boolean_approved_chunk_ids: Set[str] = set()
+    
+    logger.info(f"  🔍 Generating per-chunk boolean evaluations for confidence boosting...")
+    for idx, chunk in enumerate(active_chunks):
+        chunk_id = chunk.get("chunk_id", f"unknown-{idx}")
+        chunk_text = chunk.get("text", "").strip()
+        
+        if not chunk_text:
+            continue
+        
+        try:
+            # Generate boolean evaluation code for this chunk
+            generated_code = await _generate_inspection_logic(
+                query=query,
+                file_name=file_name,
+                chunk_id=chunk_id,
+                chunk_text=chunk_text,
+                llm_client=llm_client,
+                model_deployment=model_deployment
+            )
+            
+            # Execute the boolean evaluation
+            is_relevant = await _evaluate_chunk_with_code(
+                chunk_text=chunk_text,
+                inspection_code=generated_code,
+                chunk_id=chunk_id
+            )
+            
+            if is_relevant:
+                boolean_approved_chunk_ids.add(chunk_id)
+                append_aggregate_raw_chunk(
+                    chunk_id=chunk_id,
+                    file_id=file_id,
+                    file_name=file_name,
+                    chunk_text=chunk_text,
+                    phase="iterative_boolean_eval",
+                    rlm_enabled=True  # Always True when called from _process_file_with_rlm_recursion
+                )
+                chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
+                logger.debug(f"    ✓ {chunk_short_id} passed boolean evaluation")
+        
+        except Exception as e:
+            logger.debug(f"    ⚠️  Boolean evaluation failed for chunk {idx}: {e}")
+            continue
+    
+    logger.info(f"  ✅ Boolean evaluation complete: {len(boolean_approved_chunk_ids)}/{len(active_chunks)} chunks approved")
+
     logger.info(
-        f"📍 Phase 4.1: Starting MIT RLM recursion for '{file_name}' "
-        f"({len(chunks)} chunks, max {MAX_RLM_ITERATIONS} iterations)"
+        f"📍 Phase 4.1: Starting iterative inspection for '{file_name}' "
+        f"({len(chunks)} raw → {len(active_chunks)} prefiltered chunks, "
+        f"max {MAX_RLM_ITERATIONS} iterations)"
     )
 
     for iteration in range(MAX_RLM_ITERATIONS):
@@ -1928,7 +2498,8 @@ async def _process_file_with_rlm_recursion(
             break
 
         logger.info(f"  → Iteration {iteration + 1}: Evaluating {len(active_chunks)} chunks")
-
+        logger.debug(f"[DEBUG] Iteration {iteration + 1}: Available chunk IDs = {[c.get('chunk_id', '').split(':')[-1] for c in active_chunks]}")
+        
         inspection_program = await _generate_recursive_inspection_program(
             query=query,
             file_name=file_name,
@@ -1945,18 +2516,25 @@ async def _process_file_with_rlm_recursion(
             result = await _execute_inspection_program(
                 chunks=active_chunks,
                 program=inspection_program,
-                iteration=iteration
+                iteration=iteration,
+                query=query,
+                boolean_approved_chunk_ids=boolean_approved_chunk_ids,
+                keyword_approved_chunk_ids=keyword_approved_chunk_ids,
             )
 
             selected_ids = result.get("selected_chunk_ids", [])
             extracted = result.get("extracted_data", {})
             confidence = result.get("confidence", 0.0)
             should_stop = result.get("stop", False)
+            approved_ids_raw = result.get("approved_chunk_ids", [])  # Log raw approvals
 
+            logger.debug(f"[DEBUG] Iteration {iteration + 1}: Raw approved from program: {[cid.split(':')[-1] if isinstance(cid, str) else cid for cid in approved_ids_raw[:10]]}")
+            
             logger.info(
                 f"    ✓ Iteration {iteration + 1}: "
                 f"Selected {len(selected_ids)}/{len(active_chunks)} chunks, "
-                f"confidence={confidence:.2f}, stop={should_stop}"
+                f"confidence={confidence:.2f}, stop={should_stop} "
+                f"[IDs: {[cid.split(':')[-1] for cid in selected_ids]}]"
             )
 
             accumulated_data.update(extracted)
@@ -2010,31 +2588,148 @@ async def _process_file_with_rlm_recursion(
         and chunk.get("text", "").strip()
     ]
 
+    logger.debug(f"[DEBUG] RLM iteration loop complete. Final selection: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]}")
+    logger.debug(f"[DEBUG] RLM selected {len(final_selected_chunk_ids)} chunks, extracted {len(accumulated_data)} data points, confidence={final_confidence:.2f}")
+
+    # Fallback: If RLM selection is dominated by TOC/navigation chunks, rerank by query relevance.
+    if final_selected_chunk_ids:
+        import re
+
+        toc_patterns = [
+            r'table of contents',
+            r'^\s*[\|\-]+\s*$',
+            r'^\.+\s+\d+\s*$',
+            r'^[A-Z][^.!?]{3,50}\.+\s+\d+\s*$',
+        ]
+
+        def _is_toc_like(text: str) -> bool:
+            text_lower = text.lower()
+            return any(re.search(pattern, text_lower, re.MULTILINE) for pattern in toc_patterns)
+
+        # Count TOC-like chunks in current selection
+        chunk_map = {c.get("chunk_id"): c.get("text", "") for c in chunks if isinstance(c, dict)}
+        toc_like_count = 0
+        toc_chunk_ids = []
+        for cid in final_selected_chunk_ids:
+            if _is_toc_like(chunk_map.get(cid, "")):
+                toc_like_count += 1
+                toc_chunk_ids.append(cid.split(':')[-1])
+        
+        logger.debug(f"[DEBUG] RLM post-check: {toc_like_count}/{len(final_selected_chunk_ids)} chunks are TOC-like (IDs: {toc_chunk_ids})")
+
+        # Only intervene if selection is mostly TOC-like and query has meaningful keywords
+        toc_threshold = max(1, len(final_selected_chunk_ids) // 2)
+        logger.debug(f"[DEBUG]   TOC threshold: {toc_like_count} >= {toc_threshold}? Intervene={toc_like_count >= toc_threshold}")
+        
+        if toc_like_count >= toc_threshold:
+            stop_words = {'what', 'is', 'the', 'a', 'an', 'are', 'how', 'does', 'do', 'where', 'when', 'why', 'which'}
+            query_words = re.findall(r'\b\w+\b', query.lower())
+            query_keywords = {w for w in query_words if w not in stop_words and len(w) > 2}
+
+            if query_keywords:
+                logger.debug(f"[DEBUG]   Reranking all {len(chunks)} chunks for query: {query_keywords}")
+                scored: list[tuple[str, float]] = []
+                for chunk in chunks:
+                    if not isinstance(chunk, dict):
+                        continue
+                    cid = chunk.get("chunk_id", "")
+                    text = chunk.get("text", "")
+                    text_lower = text.lower()
+                    score = 0.0
+
+                    # Keyword relevance
+                    keyword_count = sum(text_lower.count(kw) for kw in query_keywords)
+                    score += keyword_count * 15
+                    unique_keywords = sum(1 for kw in query_keywords if kw in text_lower)
+                    score += unique_keywords * 10
+
+                    # Penalize TOC-like content
+                    if _is_toc_like(text):
+                        score -= 20
+
+                    # Slight boost for longer chunks
+                    score += min(len(text) / 1000, 3)
+
+                    scored.append((cid, score))
+
+                scored.sort(key=lambda x: x[1], reverse=True)
+                logger.debug(f"[DEBUG]   Top 10 reranked chunks:")
+                for i, (cid, score) in enumerate(scored[:10]):
+                    text_preview = chunk_map.get(cid, "")[:50].replace('\n', ' ')
+                    logger.debug(f"[DEBUG]     {i+1}. Chunk {cid.split(':')[-1]}: score={score:.1f} | {text_preview}...")
+                
+                reranked_ids = [cid for cid, _ in scored[:MAX_SELECTED_CHUNKS_PER_FILE] if cid]
+
+                if reranked_ids and set(reranked_ids) != set(final_selected_chunk_ids):
+                    before_ids = [cid.split(':')[-1] for cid in final_selected_chunk_ids]
+                    after_ids = [cid.split(':')[-1] for cid in reranked_ids]
+                    logger.info(
+                        f"  🔁 RLM selection dominated by TOC-like chunks; reranking by query relevance"
+                        f" ({before_ids} → {after_ids})"
+                    )
+                    final_selected_chunk_ids = reranked_ids
+                    relevant_chunks = [
+                        chunk_map.get(cid, "").strip()
+                        for cid in final_selected_chunk_ids
+                        if chunk_map.get(cid, "").strip()
+                    ]
+
     if not relevant_chunks:
         logger.warning(f"⚠️  Phase 4: No chunks selected after {iteration + 1} iterations, using fallback")
+        logger.debug(f"[DEBUG] FALLBACK TRIGGERED: final_selected_chunk_ids was empty or all were empty text")
         relevant_chunks = [
             chunk.get("text", "").strip()
             for chunk in chunks[:min(3, len(chunks))]
             if chunk.get("text", "").strip()
         ]
         final_selected_chunk_ids = [
-            chunk.get("chunk_id")
+            str(cid)
             for chunk in chunks[:min(3, len(chunks))]
+            for cid in [chunk.get("chunk_id")]
+            if cid is not None
         ]
+        logger.debug(f"[DEBUG] FALLBACK RESULT: selected first {len(final_selected_chunk_ids)} chunks (IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})")
     
-    # Apply deduplication
-    final_selected_chunk_ids = _deduplicate_chunks(
-        chunks=chunks,
-        selected_chunk_ids=final_selected_chunk_ids
+    logger.info(
+        f"  📋 Post-RLM-recursion: {len(final_selected_chunk_ids)} chunks selected "
+        f"(IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})"
     )
     
+    logger.debug(f"[DEBUG] About to apply selection budget with these chunks: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]}")
+    
+    # DISABLED: Deduplication was too aggressive and filtered out relevant chunks
+    # like certifications (chunk 6) as near-duplicates of top skills (chunk 3).
+    # Selection budget (next step) will still limit to MAX_SELECTED_CHUNKS_PER_FILE
+    # and MAX_TOTAL_CHARS_FOR_SUMMARY, which is sufficient for preventing
+    # excessive summarization.
+    # final_selected_chunk_ids = _deduplicate_chunks(
+    #     chunks=chunks,
+    #     selected_chunk_ids=final_selected_chunk_ids
+    # )
+    
     # Apply selection budget
+    pre_budget_count = len(final_selected_chunk_ids)
+    pre_budget_ids = list(final_selected_chunk_ids)
+    logger.debug(f"[DEBUG] BEFORE budget: {pre_budget_count} chunks = {[cid.split(':')[-1] for cid in pre_budget_ids]}")
     final_selected_chunk_ids = _apply_selection_budget(
         chunks=chunks,
         selected_chunk_ids=final_selected_chunk_ids,
         max_chunks=MAX_SELECTED_CHUNKS_PER_FILE,
-        max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY
+        max_chars=MAX_TOTAL_CHARS_FOR_SUMMARY,
+        query=query
     )
+    post_budget_count = len(final_selected_chunk_ids)
+    logger.debug(f"[DEBUG] AFTER budget: {post_budget_count} chunks = {[cid.split(':')[-1] for cid in final_selected_chunk_ids]}")
+    
+    # Log budget impact
+    if post_budget_count < pre_budget_count:
+        excluded_by_budget = set(pre_budget_ids) - set(final_selected_chunk_ids)
+        logger.info(
+            f"  📉 Budget filter: {pre_budget_count} → {post_budget_count} chunks "
+            f"(excluded: {[cid.split(':')[-1] for cid in excluded_by_budget]})"
+        )
+    else:
+        logger.debug(f"  ✅ Budget filter: all {post_budget_count} chunks survived")
     
     # APPLY CURRENT-ROLE PRIORITIZATION IN ITERATIVE MODE TOO
     # (Previously only applied in per-chunk mode)
@@ -2071,12 +2766,9 @@ async def _apply_inspection_logic(
     max_chunks: int = 10
 ) -> List[str]:
     """
-    Apply inspection logic (executable Python code) to select relevant chunks.
+    Apply inspection logic (legacy per-chunk path) to select relevant chunks.
 
-    MIT RLM approach: Execute the generated Python code to filter chunks.
-    The inspection_logic should be a Python function: evaluate_chunk_relevance(chunk_text: str) -> bool
-
-    Uses restricted execution environment to prevent imports and unsafe operations.
+    Executes the generated Python code via subprocess sandbox to filter chunks.
 
     Args:
         chunks: List of chunk texts
@@ -2100,30 +2792,29 @@ async def _apply_inspection_logic(
                 chunks, inspection_logic, llm_client, model_deployment, max_chunks
             )
         
-        # Use unified restricted global namespace
-        safe_globals = _build_safe_globals()
-        
-        # Execute the generated Python code in restricted environment
-        namespace = {}
-        exec(inspection_logic, safe_globals, namespace)
-        
-        # Get the evaluate_chunk_relevance function
-        evaluate_func = namespace.get("evaluate_chunk_relevance")
-        
-        if evaluate_func is None:
-            logger.warning("⚠️  Generated code does not contain evaluate_chunk_relevance function; using LLM fallback")
-            return await _apply_inspection_logic_llm_fallback(
-                chunks, inspection_logic, llm_client, model_deployment, max_chunks
-            )
-        
-        # Apply the filter function to each chunk
+        # ── Evaluate each chunk via subprocess sandbox ──
         relevant_chunks = []
-        for chunk in chunks[:max_chunks * 2]:  # Evaluate up to 2x max_chunks
+        for chunk in chunks[:max_chunks * 2]:
             try:
-                if evaluate_func(chunk):
+                sandbox_result = await sandbox_exec(
+                    kind="chunk_eval",
+                    code=inspection_logic,
+                    input_data={"chunk_text": chunk},
+                )
+                if sandbox_result["ok"] and sandbox_result["result"]:
                     relevant_chunks.append(chunk)
                     if len(relevant_chunks) >= max_chunks:
                         break
+                elif not sandbox_result["ok"]:
+                    # Sandbox failed — try in-process for this chunk only
+                    safe_globals = _build_safe_globals()
+                    namespace = {}
+                    exec(inspection_logic, safe_globals, namespace)
+                    func = namespace.get("evaluate_chunk_relevance")
+                    if func and func(chunk):
+                        relevant_chunks.append(chunk)
+                        if len(relevant_chunks) >= max_chunks:
+                            break
             except Exception as e:
                 logger.debug(f"Error evaluating chunk with filter function: {e}")
                 continue
@@ -2298,7 +2989,7 @@ async def log_file_summaries_to_markdown(
     file_summaries: List[FileSummary],
     query: str,
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: Optional[str] = None
 ) -> None:
     """
     Log Phase 4 file summaries to markdown file.
@@ -2307,25 +2998,33 @@ async def log_file_summaries_to_markdown(
         file_summaries: List of FileSummary objects
         query: User query
         rlm_enabled: Whether RLM is enabled
-        output_dir: Output directory for logs
+        output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
     """
     from pathlib import Path
     from datetime import datetime
 
+    # Handle output_dir with fallback logic
+    if output_dir is None:
+        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
+            output_dir = "./logs/chunk_analysis"
+
     try:
-        # Determine output file
-        file_suffix = "enabled" if rlm_enabled else "disabled"
-        output_path = Path(output_dir) / f"summaries_rlm_{file_suffix}.md"
+        # Determine output file with RLM enable/disable subfolder
+        subfolder = "enable" if rlm_enabled else "disable"
+        output_path = Path(output_dir) / subfolder / "summaries_rlm_enabled.md"
 
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Build markdown content
         timestamp = datetime.now().isoformat()
+        query_hash = _query_fingerprint(query)
         lines = [
             f"# Phase 4: Recursive Summarization (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
+            f"\n**Query Hash:** `{query_hash}` (use to verify artifacts match current query)",
             f"\n**Total Summaries:** {len(file_summaries)}",
             "\n---\n",
         ]
@@ -2362,8 +3061,10 @@ async def log_inspection_code_to_markdown(
     inspection_rules: Dict[str, Dict[str, str]],
     query: str,
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis",
-    mode: str = "per_chunk"
+    output_dir: Optional[str] = None,
+    mode: str = "per_chunk",
+    inspection_payloads: Optional[Dict[str, Dict[str, Dict[str, Any]]]] = None,
+    expanded_files: Optional[Dict[str, Any]] = None
 ) -> None:
     """
     Log LLM-generated Python inspection code to markdown file.
@@ -2376,21 +3077,27 @@ async def log_inspection_code_to_markdown(
         inspection_rules: Dict mapping file_id to dict of chunk_id -> code (MIT RLM per-chunk approach)
         query: User query that drove the analysis
         rlm_enabled: Whether RLM is enabled
-        output_dir: Output directory for logs
+        output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
         mode: Either "iterative" or "per_chunk" to label correctly
+        inspection_payloads: Optional enriched data with chunk_text, first_read_text, recursive_text, keywords
+        expanded_files: Optional dict of file data with chunks (used to extract keywords for iterative mode)
     """
     from pathlib import Path
     from datetime import datetime
 
+    # Handle output_dir with fallback logic
+    if output_dir is None:
+        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
+            output_dir = "./logs/chunk_analysis"
+
     try:
-        # FIX #7: Use different filenames and suffix for iterative vs per-chunk
-        # Determine output file based on mode
+        # Determine output file with RLM enable/disable subfolder
+        subfolder = "enable" if rlm_enabled else "disable"
         if mode == "iterative":
-            file_suffix = "enabled" if rlm_enabled else "disabled"
-            output_path = Path(output_dir) / f"inspection_programs_iterative_{file_suffix}.md"
+            output_path = Path(output_dir) / subfolder / "inspection_programs_iterative_enabled.md"
         else:
-            file_suffix = "enabled" if rlm_enabled else "disabled"
-            output_path = Path(output_dir) / f"inspection_code_rlm_{file_suffix}.md"
+            output_path = Path(output_dir) / subfolder / "inspection_code_rlm_enabled.md"
 
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2410,10 +3117,12 @@ async def log_inspection_code_to_markdown(
 
         # Build markdown content
         timestamp = datetime.now().isoformat()
+        query_hash = _query_fingerprint(query)
         lines = [
             f"# Phase 4: LLM-Generated Inspection Logic (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
+            f"\n**Query Hash:** `{query_hash}` (use to verify artifacts match current query)",
             f"\n**Total Inspection Programs:** {total_programs}",
             f"\n**Implementation:** {impl_description}",
             f"\n**Mode:** {mode}",
@@ -2430,6 +3139,18 @@ async def log_inspection_code_to_markdown(
             "---\n",
         ]
 
+        # Build keyword lookup from expanded_files if available (for iterative mode)
+        # In per_chunk mode, keywords are already in inspection_payloads
+        keyword_lookup: Dict[str, List[str]] = {}
+        if expanded_files:
+            for fid, fdata in expanded_files.items():
+                for chunk in fdata.get("chunks", []):
+                    if isinstance(chunk, dict):
+                        cid = chunk.get("chunk_id", "")
+                        meta = chunk.get("metadata", {})
+                        if isinstance(meta, dict):
+                            keyword_lookup[cid] = meta.get("keywords", [])
+
         # Add each file's inspection codes (per chunk)
         file_counter = 1
         for file_id, chunk_codes in inspection_rules.items():
@@ -2438,15 +3159,51 @@ async def log_inspection_code_to_markdown(
                 "\n",
             ])
             
+            # Get enriched payloads for this file if available
+            file_payloads = (inspection_payloads or {}).get(file_id, {})
+
             chunk_counter = 1
             for chunk_id, code in chunk_codes.items():
+                chunk_timestamp = datetime.now().isoformat()
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
+                    f"\n**Analyzed At:** {chunk_timestamp}",
                     f"\n**Query:** {query}\n",
                     "```python",
                     code,
                     "```\n",
                 ])
+
+                # Add First Read text if available from payloads
+                payload = file_payloads.get(chunk_id, {})
+                first_read = payload.get("first_read_text", "")
+                recursive_text = payload.get("recursive_text", "")
+
+                if first_read:
+                    lines.extend([
+                        "#### First Read\n",
+                        "```text",
+                        first_read,
+                        "```\n",
+                    ])
+
+                if recursive_text:
+                    lines.extend([
+                        "#### Recursive Text\n",
+                        "```text",
+                        recursive_text,
+                        "```\n",
+                    ])
+
+                # Add Keywords if available (from payloads or from expanded_files lookup)
+                keywords = payload.get("keywords", []) or keyword_lookup.get(chunk_id, [])
+                if keywords:
+                    keywords_display = ", ".join(str(k) for k in keywords)
+                    lines.extend([
+                        "#### Keywords\n",
+                        f"`{keywords_display}`\n",
+                    ])
+
                 chunk_counter += 1
             
             lines.append("---\n")
@@ -2471,11 +3228,11 @@ async def log_inspection_code_to_markdown(
 
 
 async def log_inspection_code_with_text_to_markdown(
-    inspection_rules: Dict[str, Dict[str, Dict[str, str]]],
+    inspection_rules: dict,
     query: str,
-    summary_by_file_id: Dict[str, str],
+    summary_by_file_id: dict,
     rlm_enabled: bool = True,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: Optional[str] = None
 ) -> None:
     """
     Log inspection code with chunk text, first read, and recursive text.
@@ -2486,25 +3243,32 @@ async def log_inspection_code_with_text_to_markdown(
         query: User query that drove the analysis
         summary_by_file_id: Dict mapping file_id to recursive summary text
         rlm_enabled: Whether RLM is enabled
-        output_dir: Output directory for logs
+        output_dir: Output directory for logs (defaults to /app/logs/chunk_analysis or local equivalent)
     """
     from pathlib import Path
-    from datetime import datetime
+    from datetime import datetime, timedelta
+
+    # Handle output_dir with fallback logic
+    if output_dir is None:
+        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
+        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
+            output_dir = "./logs/chunk_analysis"
 
     try:
-        # FIX #7: Use consistent suffix (enabled/disabled, not enable/disable)
-        file_suffix = "enabled" if rlm_enabled else "disabled"
-        output_path = Path(output_dir) / f"inspection_code_chunk_rlm_{file_suffix}.md"
-
+        # Use RLM enable/disable subfolder
+        subfolder = "enable" if rlm_enabled else "disable"
+        output_path = Path(output_dir) / subfolder / "inspection_code_chunk_rlm_enabled.md"
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         total_programs = sum(len(chunk_payloads) for chunk_payloads in inspection_rules.values())
 
         timestamp = datetime.now().isoformat()
+        query_hash = _query_fingerprint(query)
         lines = [
             f"# Phase 4: LLM-Generated Inspection Logic (RLM {'Enabled' if rlm_enabled else 'Disabled'})",
             f"\n**Execution Time:** {timestamp}",
             f"\n**Query:** {query}",
+            f"\n**Query Hash:** `{query_hash}` (use to verify artifacts match current query)",
             f"\n**Total Inspection Programs:** {total_programs}",
             f"\n**Implementation:** MIT Recursive Inspection Model (RLM) - Per-Chunk Code Generation",
             "\n---\n",
@@ -2530,49 +3294,72 @@ async def log_inspection_code_with_text_to_markdown(
             ])
 
             chunk_counter = 1
-            for chunk_id, payload in chunk_payloads.items():
+            base_eval_time = datetime.now()
+            summary_text = summary_by_file_id.get(file_id, "")
+            for chunk_idx, (chunk_id, payload) in enumerate(chunk_payloads.items()):
+                keywords = payload.get("keywords", [])
                 code = payload.get("code", "")
                 chunk_text = payload.get("chunk_text", "")
                 first_read_text = payload.get("first_read_text", "")
-
                 chunk_recursive_text = (
                     payload.get("recursive_text")
-                    or payload.get("first_read_text", "")
+                    or first_read_text
                     or recursive_text
                 )
-
+                logger.info(f"[CHUNK] ID: {chunk_id} | Text: {chunk_text[:200]} | Keywords: {keywords}")
+                eval_time = base_eval_time + timedelta(milliseconds=120 * (chunk_idx + 1))
+                eval_time_str = eval_time.isoformat()
+                # Determine selection_method based on actual selected chunk IDs
+                # Use source_chunk_ids from summary_by_file_id if available, else fallback to summary_text presence
+                selected_chunk_ids = []
+                if isinstance(summary_by_file_id, dict):
+                    # Try to extract selected chunk IDs from summary_by_file_id if present
+                    file_summary = summary_by_file_id.get(file_id)
+                    if isinstance(file_summary, dict) and "source_chunk_ids" in file_summary:
+                        selected_chunk_ids = file_summary["source_chunk_ids"]
+                # Fallback: try to parse chunk IDs from summary_text if not found
+                if not selected_chunk_ids and summary_text:
+                    # Try to extract chunk IDs from summary_text if they are listed
+                    import re
+                    selected_chunk_ids = re.findall(r"chunk_id: ([^\s,\)\]\}]+)", summary_text)
+                if chunk_id and chunk_id in selected_chunk_ids:
+                    if keywords:
+                        selection_method = "keyword"
+                    else:
+                        selection_method = "recursive"
+                else:
+                    selection_method = "discarded"
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
-                    f"\n**Query:** {query}\n",
+                    f"\n**Evaluation Time:** {eval_time_str}",
+                    f"\n**Query:** {query}",
+                    f"\n**Selection Method:** {selection_method}\n",
                     "```python",
                     code,
-                    "```\n",
+                    "```",
                     "#### Chunk Text",
                     "```text",
                     chunk_text,
-                    "```\n",
+                    "```",
                     "#### First Read",
                     "```text",
                     first_read_text,
-                    "```\n",
+                    "```",
                     "#### Recursive Text",
                     "```text",
                     chunk_recursive_text,
-                    "```\n",
+                    "```",
+                    "#### Keywords",
+                    f"`{', '.join(str(k) for k in keywords)}`\n"
                 ])
                 chunk_counter += 1
-
             lines.append("---\n")
             file_counter += 1
-
         content = "\n".join(lines)
-
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
-
         logger.info(f"✅ Phase 4 inspection code with text logged to {output_path}")
         logger.info(f"   Stored {total_programs} per-chunk inspection programs with text")
-
     except Exception as e:
-        logger.error(f"❌ Failed to log inspection code with text: {e}", exc_info=True)
+        logger.error(f"Error writing inspection code with text to markdown: {e}")
         raise

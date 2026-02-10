@@ -86,10 +86,10 @@ BLOB_CONTAINER_RAW=raw
  
  
 # Embeddings (Azure OpenAI)
-AZURE_OPENAI_ENDPOINT=https://dxc-agent-framework-resource.cognitiveservices.azure.com
+AZURE_OPENAI_EMBED_ENDPOINT=https://dxc-agent-framework-resource.cognitiveservices.azure.com
 ***REMOVED***
 AZURE_OPENAI_EMBED_DEPLOYMENT=text-embedding-3-small   # deployment name
-AZURE_OPENAI_API_VERSION=2024-02-15-preview            # any recent AOAI api-version that supports TE3 models
+AZURE_OPENAI_EMBED_API_VERSION=2024-02-15-preview       # any recent AOAI api-version that supports TE3 models
  
 # Vector dim must match the deployment above
 EMBEDDING_VECTOR_DIM=1536
@@ -129,6 +129,7 @@ MONGO_AGENT_URL=mongodb://user_rw:BestRAG.2026@127.0.0.1:27017/agent_db?authSour
 
 # Tools storage uses workflow_db (or derives from MONGO_AGENT_URL)
 MONGO_WORKFLOW_URL=mongodb://user_rw:BestRAG.2026@127.0.0.1:27017/workflow_db?authSource=workflow_db
+
 
 MONGO_APP_PASS=BestRAG.2026
 

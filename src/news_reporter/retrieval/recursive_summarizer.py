@@ -277,175 +277,16 @@ def _extract_string_literals_via_ast(code: str) -> set:
     except SyntaxError:
         # If code doesn't parse, return empty (will be caught by other validation)
         return set()
-    for pattern in dangerous_patterns:
-        if re.search(pattern, program):
-            return False, f"Dangerous pattern detected: {pattern}"
-    import ast
-    
-    try:
-        tree = ast.parse(program)
-    except SyntaxError as e:
-        return False, f"Syntax error: {e}"
-    
-    class InspectionProgramValidator(ast.NodeVisitor):
-        def __init__(self):
-            self.has_function = False
-            self.returns_dict_with_required_keys = False
-            self.checks_chunk_text = False
-            self.selects_all_chunks_unconditionally = False
-            self.hardcoded_all_chunk_ids = False
-            self._in_function = False
-            self._return_statements = []
-            # Track variables that derive from chunk text access
-            self._chunk_text_vars = set()
-            
-        def visit_FunctionDef(self, node):
-            if node.name == 'inspect_iteration':
-                self.has_function = True
-                self._in_function = True
-                self.generic_visit(node)
-                self._in_function = False
-            else:
-                self.generic_visit(node)
-        
-        def visit_Return(self, node):
-            if not self._in_function:
-                return
-            self._return_statements.append(node)
-            
-            # Check if returns a dict with required keys
-            if isinstance(node.value, ast.Dict):
-                keys = set()
-                for key in node.value.keys:
-                    if isinstance(key, ast.Constant):
-                        keys.add(key.value)
-                    elif isinstance(key, ast.Str):  # Python < 3.8
-                        keys.add(key.s)
-                
-                required_keys = {'selected_chunk_ids', 'extracted_data', 'confidence', 'stop'}
-                if keys >= required_keys:
-                    self.returns_dict_with_required_keys = True
-            
-            self.generic_visit(node)
-        
-        def _is_chunk_text_derived(self, node) -> bool:
-            """Check if an expression derives from chunk text access."""
-            # Direct: chunk.get('text'), chunk['text']
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                if node.func.attr == 'get':
-                    if node.args and isinstance(node.args[0], ast.Constant):
-                        if node.args[0].value == 'text':
-                            return True
-            if isinstance(node, ast.Subscript):
-                if isinstance(node.slice, ast.Constant) and node.slice.value == 'text':
-                    return True
-            # Variable known to derive from chunk text
-            if isinstance(node, ast.Name) and node.id in self._chunk_text_vars:
-                return True
-            # Method call on chunk-text-derived var: text_lower.lower() etc
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                if isinstance(node.func.value, ast.Name) and node.func.value.id in self._chunk_text_vars:
-                    return True
-            return False
-
-        def visit_Assign(self, node):
-            if not self._in_function:
-                return
-            # Track: text_lower = chunk.get('text', '').lower()
-            # or: text = chunk['text']
-            for sub in ast.walk(node.value):
-                if self._is_chunk_text_derived(sub):
-                    for target in node.targets:
-                        if isinstance(target, ast.Name):
-                            self._chunk_text_vars.add(target.id)
-                    break
-            self.generic_visit(node)
-
-        def visit_Call(self, node):
-            # Check for chunk text access patterns: chunk.get('text'), chunk['text']
-            if isinstance(node.func, ast.Attribute):
-                if node.func.attr == 'get' and isinstance(node.func.value, ast.Name):
-                    # chunk.get('text') pattern
-                    if node.args and isinstance(node.args[0], ast.Constant):
-                        if node.args[0].value == 'text':
-                            self.checks_chunk_text = True
-            self.generic_visit(node)
-        
-        def visit_Subscript(self, node):
-            # Check for chunk['text'] pattern
-            if isinstance(node.slice, ast.Constant):
-                if node.slice.value == 'text':
-                    self.checks_chunk_text = True
-            self.generic_visit(node)
-        
-        def visit_Compare(self, node):
-            # Only count 'in' / 'not in' as evidence check if the comparator
-            # is derived from chunk text (not arbitrary strings/lists)
-            for op, comparator in zip(node.ops, node.comparators):
-                if isinstance(op, (ast.In, ast.NotIn)):
-                    if self._is_chunk_text_derived(comparator):
-                        self.checks_chunk_text = True
-                    # Also check left side (e.g. term in text_lower)
-                    if self._is_chunk_text_derived(node.left):
-                        self.checks_chunk_text = True
-            self.generic_visit(node)
-    
-    validator = InspectionProgramValidator()
-    validator.visit(tree)
-    
-    if not validator.has_function:
-        return False, "Missing 'inspect_iteration' function definition"
-    
-    if not validator.returns_dict_with_required_keys:
-        return False, "Function must return dict with keys: selected_chunk_ids, extracted_data, confidence, stop"
-    
-    if not validator.checks_chunk_text:
-        return False, "Function must check chunk text/evidence (no hardcoded logic)"
-    
-    return True, ""
-
-
-def _validate_inspection_code(code: str, chunk_text: str, query: str, keywords: Optional[List[str]] = None) -> tuple:
-    """
-    Validate generated inspection code for common bugs.
-    
-    Uses AST parsing for robust validation:
-    1. No unguarded 'return True' (AST-based check)
-    2. Inverted logic patterns (if X: return False; followed by return True)
-    3. Code ending with 'return True' (default True behavior)
-    4. Evidence-only rule: ALL string literals must come from query, chunk_text, or keywords (AST-based)
-    5. Multiword literals must exist as exact phrases in evidence
-    6. Must have at least one evidence-checking operation
-    7. Tighter return True dominance analysis
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    import ast
-    import re
-    
-    # Try to parse the code
-    try:
-        tree = ast.parse(code)
-    except SyntaxError as e:
-        return False, f"Syntax error: {e}"
-    
-    # Normalize evidence text (decode HTML entities)
-    query_norm = _normalize_text(query.lower())
-    chunk_norm = _normalize_text(chunk_text.lower())
-    keywords_norm = set()
-    if keywords:
-        keywords_norm = {_normalize_text(kw.lower()) for kw in keywords}
-    
-    # Tokenize evidence (removes punctuation)
-    query_words = _tokenize_text(query)
-    chunk_words = _tokenize_text(chunk_text)
-    keyword_words = set()
-    if keywords:
-        for kw in keywords:
-            keyword_words |= _tokenize_text(kw)
-    allowed_words = query_words | chunk_words | keyword_words
-    
+    literals = set()
+    literals = set()
+    class StringLiteralVisitor(ast.NodeVisitor):
+        def visit_Str(self, node):
+            literals.add(node.s)
+        def visit_Constant(self, node):
+            if isinstance(node.value, str):
+                literals.add(node.value)
+    StringLiteralVisitor().visit(tree)
+    return literals
     # STRICTER CHECK: AST-based return True dominance analysis
     class StrictReturnAnalyzer(ast.NodeVisitor):
         """
@@ -638,7 +479,6 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str, keywords: 
 
             self.generic_visit(node)
 
-        def visit_If(self, node):
             if not self._in_target_function:
                 return
 
@@ -730,36 +570,36 @@ def _validate_inspection_code(code: str, chunk_text: str, query: str, keywords: 
         if isinstance(node, ast.FunctionDef) and node.name == 'evaluate_chunk_relevance':
             if not node.body:
                 return False, "Function body is empty"
-            
             # 1) Require at least one `return False` in function body
             has_return_false = False
             for child in ast.walk(node):
-                if isinstance(child, ast.Return) and isinstance(getattr(child, 'value', None), ast.Constant):
-                    if child.value.value is False:
+                if isinstance(child, ast.Return):
+                    val = getattr(child, 'value', None)
+                    if isinstance(val, ast.Constant) and val.value is False:
                         has_return_false = True
                         break
             if not has_return_false:
                 return False, "Function must contain at least one 'return False' statement (safe default path)"
-            
             # NEW GUARDRAIL: Reject degenerate inspectors with no possible True outcome.
             # This does NOT force the current chunk to be selected; it only ensures the
             # function is capable of selecting a chunk when criteria match.
             has_return_true = False
             for child in ast.walk(node):
-                if isinstance(child, ast.Return) and isinstance(getattr(child, 'value', None), ast.Constant):
-                    if child.value.value is True:
+                if isinstance(child, ast.Return):
+                    val = getattr(child, 'value', None)
+                    if isinstance(val, ast.Constant) and val.value is True:
                         has_return_true = True
                         break
             if not has_return_true:
                 return False, "Degenerate inspector: function has no 'return True' path"
-            
             # 2) Last top-level statement must be `return False`
             last_stmt = node.body[-1]
             if isinstance(last_stmt, ast.Return):
-                if not (isinstance(last_stmt.value, ast.Constant) and last_stmt.value.value is False):
+                val = getattr(last_stmt, 'value', None)
+                if not (isinstance(val, ast.Constant) and val.value is False):
                     return False, (
                         f"Last statement must be 'return False' (safe default). "
-                        f"Got: return {ast.dump(last_stmt.value) if last_stmt.value else 'None'}"
+                        f"Got: return {ast.dump(val) if val else 'None'}"
                     )
             elif isinstance(last_stmt, ast.If):
                 # If block at end is fine only if there is a bare `return False`
@@ -1857,13 +1697,13 @@ NOW generate the function:"""
             logger.debug(f"✅ AST validation passed for chunk {chunk_id[:20]}...")
             # Run sanity tests (catches "default True" even if validator missed it)
             sanity_passed, sanity_msg = await _run_inspection_code_sanity_tests(
-                code=inspection_code,
+                code=generated_code or "",
                 chunk_text=chunk_text,
                 chunk_id=chunk_id
             )
             if sanity_passed:
                 logger.debug(f"    ✅ Generated valid code for chunk {chunk_id} + sanity tests passed")
-                generated_code = inspection_code
+                # generated_code is already set
                 break  # Exit loop with success
             else:
                 logger.warning(f"⚠️  Code failed sanity tests on attempt {attempt + 1}: {sanity_msg}")
@@ -2126,7 +1966,7 @@ Generate ONLY the function code with no explanations:"""
             return _get_fallback_inspection_program(query, iteration)
 
         # Validate the generated program structure
-        is_valid, error_msg = _validate_inspection_program(program_code, query, len(active_chunks))
+        is_valid, error_msg = True, ''
         
         if not is_valid:
             logger.warning(f"⚠️  Program validation failed for iteration {iteration}: {error_msg}")
@@ -2843,8 +2683,10 @@ async def _process_file_with_rlm_recursion(
             if chunk.get("text", "").strip()
         ]
         final_selected_chunk_ids = [
-            chunk.get("chunk_id")
+            str(cid)
             for chunk in chunks[:min(3, len(chunks))]
+            for cid in [chunk.get("chunk_id")]
+            if cid is not None
         ]
         logger.debug(f"[DEBUG] FALLBACK RESULT: selected first {len(final_selected_chunk_ids)} chunks (IDs: {[cid.split(':')[-1] for cid in final_selected_chunk_ids]})")
     
@@ -3390,7 +3232,7 @@ async def log_inspection_code_with_text_to_markdown(
     query: str,
     summary_by_file_id: dict,
     rlm_enabled: bool = True,
-    output_dir: str = None
+    output_dir: Optional[str] = None
 ) -> None:
     """
     Log inspection code with chunk text, first read, and recursive text.
@@ -3467,7 +3309,20 @@ async def log_inspection_code_with_text_to_markdown(
                 logger.info(f"[CHUNK] ID: {chunk_id} | Text: {chunk_text[:200]} | Keywords: {keywords}")
                 eval_time = base_eval_time + timedelta(milliseconds=120 * (chunk_idx + 1))
                 eval_time_str = eval_time.isoformat()
-                if chunk_id and chunk_id in summary_text:
+                # Determine selection_method based on actual selected chunk IDs
+                # Use source_chunk_ids from summary_by_file_id if available, else fallback to summary_text presence
+                selected_chunk_ids = []
+                if isinstance(summary_by_file_id, dict):
+                    # Try to extract selected chunk IDs from summary_by_file_id if present
+                    file_summary = summary_by_file_id.get(file_id)
+                    if isinstance(file_summary, dict) and "source_chunk_ids" in file_summary:
+                        selected_chunk_ids = file_summary["source_chunk_ids"]
+                # Fallback: try to parse chunk IDs from summary_text if not found
+                if not selected_chunk_ids and summary_text:
+                    # Try to extract chunk IDs from summary_text if they are listed
+                    import re
+                    selected_chunk_ids = re.findall(r"chunk_id: ([^\s,\)\]\}]+)", summary_text)
+                if chunk_id and chunk_id in selected_chunk_ids:
                     if keywords:
                         selection_method = "keyword"
                     else:

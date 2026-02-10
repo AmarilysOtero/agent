@@ -75,12 +75,23 @@ def append_aggregate_raw_chunk(
     """Append a passing chunk to the aggregate raw log."""
     output_path = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled) / AGGREGATE_RAW_FILE_NAME
 
+
+    # Always include selection method
+    if phase == "keyword_pre_filter":
+        selection_method = "keyword"
+    elif phase == "iterative_boolean_eval":
+        selection_method = "recursive"
+    else:
+        selection_method = "unknown"
+
     entry = [
         f"### Chunk: {chunk_id}\n",
         f"**File ID:** {file_id}\n",
         f"**File Name:** {file_name}\n",
         f"**Phase:** {phase}\n",
-        f"**Captured:** {datetime.now().isoformat()}\n\n",
+        f"**Captured:** {datetime.now().isoformat()}\n",
+        f"**Selection Method:** {selection_method}\n",
+        "\n",
         "```text\n",
         f"{chunk_text}\n",
         "```\n\n",

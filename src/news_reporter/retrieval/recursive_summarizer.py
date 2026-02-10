@@ -1525,12 +1525,14 @@ async def recursive_summarize_files(
                         if is_relevant:
                             relevant_chunks.append(chunk_text)
                             relevant_chunk_ids.append(chunk_id)
+                            # If chunk_keywords exist, treat as keyword selection, else recursive
+                            phase = "keyword_pre_filter" if chunk_keywords else "iterative_boolean_eval"
                             append_aggregate_raw_chunk(
                                 chunk_id=chunk_id,
                                 file_id=file_id,
                                 file_name=file_name,
                                 chunk_text=chunk_text,
-                                phase="per_chunk_inspector",
+                                phase=phase,
                                 rlm_enabled=rlm_enabled
                             )
                             logger.debug(f"    ✓ {chunk_short_id} passed inspection")

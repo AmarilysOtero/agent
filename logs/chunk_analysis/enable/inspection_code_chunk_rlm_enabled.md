@@ -1,6 +1,6 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-10T00:44:32.894068
+**Execution Time:** 2026-02-10T01:17:28.236484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -35,7 +35,7 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0
 
-**Evaluation Time:** 2026-02-10T00:44:33.014068
+**Evaluation Time:** 2026-02-10T01:17:28.356484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -45,7 +45,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -75,7 +75,7 @@ Alison Cossette Zach Blumenfeld Damaso Sanoja
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1
 
-**Evaluation Time:** 2026-02-10T00:44:33.134068
+**Evaluation Time:** 2026-02-10T01:17:28.476484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -85,7 +85,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -129,7 +129,7 @@ Table of Contents
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
 
-**Evaluation Time:** 2026-02-10T00:44:33.254068
+**Evaluation Time:** 2026-02-10T01:17:28.596484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -139,7 +139,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -186,7 +186,7 @@ Table of Contents
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3
 
-**Evaluation Time:** 2026-02-10T00:44:33.374068
+**Evaluation Time:** 2026-02-10T01:17:28.716484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -196,7 +196,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -243,7 +243,7 @@ Table of Contents
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4
 
-**Evaluation Time:** 2026-02-10T00:44:33.494068
+**Evaluation Time:** 2026-02-10T01:17:28.836484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -253,7 +253,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -296,7 +296,7 @@ Table of Contents
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
 
-**Evaluation Time:** 2026-02-10T00:44:33.614068
+**Evaluation Time:** 2026-02-10T01:17:28.956484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -306,7 +306,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -350,7 +350,7 @@ Table of Contents (continued)
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
 
-**Evaluation Time:** 2026-02-10T00:44:33.734068
+**Evaluation Time:** 2026-02-10T01:17:29.076484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -360,7 +360,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -413,7 +413,7 @@ Table of Contents (continued)
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7
 
-**Evaluation Time:** 2026-02-10T00:44:33.854068
+**Evaluation Time:** 2026-02-10T01:17:29.196484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -423,7 +423,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -453,7 +453,7 @@ Table of Contents (continued)
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8
 
-**Evaluation Time:** 2026-02-10T00:44:33.974068
+**Evaluation Time:** 2026-02-10T01:17:29.316484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -463,7 +463,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -499,7 +499,7 @@ You've built a retrieval-augmented generation (RAG) system. You embedded the doc
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9
 
-**Evaluation Time:** 2026-02-10T00:44:34.094068
+**Evaluation Time:** 2026-02-10T01:17:29.436484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -509,7 +509,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -545,7 +545,7 @@ Your RAG system isn't broken. It's just blind.
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:10
 
-**Evaluation Time:** 2026-02-10T00:44:34.214068
+**Evaluation Time:** 2026-02-10T01:17:29.556484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -555,7 +555,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -606,7 +606,7 @@ That's the ceiling of traditional RAG. And that's what this book is here to fix.
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11
 
-**Evaluation Time:** 2026-02-10T00:44:34.334068
+**Evaluation Time:** 2026-02-10T01:17:29.676484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -616,7 +616,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -664,7 +664,7 @@ Traditional RAG doesn't have shared context across documents. That's because it 
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12
 
-**Evaluation Time:** 2026-02-10T00:44:34.454068
+**Evaluation Time:** 2026-02-10T01:17:29.796484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -674,7 +674,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -717,7 +717,7 @@ You want your RAG application to do what humans do naturall
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13
 
-**Evaluation Time:** 2026-02-10T00:44:34.574068
+**Evaluation Time:** 2026-02-10T01:17:29.916484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -727,7 +727,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -770,7 +770,7 @@ And that's the problem: Your RAG system has none of that. Sure, it has some docu
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:14
 
-**Evaluation Time:** 2026-02-10T00:44:34.694068
+**Evaluation Time:** 2026-02-10T01:17:30.036484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -780,7 +780,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -822,7 +822,7 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15
 
-**Evaluation Time:** 2026-02-10T00:44:34.814068
+**Evaluation Time:** 2026-02-10T01:17:30.156484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -832,7 +832,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -883,7 +883,7 @@ the meaning depends on a sales addendum from three weeks earlier. Or maybe they 
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16
 
-**Evaluation Time:** 2026-02-10T00:44:34.934068
+**Evaluation Time:** 2026-02-10T01:17:30.276484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -893,7 +893,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -940,7 +940,7 @@ You already know what y
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17
 
-**Evaluation Time:** 2026-02-10T00:44:35.054068
+**Evaluation Time:** 2026-02-10T01:17:30.396484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -950,7 +950,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1007,7 +1007,7 @@ These shouldn't feel like advanced use cases they're
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18
 
-**Evaluation Time:** 2026-02-10T00:44:35.174068
+**Evaluation Time:** 2026-02-10T01:17:30.516484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1017,7 +1017,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1072,7 +1072,7 @@ And we're going to do it
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19
 
-**Evaluation Time:** 2026-02-10T00:44:35.294068
+**Evaluation Time:** 2026-02-10T01:17:30.636484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1082,7 +1082,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1125,7 +1125,7 @@ Without it, RAG can't reason. It can only retrieve, and that isn't enou
 
 ### 1.21 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
 
-**Evaluation Time:** 2026-02-10T00:44:35.414068
+**Evaluation Time:** 2026-02-10T01:17:30.756484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1135,7 +1135,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1192,7 +1192,7 @@ These shouldn't feel like adv
 
 ### 1.22 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21
 
-**Evaluation Time:** 2026-02-10T00:44:35.534068
+**Evaluation Time:** 2026-02-10T01:17:30.876484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1202,7 +1202,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1257,7 +1257,7 @@ An
 
 ### 1.23 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:22
 
-**Evaluation Time:** 2026-02-10T00:44:35.654068
+**Evaluation Time:** 2026-02-10T01:17:30.996484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1267,7 +1267,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1297,7 +1297,7 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ### 1.24 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23
 
-**Evaluation Time:** 2026-02-10T00:44:35.774068
+**Evaluation Time:** 2026-02-10T01:17:31.116484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1307,7 +1307,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1354,7 +1354,7 @@ such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the L
 
 ### 1.25 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24
 
-**Evaluation Time:** 2026-02-10T00:44:35.894068
+**Evaluation Time:** 2026-02-10T01:17:31.236484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1364,7 +1364,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1427,7 +1427,7 @@ Figure 1. Querying a knowledge graph with an LLM
 
 ### 1.26 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25
 
-**Evaluation Time:** 2026-02-10T00:44:36.014068
+**Evaluation Time:** 2026-02-10T01:17:31.356484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1437,7 +1437,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1469,7 +1469,7 @@ If you use a vector store (as in traditional RAG), the process goes like this: T
 
 ### 1.27 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:26
 
-**Evaluation Time:** 2026-02-10T00:44:36.134068
+**Evaluation Time:** 2026-02-10T01:17:31.476484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1479,7 +1479,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1529,7 +1529,7 @@ The knowledge graph becomes a mental map of your domain, providing the LLM with 
 
 ### 1.28 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27
 
-**Evaluation Time:** 2026-02-10T00:44:36.254068
+**Evaluation Time:** 2026-02-10T01:17:31.596484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1539,7 +1539,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1610,7 +1610,7 @@ A knowledge graph holds all related information together across both structured 
 
 ### 1.29 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28
 
-**Evaluation Time:** 2026-02-10T00:44:36.374068
+**Evaluation Time:** 2026-02-10T01:17:31.716484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1620,7 +1620,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1650,7 +1650,7 @@ Unlike traditional RAG, which retrieves isolated chunks of text based on similar
 
 ### 1.30 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29
 
-**Evaluation Time:** 2026-02-10T00:44:36.494068
+**Evaluation Time:** 2026-02-10T01:17:31.836484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1660,7 +1660,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1690,7 +1690,7 @@ LLMs and even standard RAG approaches operate as black boxes, making it difficul
 
 ### 1.31 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30
 
-**Evaluation Time:** 2026-02-10T00:44:36.614068
+**Evaluation Time:** 2026-02-10T01:17:31.956484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1700,7 +1700,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1730,7 +1730,7 @@ GraphRAG overcomes a key limitation of vector-only RAG by integrating both struc
 
 ### 1.32 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:31
 
-**Evaluation Time:** 2026-02-10T00:44:36.734068
+**Evaluation Time:** 2026-02-10T01:17:32.076484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1740,7 +1740,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1776,7 +1776,7 @@ Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a know
 
 ### 1.33 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32
 
-**Evaluation Time:** 2026-02-10T00:44:36.854068
+**Evaluation Time:** 2026-02-10T01:17:32.196484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1786,7 +1786,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1819,7 +1819,7 @@ Preparing a knowledge graph for GraphRAG
 
 ### 1.34 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:33
 
-**Evaluation Time:** 2026-02-10T00:44:36.974068
+**Evaluation Time:** 2026-02-10T01:17:32.316484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1829,7 +1829,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1868,7 +1868,7 @@ The rest of this book walks you through these two critical steps.
 
 ### 1.35 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34
 
-**Evaluation Time:** 2026-02-10T00:44:37.094068
+**Evaluation Time:** 2026-02-10T01:17:32.436484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1878,7 +1878,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1914,7 +1914,7 @@ There are two aspects to consider when you're modeling a knowledge graph for AI 
 
 ### 1.36 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35
 
-**Evaluation Time:** 2026-02-10T00:44:37.214068
+**Evaluation Time:** 2026-02-10T01:17:32.556484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1924,7 +1924,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -1960,7 +1960,7 @@ The relationships between documents - or how your content is organized and relat
 
 ### 1.37 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36
 
-**Evaluation Time:** 2026-02-10T00:44:37.334068
+**Evaluation Time:** 2026-02-10T01:17:32.676484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -1970,7 +1970,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2014,7 +2014,7 @@ These two layers - the document structure and the business domain - work togethe
 
 ### 1.38 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
 
-**Evaluation Time:** 2026-02-10T00:44:37.454068
+**Evaluation Time:** 2026-02-10T01:17:32.796484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2024,7 +2024,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2062,7 +2062,7 @@ To buil
 
 ### 1.39 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
 
-**Evaluation Time:** 2026-02-10T00:44:37.574068
+**Evaluation Time:** 2026-02-10T01:17:32.916484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2072,7 +2072,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2136,7 +2136,7 @@ At one end, you've got relational databases and clean CSV, where entities and re
 
 ### 1.40 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
 
-**Evaluation Time:** 2026-02-10T00:44:37.694068
+**Evaluation Time:** 2026-02-10T01:17:33.036484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2146,7 +2146,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2194,7 +2194,7 @@ If you find that your dataset has more complex data structures, you can consider
 
 ### 1.41 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
 
-**Evaluation Time:** 2026-02-10T00:44:37.814068
+**Evaluation Time:** 2026-02-10T01:17:33.156484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2204,7 +2204,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2250,7 +2250,7 @@ Guide             |
 
 ### 1.42 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41
 
-**Evaluation Time:** 2026-02-10T00:44:37.934068
+**Evaluation Time:** 2026-02-10T01:17:33.276484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2260,7 +2260,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2298,7 +2298,7 @@ Finally, you'll test retrieval strategies, from vector search to graph-enhanced 
 
 ### 1.43 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42
 
-**Evaluation Time:** 2026-02-10T00:44:38.054068
+**Evaluation Time:** 2026-02-10T01:17:33.396484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2308,7 +2308,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2363,7 +2363,7 @@ Tip: Download your AuraDB credentials (URI, username, password) immediately afte
 
 ### 1.44 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43
 
-**Evaluation Time:** 2026-02-10T00:44:38.174068
+**Evaluation Time:** 2026-02-10T01:17:33.516484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2373,7 +2373,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2427,7 +2427,7 @@ Figure 7. Credential download and continue screen
 
 ### 1.45 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44
 
-**Evaluation Time:** 2026-02-10T00:44:38.294068
+**Evaluation Time:** 2026-02-10T01:17:33.636484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2437,7 +2437,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2473,7 +2473,7 @@ Figure 8. Document flow
 
 ### 1.46 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
 
-**Evaluation Time:** 2026-02-10T00:44:38.414068
+**Evaluation Time:** 2026-02-10T01:17:33.756484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2483,7 +2483,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2533,7 +2533,7 @@ Key Features of Neo4j GraphRAG Package
 
 ### 1.47 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:46
 
-**Evaluation Time:** 2026-02-10T00:44:38.534068
+**Evaluation Time:** 2026-02-10T01:17:33.876484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2543,7 +2543,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2591,7 +2591,7 @@ The LLM does the thinking by extracting meaningful concepts from text. The embed
 
 ### 1.48 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47
 
-**Evaluation Time:** 2026-02-10T00:44:38.654068
+**Evaluation Time:** 2026-02-10T01:17:33.996484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2601,7 +2601,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2658,7 +2658,7 @@ Figure 9. Credentials from .txt file
 
 ### 1.49 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:48
 
-**Evaluation Time:** 2026-02-10T00:44:38.774068
+**Evaluation Time:** 2026-02-10T01:17:34.116484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2668,7 +2668,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2701,7 +2701,7 @@ Initialize the LLM and Embeddings
 
 ### 1.50 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49
 
-**Evaluation Time:** 2026-02-10T00:44:38.894068
+**Evaluation Time:** 2026-02-10T01:17:34.236484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2711,7 +2711,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2748,7 +2748,7 @@ entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STR
 
 ### 1.51 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50
 
-**Evaluation Time:** 2026-02-10T00:44:39.014068
+**Evaluation Time:** 2026-02-10T01:17:34.356484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2758,7 +2758,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2788,7 +2788,7 @@ key moment in the knowledge graph construction process. This is when you determi
 
 ### 1.52 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:51
 
-**Evaluation Time:** 2026-02-10T00:44:39.134068
+**Evaluation Time:** 2026-02-10T01:17:34.476484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2798,7 +2798,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2834,7 +2834,7 @@ Company, Executive, RiskFactor, Product whatever matters to your domain.
 
 ### 1.53 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52
 
-**Evaluation Time:** 2026-02-10T00:44:39.254068
+**Evaluation Time:** 2026-02-10T01:17:34.596484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2844,7 +2844,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2886,7 +2886,7 @@ If you aren't sure which entities and relationships to include in your first pro
 
 ### 1.54 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53
 
-**Evaluation Time:** 2026-02-10T00:44:39.374068
+**Evaluation Time:** 2026-02-10T01:17:34.716484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2896,7 +2896,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -2934,7 +2934,7 @@ model used to vectorize text, which supports similarity-based retrieval
 
 ### 1.55 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54
 
-**Evaluation Time:** 2026-02-10T00:44:39.494068
+**Evaluation Time:** 2026-02-10T01:17:34.836484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -2944,7 +2944,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3006,7 +3006,7 @@ All of these are network-bound and would block the main thread in a normal synch
 
 ### 1.56 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55
 
-**Evaluation Time:** 2026-02-10T00:44:39.614068
+**Evaluation Time:** 2026-02-10T01:17:34.956484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3016,7 +3016,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3075,7 +3075,7 @@ of the chunk text. This is how your retriever finds the relevant chunk in your a
 
 ### 1.57 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56
 
-**Evaluation Time:** 2026-02-10T00:44:39.734068
+**Evaluation Time:** 2026-02-10T01:17:35.076484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3085,7 +3085,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3121,7 +3121,7 @@ In the context of Neo4j and RAG, here's what you need to know:
 
 ### 1.58 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:57
 
-**Evaluation Time:** 2026-02-10T00:44:39.854068
+**Evaluation Time:** 2026-02-10T01:17:35.196484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3131,7 +3131,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3161,7 +3161,7 @@ By using a vector index, Neo4j enables scalable, realtime retrieval of relevant 
 
 ### 1.59 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58
 
-**Evaluation Time:** 2026-02-10T00:44:39.974068
+**Evaluation Time:** 2026-02-10T01:17:35.316484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3171,7 +3171,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3201,7 +3201,7 @@ Neo4j Data Importer provides a streamlined process for bringing structured data 
 
 ### 1.60 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59
 
-**Evaluation Time:** 2026-02-10T00:44:40.094068
+**Evaluation Time:** 2026-02-10T01:17:35.436484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3211,7 +3211,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3241,7 +3241,7 @@ Create a new graph model.
 
 ### 1.61 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60
 
-**Evaluation Time:** 2026-02-10T00:44:40.214068
+**Evaluation Time:** 2026-02-10T01:17:35.556484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3251,7 +3251,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3311,7 +3311,7 @@ Figure 14.  Browse to .csv files screen
 
 ### 1.62 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61
 
-**Evaluation Time:** 2026-02-10T00:44:40.334068
+**Evaluation Time:** 2026-02-10T01:17:35.676484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3321,7 +3321,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3351,7 +3351,7 @@ Figure 15. Run import screen
 
 ### 1.63 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
 
-**Evaluation Time:** 2026-02-10T00:44:40.454068
+**Evaluation Time:** 2026-02-10T01:17:35.796484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3361,7 +3361,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3414,7 +3414,7 @@ If you'd like to work with your own dataset, here's how to get started.The Aura 
 
 ### 1.64 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63
 
-**Evaluation Time:** 2026-02-10T00:44:40.574068
+**Evaluation Time:** 2026-02-10T01:17:35.916484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3424,7 +3424,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3469,7 +3469,7 @@ Label refers to the type of node. Table points to the data source where the info
 
 ### 1.65 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:64
 
-**Evaluation Time:** 2026-02-10T00:44:40.694068
+**Evaluation Time:** 2026-02-10T01:17:36.036484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3479,7 +3479,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3554,7 +3554,7 @@ Figure 18.  Company node screen
 
 ### 1.66 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65
 
-**Evaluation Time:** 2026-02-10T00:44:40.814068
+**Evaluation Time:** 2026-02-10T01:17:36.156484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3564,7 +3564,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3673,7 +3673,7 @@ Figure 19.  Path property screen
 
 ### 1.67 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:66
 
-**Evaluation Time:** 2026-02-10T00:44:40.934068
+**Evaluation Time:** 2026-02-10T01:17:36.276484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3683,7 +3683,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3749,7 +3749,7 @@ Figure 20.  AssetManager node screen
 
 ### 1.68 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:67
 
-**Evaluation Time:** 2026-02-10T00:44:41.054068
+**Evaluation Time:** 2026-02-10T01:17:36.396484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3759,7 +3759,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3817,7 +3817,7 @@ Relationships are created with the following criteria:
 
 ### 1.69 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68
 
-**Evaluation Time:** 2026-02-10T00:44:41.174068
+**Evaluation Time:** 2026-02-10T01:17:36.516484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3827,7 +3827,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3869,7 +3869,7 @@ In a knowledge graph, we want to map the domain knowledge of structured data, wh
 
 ### 1.70 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:69
 
-**Evaluation Time:** 2026-02-10T00:44:41.294068
+**Evaluation Time:** 2026-02-10T01:17:36.636484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3879,7 +3879,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3921,7 +3921,7 @@ Figure 22. AssetManager gray outline
 
 ### 1.71 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:70
 
-**Evaluation Time:** 2026-02-10T00:44:41.414068
+**Evaluation Time:** 2026-02-10T01:17:36.756484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3931,7 +3931,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -3970,7 +3970,7 @@ Clicking on this arrow allows you to edit the parameters of the relationship.
 
 ### 1.72 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71
 
-**Evaluation Time:** 2026-02-10T00:44:41.534068
+**Evaluation Time:** 2026-02-10T01:17:36.876484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -3980,7 +3980,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4133,7 +4133,7 @@ The property shares represents the number of shares of the Company owned by the 
 
 ### 1.73 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72
 
-**Evaluation Time:** 2026-02-10T00:44:41.654068
+**Evaluation Time:** 2026-02-10T01:17:36.996484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4143,7 +4143,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4304,7 +4304,7 @@ As you see in the diagram above, each entity and relationship will have a green 
 
 ### 1.74 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:73
 
-**Evaluation Time:** 2026-02-10T00:44:41.774068
+**Evaluation Time:** 2026-02-10T01:17:37.116484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4314,7 +4314,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4362,7 +4362,7 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ### 1.75 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:74
 
-**Evaluation Time:** 2026-02-10T00:44:41.894068
+**Evaluation Time:** 2026-02-10T01:17:37.236484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4372,7 +4372,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4408,7 +4408,7 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ### 1.76 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
 
-**Evaluation Time:** 2026-02-10T00:44:42.014068
+**Evaluation Time:** 2026-02-10T01:17:37.356484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4418,7 +4418,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4471,7 +4471,7 @@ This notebook imports the core libraries required for building and querying RAG 
 
 ### 1.77 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76
 
-**Evaluation Time:** 2026-02-10T00:44:42.134068
+**Evaluation Time:** 2026-02-10T01:17:37.476484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4481,7 +4481,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4525,7 +4525,7 @@ Here, you load sensitive configuration values (such as database credentials and 
 
 ### 1.78 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77
 
-**Evaluation Time:** 2026-02-10T00:44:42.254068
+**Evaluation Time:** 2026-02-10T01:17:37.596484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4535,7 +4535,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4577,7 +4577,7 @@ llm = OPENAIL
 
 ### 1.79 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78
 
-**Evaluation Time:** 2026-02-10T00:44:42.374068
+**Evaluation Time:** 2026-02-10T01:17:37.716484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4587,7 +4587,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4640,7 +4640,7 @@ There are two components in the process:
 
 ### 1.80 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79
 
-**Evaluation Time:** 2026-02-10T00:44:42.494068
+**Evaluation Time:** 2026-02-10T01:17:37.836484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4650,7 +4650,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4701,7 +4701,7 @@ Be sure to review your retrieval results before generating any text output. This
 
 ### 1.81 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:80
 
-**Evaluation Time:** 2026-02-10T00:44:42.614068
+**Evaluation Time:** 2026-02-10T01:17:37.956484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4711,7 +4711,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4762,7 +4762,7 @@ The Basic Retriever Pattern
 
 ### 1.82 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81
 
-**Evaluation Time:** 2026-02-10T00:44:42.734068
+**Evaluation Time:** 2026-02-10T01:17:38.076484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4772,7 +4772,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4825,7 +4825,7 @@ The basic retriever will cause the LLM to generate a res
 
 ### 1.83 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:82
 
-**Evaluation Time:** 2026-02-10T00:44:42.854068
+**Evaluation Time:** 2026-02-10T01:17:38.196484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4835,7 +4835,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4878,7 +4878,7 @@ gh a third-party custodian are susceptible to various risks, such as inappropria
 
 ### 1.84 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:83
 
-**Evaluation Time:** 2026-02-10T00:44:42.974068
+**Evaluation Time:** 2026-02-10T01:17:38.316484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4888,7 +4888,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4938,7 +4938,7 @@ In other words, the approach demonstrated here retrieves relevant text fragments
 
 ### 1.85 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
 
-**Evaluation Time:** 2026-02-10T00:44:43.094068
+**Evaluation Time:** 2026-02-10T01:17:38.436484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4948,7 +4948,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -4989,7 +4989,7 @@ The Graph-Enhanced Vector Search Pattern, also known as augmented vector search,
 
 ### 1.86 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
 
-**Evaluation Time:** 2026-02-10T00:44:43.214068
+**Evaluation Time:** 2026-02-10T01:17:38.556484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -4999,7 +4999,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5057,7 +5057,7 @@ Let's start by looking at the parts of the graph that help to answer this query.
 
 ### 1.87 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
 
-**Evaluation Time:** 2026-02-10T00:44:43.334068
+**Evaluation Time:** 2026-02-10T01:17:38.676484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5067,7 +5067,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5112,7 +5112,7 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 
 ### 1.88 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87
 
-**Evaluation Time:** 2026-02-10T00:44:43.454068
+**Evaluation Time:** 2026-02-10T01:17:38.796484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5122,7 +5122,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5171,7 +5171,7 @@ How might this look for other industries?
 
 ### 1.89 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
 
-**Evaluation Time:** 2026-02-10T00:44:43.574068
+**Evaluation Time:** 2026-02-10T01:17:38.916484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5181,7 +5181,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5231,7 +5231,7 @@ Let's summarize the major tasks from  this example so you can apply it to your d
 
 ### 1.90 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
 
-**Evaluation Time:** 2026-02-10T00:44:43.694068
+**Evaluation Time:** 2026-02-10T01:17:39.036484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5241,7 +5241,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5313,7 +5313,7 @@ Let's again s
 
 ### 1.91 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
 
-**Evaluation Time:** 2026-02-10T00:44:43.814068
+**Evaluation Time:** 2026-02-10T01:17:39.156484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5323,7 +5323,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5377,7 +5377,7 @@ Next, add this new retrieval query to the VectorCyphe
 
 ### 1.92 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
 
-**Evaluation Time:** 2026-02-10T00:44:43.934068
+**Evaluation Time:** 2026-02-10T01:17:39.276484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5387,7 +5387,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5442,7 +5442,7 @@ result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in 
 
 ### 1.93 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:92
 
-**Evaluation Time:** 2026-02-10T00:44:44.054068
+**Evaluation Time:** 2026-02-10T01:17:39.396484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5452,7 +5452,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5508,7 +5508,7 @@ Let's look at the results:
 
 ### 1.94 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:93
 
-**Evaluation Time:** 2026-02-10T00:44:44.174068
+**Evaluation Time:** 2026-02-10T01:17:39.516484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5518,7 +5518,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5548,7 +5548,7 @@ This is where GraphRAG really shines. You may be wondering how to construct the 
 
 ### 1.95 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:94
 
-**Evaluation Time:** 2026-02-10T00:44:44.294068
+**Evaluation Time:** 2026-02-10T01:17:39.636484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5558,7 +5558,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5609,7 +5609,7 @@ The retriever then uses the schema, described as a string outlining the
 
 ### 1.96 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95
 
-**Evaluation Time:** 2026-02-10T00:44:44.414068
+**Evaluation Time:** 2026-02-10T01:17:39.756484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5619,7 +5619,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5676,7 +5676,7 @@ Now that you've defined the schema, you have everything you need to set the Text
 
 ### 1.97 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96
 
-**Evaluation Time:** 2026-02-10T00:44:44.534068
+**Evaluation Time:** 2026-02-10T01:17:39.876484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5686,7 +5686,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5741,7 +5741,7 @@ While the Text2Cypher functionality in the Neo4j GraphRAG library offers a power
 
 ### 1.98 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97
 
-**Evaluation Time:** 2026-02-10T00:44:44.654068
+**Evaluation Time:** 2026-02-10T01:17:39.996484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5751,7 +5751,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5798,7 +5798,7 @@ Finally, high-stakes applications - such as those requiring strict reproducibili
 
 ### 1.99 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:98
 
-**Evaluation Time:** 2026-02-10T00:44:44.774068
+**Evaluation Time:** 2026-02-10T01:17:40.116484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5808,7 +5808,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5844,7 +5844,7 @@ Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications 
 
 ### 1.100 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99
 
-**Evaluation Time:** 2026-02-10T00:44:44.894068
+**Evaluation Time:** 2026-02-10T01:17:40.236484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5854,7 +5854,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5890,7 +5890,7 @@ While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A,
 
 ### 1.101 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
 
-**Evaluation Time:** 2026-02-10T00:44:45.014068
+**Evaluation Time:** 2026-02-10T01:17:40.356484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5900,7 +5900,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5943,7 +5943,7 @@ This guide has equipped you with the foundational skills needed to implement Gra
 
 ### 1.102 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:101
 
-**Evaluation Time:** 2026-02-10T00:44:45.134068
+**Evaluation Time:** 2026-02-10T01:17:40.476484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5953,7 +5953,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -5989,7 +5989,7 @@ embeddings and graph neural networks, promises to enhance the semantic understan
 
 ### 1.103 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102
 
-**Evaluation Time:** 2026-02-10T00:44:45.254068
+**Evaluation Time:** 2026-02-10T01:17:40.596484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -5999,7 +5999,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -6057,7 +6057,7 @@ Build on what you learned in this guide:
 
 ### 1.104 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103
 
-**Evaluation Time:** 2026-02-10T00:44:45.374068
+**Evaluation Time:** 2026-02-10T01:17:40.716484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -6067,7 +6067,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -6107,7 +6107,7 @@ Technical Resources in Workflow Order
 
 ### 1.105 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104
 
-**Evaluation Time:** 2026-02-10T00:44:45.494068
+**Evaluation Time:** 2026-02-10T01:17:40.836484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -6117,7 +6117,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match
@@ -6157,7 +6157,7 @@ Data Importer Tool                            | Visual UI for mapping CSVs and r
 
 ### 1.106 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:105
 
-**Evaluation Time:** 2026-02-10T00:44:45.614068
+**Evaluation Time:** 2026-02-10T01:17:40.956484
 
 **Query:** explain what is Ground With Unstructured  and Structured Data
 
@@ -6167,7 +6167,7 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
     if not chunk_text.strip():
         return False
     text_lower = chunk_text.lower()
-    query_terms = ['unstructured', 'structured', 'explain', 'ground', 'data']
+    query_terms = ['unstructured', 'structured', 'ground', 'data', 'explain']
     if not query_terms:
         return False
     # Require at least one content token match

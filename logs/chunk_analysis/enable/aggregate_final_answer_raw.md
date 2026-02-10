@@ -4,7 +4,7 @@ This file captures raw chunks before LLM summarization.
 
 ---
 
-## Execution: 2026-02-10T00:44:30.350195
+## Execution: 2026-02-10T01:17:25.792140
 **Query**: explain what is Ground With Unstructured  and Structured Data
 
 ---
@@ -14,8 +14,9 @@ This file captures raw chunks before LLM summarization.
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.358196
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.800141
+**Selection Method:** keyword
 
 ```text
 Table of Contents
@@ -33,8 +34,9 @@ Table of Contents
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.362195
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.804167
+**Selection Method:** keyword
 
 ```text
 Table of Contents
@@ -53,8 +55,9 @@ Table of Contents
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.368204
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.808143
+**Selection Method:** keyword
 
 ```text
 Table of Contents
@@ -73,8 +76,9 @@ Table of Contents
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.373195
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.813143
+**Selection Method:** keyword
 
 ```text
 Table of Contents
@@ -89,8 +93,9 @@ Table of Contents
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.388196
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.827141
+**Selection Method:** keyword
 
 ```text
 Table of Contents (continued)
@@ -100,8 +105,9 @@ Table of Contents (continued)
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.395199
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.832664
+**Selection Method:** keyword
 
 ```text
 PART I: The Problem With Current RAG
@@ -113,8 +119,9 @@ You've built a retrieval-augmented generation (RAG) system. You embedded the doc
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.400196
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.836665
+**Selection Method:** keyword
 
 ```text
 Then reality hit.
@@ -126,8 +133,9 @@ Your RAG system isn't broken. It's just blind.
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.412195
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.846664
+**Selection Method:** keyword
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -147,8 +155,9 @@ You already know what your RAG system should be able to do. It's the kind of rea
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.419197
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.852679
+**Selection Method:** keyword
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -167,8 +176,9 @@ These shouldn't feel like advanced use cases they're basic context. They're what
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.427127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.859668
+**Selection Method:** keyword
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -191,8 +201,9 @@ To understand GraphRAG, let's explore its foundational
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.439127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.870666
+**Selection Method:** keyword
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -213,8 +224,9 @@ Even more problematic is that the system has no mental model for your business. 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.444126
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.878665
+**Selection Method:** keyword
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -233,8 +245,9 @@ You want your RAG application to do what humans do naturally: use context to inf
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.451125
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.885672
+**Selection Method:** keyword
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -257,8 +270,9 @@ This isn't a whitepaper. It's a build-it-yourself playbook. We're going to walk 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.458128
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.892669
+**Selection Method:** keyword
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -279,8 +293,9 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.464129
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.899614
+**Selection Method:** keyword
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
@@ -299,8 +314,9 @@ You want your RAG application to do what humans do naturally: use context to inf
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.470126
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.906332
+**Selection Method:** keyword
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
@@ -323,8 +339,9 @@ This isn't a whitepaper. It's a build-it-yourself playbook. We're going to walk 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.477128
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.911858
+**Selection Method:** keyword
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
@@ -345,8 +362,9 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.488127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.920140
+**Selection Method:** keyword
 
 ```text
 What Is RAG?
@@ -367,8 +385,9 @@ RAG consists of three key
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.495129
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.925048
+**Selection Method:** keyword
 
 ```text
 What Is RAG?
@@ -389,8 +408,9 @@ Figure 1. Querying a knowledge graph with an LLM
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.502128
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.929874
+**Selection Method:** keyword
 
 ```text
 The quality of a RAG response depends heavily on the database type the information is retrieved from.
@@ -402,8 +422,9 @@ Retrieval based on semantic similarity can only get you so far. And this is wher
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.513128
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.941075
+**Selection Method:** keyword
 
 ```text
 What Is GraphRAG?
@@ -428,8 +449,9 @@ The main reasons to implement a GraphRAG solution include:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.519127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.947071
+**Selection Method:** keyword
 
 ```text
 1.  Context-Aware Responses
@@ -439,8 +461,9 @@ Unlike traditional RAG, which retrieves isolated chunks of text based on similar
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.525133
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.952072
+**Selection Method:** keyword
 
 ```text
 2.  Traceability and Explainability
@@ -450,8 +473,9 @@ LLMs and even standard RAG approaches operate as black boxes, making it difficul
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.532130
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.958071
+**Selection Method:** keyword
 
 ```text
 3.  Access to Structured and Unstructured Data
@@ -461,8 +485,9 @@ GraphRAG overcomes a key limitation of vector-only RAG by integrating both struc
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.543126
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.966070
+**Selection Method:** keyword
 
 ```text
 Preparing a knowledge graph for GraphRAG
@@ -473,8 +498,9 @@ Preparing a knowledge graph for GraphRAG
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.556128
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.973603
+**Selection Method:** keyword
 
 ```text
 Prepare a Knowledge Graph for GraphRAG
@@ -486,8 +512,9 @@ There are two aspects to consider when you're modeling a knowledge graph for AI 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.563128
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.978603
+**Selection Method:** keyword
 
 ```text
 The relationships between documents - or how your content is organized and related:
@@ -499,8 +526,9 @@ The relationships between documents - or how your content is organized and relat
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.569127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.984603
+**Selection Method:** keyword
 
 ```text
 Business entities and logic:
@@ -516,8 +544,9 @@ The first step is to determine where you can access that business domain and how
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.575125
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.989604
+**Selection Method:** keyword
 
 ```text
 Ground With Unstructured and Structured Data
@@ -531,8 +560,9 @@ Technically, you can begin from either side. But in practice, most teams start w
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.581127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:25.994619
+**Selection Method:** keyword
 
 ```text
 Ground With Unstructured and Structured Data
@@ -558,8 +588,9 @@ If you find that
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.588127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.000210
+**Selection Method:** keyword
 
 ```text
 Ground With Unstructured and Structured Data
@@ -577,8 +608,9 @@ If you find that your dataset has more complex data structures, you can consider
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.597131
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.006223
+**Selection Method:** keyword
 
 ```text
 Ground With Unstructured and Structured Data
@@ -598,8 +630,9 @@ Finally,
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.605140
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.012404
+**Selection Method:** keyword
 
 ```text
 Ground With Unstructured and Structured Data
@@ -613,8 +646,9 @@ Finally, you'll test retrieval strategies, from vector search to graph-enhanced 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.613144
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.017839
+**Selection Method:** keyword
 
 ```text
 Create a Neo4j Database
@@ -645,8 +679,9 @@ Be sure to download the credentials when you set up the database because
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.621125
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.023333
+**Selection Method:** keyword
 
 ```text
 Create a Neo4j Database
@@ -664,8 +699,9 @@ Figure 7. Credential download and continue screen
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.628127
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.029514
+**Selection Method:** keyword
 
 ```text
 Ingest Unstructured Data
@@ -677,8 +713,9 @@ Figure 8. Document flow
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.635131
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.036079
+**Selection Method:** keyword
 
 ```text
 Key Features of Neo4j GraphRAG Package
@@ -702,8 +739,9 @@ The LLM does the thinking by extracting meaningful concepts from text. The embed
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.645844
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.045449
+**Selection Method:** keyword
 
 ```text
 Neo4j Connection
@@ -722,8 +760,9 @@ Figure 9. Credentials from .txt file
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.656381
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.055457
+**Selection Method:** keyword
 
 ```text
 Define Node Labels and Relationship Types
@@ -738,8 +777,9 @@ Defining your nodes and relationships in two lists is a key moment in the knowle
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.666769
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.061449
+**Selection Method:** keyword
 
 ```text
 Define Node Labels and Relationship Types
@@ -749,8 +789,9 @@ key moment in the knowledge graph construction process. This is when you determi
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.682839
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.072451
+**Selection Method:** keyword
 
 ```text
 Relationships = Verbs or Connectors
@@ -764,8 +805,9 @@ If you aren't sure which entities and relationships to include in your first pro
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.689743
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.079450
+**Selection Method:** keyword
 
 ```text
 Initialize and Run the Pipeline
@@ -779,8 +821,9 @@ The entities and relations define the schema: what kinds of objects (like Custom
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.697309
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.085448
+**Selection Method:** keyword
 
 ```text
 Process the PDF Document
@@ -810,8 +853,9 @@ As you can see in the image below, the document and chunk nodes have been create
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.702834
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.093451
+**Selection Method:** keyword
 
 ```text
 Process the PDF Document
@@ -832,8 +876,9 @@ Figure 10. Node details
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.709838
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.100466
+**Selection Method:** keyword
 
 ```text
 Create the Vector Index
@@ -845,8 +890,9 @@ In the context of Neo4j and RAG, here's what you need to know:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.725837
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.109824
+**Selection Method:** keyword
 
 ```text
 Getting Started With Data Importer
@@ -856,8 +902,9 @@ Neo4j Data Importer provides a streamlined process for bringing structured data 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.731839
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.114812
+**Selection Method:** keyword
 
 ```text
 Create a new graph model.
@@ -867,8 +914,9 @@ Create a new graph model.
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.737839
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.121998
+**Selection Method:** keyword
 
 ```text
 Once you've loaded the provided data model, click Browse and navigate to the data folder in your repository, selecting both the Asset\_ Manager\_Holdings.csv file and the Company\_ Filings.csv files.
@@ -888,8 +936,9 @@ Figure 14.  Browse to .csv files screen
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.743370
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.129700
+**Selection Method:** keyword
 
 ```text
 Once the files are connected, you'll see that the data model has check marks for each entity and relationship. Click Run Import in the upper right-hand corner.
@@ -899,8 +948,9 @@ Figure 15. Run import screen
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.749368
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.136675
+**Selection Method:** keyword
 
 ```text
 Mapping Your Data to Graph Structures
@@ -929,8 +979,9 @@ Label refers to the type of node. Table points to the data source where the info
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.755369
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.143679
+**Selection Method:** keyword
 
 ```text
 Mapping Your Data to Graph Structures
@@ -945,8 +996,9 @@ Label refers to the type of node. Table points to the data source where the info
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.766366
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.162674
+**Selection Method:** keyword
 
 ```text
 Document Node
@@ -989,8 +1041,9 @@ Pick the column for your system:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.783368
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.180675
+**Selection Method:** keyword
 
 ```text
 Mapping Relationships
@@ -1004,8 +1057,9 @@ In a knowledge graph, we want to map the domain knowledge of structured data, wh
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.799369
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.195720
+**Selection Method:** keyword
 
 ```text
 OWNS Relationship
@@ -1056,8 +1110,9 @@ The property shares represents the number of shares of the Company owned by the 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.806367
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.202586
+**Selection Method:** keyword
 
 ```text
 FILED Relationship
@@ -1120,8 +1175,9 @@ GraphRAG retrieval patterns are practical mechanisms that define how the
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.823455
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.220456
+**Selection Method:** keyword
 
 ```text
 Import Libraries
@@ -1144,8 +1200,9 @@ These imports enable advanced semantic search, retrieval, and GenAI capabilities
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.829451
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.226335
+**Selection Method:** keyword
 
 ```text
 Load Environment Variables and Initialize Neo4j Driver
@@ -1161,8 +1218,9 @@ TIP: Make sure your .env file contains the correct values for NEO4J\_URI,  NEO4J
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.836145
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.232976
+**Selection Method:** keyword
 
 ```text
 Initialize the LLM and Embedder
@@ -1176,8 +1234,9 @@ llm = OPENAILLM (model\_name='gpt-4o', api\_key=OPENAI\_API\_KEY) embedder = OPE
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.842550
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.238863
+**Selection Method:** keyword
 
 ```text
 The Basic Retriever Pattern
@@ -1200,8 +1259,9 @@ Be sure
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.849829
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.245867
+**Selection Method:** keyword
 
 ```text
 The Basic Retriever Pattern
@@ -1226,8 +1286,9 @@ result_table=pd.DataFrame([(item.metadata['score'], item. content [10:80], item.
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.863215
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.258861
+**Selection Method:** keyword
 
 ```text
 The Basic Retriever Pattern
@@ -1248,8 +1309,9 @@ The main risks around cryptocurrency, as highlighted in the context, include:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.882776
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.274863
+**Selection Method:** keyword
 
 ```text
 The Graph-Enhanced Vector Search Pattern
@@ -1266,8 +1328,9 @@ The VectorCypherRetriever uses the full graph capabilities of Neo4j by combining
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.897847
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.286469
+**Selection Method:** keyword
 
 ```text
 VectorCypherRetriever parameters:
@@ -1282,8 +1345,9 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.907458
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.293127
+**Selection Method:** keyword
 
 ```text
 VectorCypher Retriever in Practice
@@ -1304,8 +1368,9 @@ purchase behavior, category hierarchies, or supplier relationships (a structured
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.913486
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.298753
+**Selection Method:** keyword
 
 ```text
 VectorCypher Retriever in Practice
@@ -1325,8 +1390,9 @@ The result: You can ask complex, context-aware questions about entities in your 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.919792
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.304753
+**Selection Method:** keyword
 
 ```text
 VectorCypher Retriever in Practice
@@ -1354,8 +1420,9 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.932614
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.312754
+**Selection Method:** keyword
 
 ```text
 VectorCypherRetriever parameters:
@@ -1374,8 +1441,9 @@ result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in 
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.960626
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.330757
+**Selection Method:** keyword
 
 ```text
 Text2CypherRetriever
@@ -1402,8 +1470,9 @@ result = driver.execute_query(cypher_query.metadata['cypher']) for record in res
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.972657
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.336423
+**Selection Method:** keyword
 
 ```text
 Text2CypherRetriever
@@ -1424,8 +1493,9 @@ Additionally, query optimization remains an important factor. While LLMs are cap
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.978040
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.341417
+**Selection Method:** keyword
 
 ```text
 Text2CypherRetriever
@@ -1446,8 +1516,9 @@ Check out the Text2Cypher Crowdsourcing App to explore
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.987480
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.350425
+**Selection Method:** keyword
 
 ```text
 Community Summary Pattern
@@ -1459,8 +1530,9 @@ While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A,
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:30.994482
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.355420
+**Selection Method:** keyword
 
 ```text
 Concluding Thoughts and Next Steps
@@ -1479,8 +1551,9 @@ Like other AI technologies, GraphRAG is rapidly evolving. A few trends to watch:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:31.017986
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.362419
+**Selection Method:** keyword
 
 ```text
 Explore GenAI With Neo4j
@@ -1500,8 +1573,9 @@ Build on what you learned in this guide:
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:31.023839
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.368717
+**Selection Method:** keyword
 
 ```text
 Technical Resources in Workflow Order
@@ -1517,8 +1591,9 @@ Technical Resources in Workflow Order
 ### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
-**Phase:** per_chunk_inspector
-**Captured:** 2026-02-10T00:44:31.031366
+**Phase:** keyword_pre_filter
+**Captured:** 2026-02-10T01:17:26.372829
+**Selection Method:** keyword
 
 ```text
 Technical Resources in Workflow Order
@@ -1537,7 +1612,7 @@ Data Importer Tool                            | Visual UI for mapping CSVs and r
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1550,7 +1625,7 @@ Technically, you can begin from either side. But in practice, most teams start w
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1575,7 +1650,7 @@ If you find that
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1594,7 +1669,7 @@ Finally,
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1611,7 +1686,7 @@ If you find that your dataset has more complex data structures, you can consider
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Mapping Your Data to Graph Structures
@@ -1639,7 +1714,7 @@ Label refers to the type of node. Table points to the data source where the info
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Concluding Thoughts and Next Steps
@@ -1657,7 +1732,7 @@ Like other AI technologies, GraphRAG is rapidly evolving. A few trends to watch:
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 Key Features of Neo4j GraphRAG Package
@@ -1680,7 +1755,7 @@ The LLM does the thinking by extracting meaningful concepts from text. The embed
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
 
-**Analyzed At:** 2026-02-10T00:44:31.059239
+**Analyzed At:** 2026-02-10T01:17:26.393832
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.

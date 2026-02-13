@@ -28,8 +28,7 @@ class AiSearchAgent:
         print(f"🤖 [AGENT INVOKED] AiSearchAgent (ID: {self._id})")
         print("AiSearchAgent: using Foundry agent:", self._id)  # keep print
         from ..tools.neo4j_graphrag import graphrag_search
-        
-        # Import CSV query tools for exact numerical calculations and list queries
+        # ...existing code...
         try:
             from ..tools.csv_query import (
                 query_requires_exact_numbers,
@@ -44,19 +43,112 @@ class AiSearchAgent:
         except ImportError:
             logger.warning("CSV query tools not available, skipping CSV queries")
             csv_query_available = False
+        # Extract person names and determine if query is person-centric
+        from ..tools.header_vocab import extract_attribute_keywords
+        person_names, is_person_query = extract_person_names_and_mode(query)
+        # ...existing code...
+        # Build keywords and keyword_boost before using them
+        keywords = []
+        if is_person_query and person_names:
+            keywords.extend(person_names)
+        # Add attribute keywords for richer matching
+        attribute_kws = extract_attribute_keywords(query)
+        if attribute_kws:
+            keywords.extend(attribute_kws)
+            logger.info(f"🔍 [AiSearchAgent] Added attribute keywords: {attribute_kws}")
+        # Remove duplicates while preserving order
+        keywords = list(dict.fromkeys(keywords))
+        keyword_boost = 0.4 if keywords else 0.0
+
+        # PHASE 5: Query Classification for Structural Routing
+        query_intent = self._classify_query_intent(query, person_names or [])
+        logger.info(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        print(f"🔍 [QueryClassification] Intent: {query_intent['type']}, routing: {query_intent['routing']}")
+        top_k = 20 if high_recall_mode else 12
+        similarity_threshold = 0.6 if high_recall_mode else 0.75
+        logger.info(
+            "🔍 [AiSearchAgent] Calling graphrag_search with: "
+            f"top_k={top_k}, similarity_threshold={similarity_threshold}, keywords={keywords}, "
+            f"keyword_boost={keyword_boost}, is_person_query={is_person_query}, person_names={person_names}, "
+            f"high_recall_mode={high_recall_mode}"
+        )
+        print(
+            "🔍 [AiSearchAgent] Calling graphrag_search with: "
+            f"keywords={keywords}, keyword_boost={keyword_boost}, is_person_query={is_person_query}, "
+            f"person_names={person_names}, high_recall_mode={high_recall_mode}"
+        )
+        results = graphrag_search(
+            query=query,
+            top_k=top_k,  # Get more results initially for filtering
+            similarity_threshold=similarity_threshold,
+            keywords=keywords,
+            keyword_match_type="any",
+            keyword_boost=keyword_boost,
+            is_person_query=is_person_query,
+            enable_coworker_expansion=True,  # Enable coworker expansion for person queries
+            person_names=person_names
+        )
+        logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
+        if not results:
+            # Always log attempted chunks, even if empty
+            logger.info(f"[DEBUG] No results returned from graphrag_search. Query: {query}")
+            # Write to chunk log (simulate chunk_logger usage)
+            try:
+                from ..chunk_logger import log_chunk_selection
+                log_chunk_selection(query, [], high_recall_mode, candidate_chunks=[])
+            except Exception as e:
+                logger.warning(f"[DEBUG] Could not write empty chunk log: {e}")
+            return (
+                "No results found in Neo4j GraphRAG.",
+                []
+            ) if return_results else "No results found in Neo4j GraphRAG."
+        # ...existing code...
+        try:
+            from ..tools.csv_query import (
+                query_requires_exact_numbers,
+                query_requires_list,
+                extract_csv_path_from_rag_results,
+                extract_filter_value_from_query,
+                sum_numeric_columns,
+                get_distinct_values,
+                is_csv_specific_query
+            )
+            csv_query_available = True
+        except ImportError:
+            logger.warning("CSV query tools not available, skipping CSV queries")
+            csv_query_available = False
+
+        # Log all candidate chunk similarities and IDs before filtering
+        logger.info(f"[DEBUG] Candidate chunks before filtering: " + ", ".join([
+            f"ID={r.get('chunk_id', r.get('id', 'N/A'))}, sim={r.get('similarity', 0.0):.3f}" for r in results
+        ]))
+        filtered_results = filter_results_by_exact_match(
+            results, 
+            query, 
+            min_similarity=0.3,
+            is_person_query=is_person_query,
+            person_names=person_names
+        )
         
         # Extract person names and determine if query is person-centric
         # Uses corpus-learned vocabulary for context-aware classification
         from ..tools.header_vocab import extract_attribute_keywords
         
         person_names, is_person_query = extract_person_names_and_mode(query)
-        
-        logger.info(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
-        logger.info(f"🔍 [AiSearchAgent] Extracted person names: {person_names}, is_person_query: {is_person_query}")
-        print(f"🔍 [AiSearchAgent] Starting search for query: '{query}'")
-        print(f"🔍 [AiSearchAgent] person_names={person_names}, is_person_query={is_person_query}")
-        
-        # Build keyword list: person names + attribute keywords (e.g., skills)
+        if not filtered_results:
+            logger.warning(f"⚠️ [AiSearchAgent] No relevant results found after filtering (had {len(results)} initial results)")
+            print(f"⚠️ [AiSearchAgent] No relevant results found after filtering (had {len(results)} initial results)")
+            # Always log attempted chunks, even if none pass filter
+            try:
+                from ..chunk_logger import log_chunk_selection
+                log_chunk_selection(query, [], high_recall_mode, candidate_chunks=results)
+            except Exception as e:
+                logger.warning(f"[DEBUG] Could not write empty chunk log: {e}")
+            return (
+                "No relevant results found in Neo4j GraphRAG after filtering.",
+                []
+            ) if return_results else "No relevant results found in Neo4j GraphRAG after filtering."
         # For "Tell me Kevin Skills" → keywords=['kevin', 'skills']
         keywords = []
         if is_person_query and person_names:
@@ -107,7 +199,11 @@ class AiSearchAgent:
 
         logger.info(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
         print(f"📊 [AiSearchAgent] GraphRAG search returned {len(results)} results")
-        
+        if results:
+            logger.info(f"[DEBUG] Pre-filter chunk IDs: {[r.get('chunk_id', r.get('id', 'N/A')) for r in results]}")
+        else:
+            logger.info("[DEBUG] No results returned from graphrag_search.")
+
         if not results:
             return (
                 "No results found in Neo4j GraphRAG.",
@@ -128,7 +224,10 @@ class AiSearchAgent:
         
         logger.info(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
         print(f"✅ [AiSearchAgent] After filtering: {len(filtered_results)} results (from {len(results)} initial)")
-        
+        if filtered_results:
+            logger.info(f"[DEBUG] Post-filter chunk IDs: {[r.get('chunk_id', r.get('id', 'N/A')) for r in filtered_results]}")
+        else:
+            logger.info("[DEBUG] No chunks passed the filter.")
         # Limit to top 8 after filtering
         filtered_results = filtered_results[:8]
 

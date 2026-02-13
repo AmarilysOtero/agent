@@ -35,6 +35,7 @@ class Citation:
     chunk_id: str
     file_id: str
     file_name: str
+    selection_method: Optional[str] = None  # Selection method provenance
     quote: Optional[str] = None  # Extracted quote from the chunk
 
 
@@ -328,7 +329,6 @@ def _extract_citations(
     for file_name_raw, chunks_raw in found_citations:
         file_name = file_name_raw.strip()
         chunk_ids = [cid.strip() for cid in chunks_raw.split(',')]
-        
         # Look up file
         file_summary = file_lookup.get(file_name)
         if file_summary:
@@ -338,6 +338,7 @@ def _extract_citations(
                         chunk_id=chunk_id,
                         file_id=file_summary.file_id,
                         file_name=file_summary.file_name,
+                        selection_method=getattr(file_summary, 'selection_method', None),
                         quote=None  # Could extract from original chunks, but not available here
                     ))
     
@@ -350,6 +351,7 @@ def _extract_citations(
                     chunk_id=chunk_id,
                     file_id=summary.file_id,
                     file_name=summary.file_name,
+                    selection_method=getattr(summary, 'selection_method', None),
                     quote=None
                 ))
     
@@ -452,7 +454,8 @@ def _create_fallback_answer(
             citations.append(Citation(
                 chunk_id=chunk_id,
                 file_id=summary.file_id,
-                file_name=summary.file_name
+                file_name=summary.file_name,
+                selection_method=getattr(summary, 'selection_method', None)
             ))
     
     return Answer(
@@ -478,7 +481,8 @@ def _create_empty_answer() -> Answer:
 async def log_final_answer_to_markdown(
     answer: Answer,
     query: str,
-    output_dir: str = "/app/logs/chunk_analysis"
+    output_dir: str = "/app/logs/chunk_analysis",
+    rlm_enabled: bool = False
 ) -> None:
     """
     Log Phase 5 final answer with citations to markdown file.
@@ -487,13 +491,15 @@ async def log_final_answer_to_markdown(
         answer: Answer object with citations
         query: User query
         output_dir: Output directory for logs
+        rlm_enabled: Whether RLM is enabled (affects subdirectory)
     """
     from pathlib import Path
     from datetime import datetime
 
     try:
-        # Determine output file
-        output_path = Path(output_dir) / "final_answer_phase5.md"
+        # Determine output file with RLM enable/disable subdirectory
+        subfolder = "enable" if rlm_enabled else "disable"
+        output_path = Path(output_dir) / subfolder / "final_answer_phase5.md"
         
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -514,20 +520,19 @@ async def log_final_answer_to_markdown(
             "## Citations\n",
         ]
 
-        # Add citations by file
+        # Add citations by file and chunk, including selection method
         if answer.citations:
             citations_by_file = {}
             for citation in answer.citations:
                 if citation.file_name not in citations_by_file:
                     citations_by_file[citation.file_name] = []
-                citations_by_file[citation.file_name].append(citation.chunk_id)
-            
-            for file_name, chunk_ids in citations_by_file.items():
-                lines.extend([
-                    f"### {file_name}",
-                    f"- Chunks: {', '.join(chunk_ids)}",
-                    "\n",
-                ])
+                citations_by_file[citation.file_name].append(citation)
+            for file_name, citations in citations_by_file.items():
+                lines.append(f"### {file_name}")
+                for citation in citations:
+                    sel_method = citation.selection_method if citation.selection_method else "unknown"
+                    lines.append(f"- Chunk: {citation.chunk_id} | Selection Method: {sel_method}")
+                lines.append("")
         else:
             lines.append("No citations extracted from answer.")
 

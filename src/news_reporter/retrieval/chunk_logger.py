@@ -1,6 +1,7 @@
 """Chunk logging utility for Phase 3 - writes chunk information to markdown files."""
 
 import logging
+import os
 from typing import List, Dict, Optional
 from datetime import datetime
 from pathlib import Path
@@ -11,8 +12,124 @@ logger = logging.getLogger(__name__)
 CHUNK_LOGS_DIR = Path("/app/logs/chunk_analysis")
 CHUNK_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
-CHUNKS_RLM_DISABLED_FILE = CHUNK_LOGS_DIR / "chunks_rlm_disabled.md"
-CHUNKS_RLM_ENABLED_FILE = CHUNK_LOGS_DIR / "chunks_rlm_enabled.md"
+CHUNK_LOGS_ENABLE_DIR = CHUNK_LOGS_DIR / "enable"
+CHUNK_LOGS_DISABLE_DIR = CHUNK_LOGS_DIR / "disable"
+CHUNK_LOGS_ENABLE_DIR.mkdir(parents=True, exist_ok=True)
+CHUNK_LOGS_DISABLE_DIR.mkdir(parents=True, exist_ok=True)
+
+CHUNKS_RLM_DISABLED_FILE = CHUNK_LOGS_DISABLE_DIR / "chunks_rlm_disabled.md"
+CHUNKS_RLM_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "chunks_rlm_enabled.md"
+AGGREGATE_RAW_FILE_NAME = "aggregate_final_answer_raw.md"
+
+
+def _resolve_chunk_logs_dir(output_dir: Optional[str] = None, rlm_enabled: bool = False) -> Path:
+    """Resolve chunk logs directory with RLM enable/disable subfolder."""
+    # Always use local logs/chunk_analysis directory for Windows/non-Docker
+    if os.name == "nt" or not Path("/.dockerenv").exists():
+        base_dir = Path(__file__).parent.parent.parent / "logs" / "chunk_analysis"
+    else:
+        base_dir = Path("/app/logs/chunk_analysis")
+    # Add enable/disable subfolder
+    subfolder = "enable" if rlm_enabled else "disable"
+    target_dir = base_dir / subfolder
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir
+
+
+def init_aggregate_raw_log(query: Optional[str] = None, output_dir: Optional[str] = None, rlm_enabled: bool = True) -> Path:
+    """Initialize the aggregate raw log (overwrite per query)."""
+    target_dir = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled)
+    output_path = target_dir / AGGREGATE_RAW_FILE_NAME
+
+    content = [
+        "# Aggregate Final Answer - Raw Chunks (Pre-LLM)\n",
+        "This file captures raw chunks before LLM summarization.\n",
+        "(File overwrites with each new query)\n\n",
+        "---\n\n",
+        f"## Execution: {datetime.now().isoformat()}\n",
+    ]
+    if query:
+        content.append(f"**Query**: {query}\n\n")
+    content.append("---\n\n")
+    content.append("## Passing Chunks (Append Log)\n\n")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("".join(content))
+
+    logger.info(f"📝 Initialized aggregate raw log: {output_path}")
+    return output_path
+
+
+def append_aggregate_raw_chunk(
+    chunk_id: str,
+    file_id: str,
+    file_name: str,
+    chunk_text: str,
+    phase: str,
+    output_dir: Optional[str] = None,
+    rlm_enabled: bool = True
+) -> None:
+    """Append a passing chunk to the aggregate raw log."""
+    output_path = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled) / AGGREGATE_RAW_FILE_NAME
+
+
+    # Always include selection method
+    if phase == "keyword_pre_filter":
+        selection_method = "keyword"
+    elif phase == "iterative_boolean_eval":
+        selection_method = "recursive"
+    else:
+        selection_method = "unknown"
+
+    entry = [
+        f"### Chunk: {chunk_id}\n",
+        f"**File ID:** {file_id}\n",
+        f"**File Name:** {file_name}\n",
+        f"**Phase:** {phase}\n",
+        f"**Captured:** {datetime.now().isoformat()}\n",
+        f"**Selection Method:** {selection_method}\n",
+        "\n",
+        "```text\n",
+        f"{chunk_text}\n",
+        "```\n\n",
+    ]
+
+    with open(output_path, "a", encoding="utf-8") as f:
+        f.write("".join(entry))
+
+
+def log_aggregate_raw_final_set(
+    file_id: str,
+    file_name: str,
+    selected_chunks: List[Dict],
+    output_dir: Optional[str] = None,
+    rlm_enabled: bool = True
+) -> None:
+    """Append the final selected chunks before summarization."""
+    output_path = _resolve_chunk_logs_dir(output_dir, rlm_enabled=rlm_enabled) / AGGREGATE_RAW_FILE_NAME
+
+    header = [
+        "## Final Selected Chunks\n\n",
+        f"### File: {file_name} (ID: {file_id})\n\n",
+    ]
+
+    total_chars = sum(len(chunk.get("text", "")) for chunk in selected_chunks)
+
+    with open(output_path, "a", encoding="utf-8") as f:
+        f.write("".join(header))
+        for chunk in selected_chunks:
+            chunk_id = chunk.get("chunk_id", "unknown")
+            chunk_text = chunk.get("text", "")
+            timestamp = datetime.now().isoformat()
+            f.write(f"#### Chunk: {chunk_id}\n\n")
+            f.write(f"**Analyzed At:** {timestamp}\n\n")
+            f.write("```text\n")
+            f.write(f"{chunk_text}\n")
+            f.write("```\n\n")
+
+        f.write("**Summary:**\n")
+        f.write(f"- Selected chunks: {len(selected_chunks)}\n")
+        f.write(f"- Total chars: {total_chars}\n\n")
 
 
 async def log_chunks_to_markdown(
@@ -68,10 +185,11 @@ async def log_chunks_to_markdown(
         
         # Add chunks table
         content.append("### Chunks\n\n")
-        content.append("| # | Chunk ID | File | Text Preview | Size |\n")
-        content.append("|---|----------|------|--------------|------|\n")
+        content.append("| # | Timestamp | Chunk ID | File | Text Preview | Size |\n")
+        content.append("|---|-----------|----------|------|--------------|------|\n")
         
         for idx, chunk in enumerate(chunks, 1):
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
             chunk_id = chunk.get("chunk_id", chunk.get("id", "N/A"))
             file_name = chunk.get("file", "N/A")
             text = chunk.get("text", "")
@@ -79,7 +197,7 @@ async def log_chunks_to_markdown(
             text_preview = text_preview.replace("\n", " ").replace("|", "\\|")
             size = len(text)
             
-            content.append(f"| {idx} | `{chunk_id}` | {file_name} | {text_preview} | {size} bytes |\n")
+            content.append(f"| {idx} | {timestamp} | `{chunk_id}` | {file_name} | {text_preview} | {size} bytes |\n")
         
         content.append("\n---\n\n")
         
@@ -102,7 +220,8 @@ async def log_chunks_to_markdown(
 async def log_phase3_expansion(
     entry_chunks: List[Dict],
     expanded_chunks: Dict[str, Dict],
-    query: Optional[str] = None
+    query: Optional[str] = None,
+    rlm_enabled: bool = True
 ) -> None:
     """
     Log Phase 3 file expansion details to markdown.
@@ -111,6 +230,7 @@ async def log_phase3_expansion(
         entry_chunks: Original entry chunks from retrieval
         expanded_chunks: Result from expand_to_full_files() - {file_id: {chunks: [...], ...}}
         query: Original query string
+        rlm_enabled: Whether RLM is enabled (defaults to True since Phase 3 only runs with RLM)
     """
     
     try:
@@ -140,7 +260,7 @@ async def log_phase3_expansion(
         # Log expanded chunks
         await log_chunks_to_markdown(
             chunks=all_expanded_chunks,
-            rlm_enabled=True,
+            rlm_enabled=rlm_enabled,
             query=query,
             metadata=metadata
         )

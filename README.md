@@ -144,3 +144,7 @@ Since `az login` doesn't work in Docker containers, you need to use service prin
 For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
 ## Test
+
+## No docker
+
+.\.venv\Scripts\Activate.ps1

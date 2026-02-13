@@ -10,7 +10,7 @@ from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, Assi
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
 from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance, log_expanded_chunks
-from ..retrieval.chunk_logger import log_chunks_to_markdown
+from ..retrieval.chunk_logger import log_chunks_to_markdown, ensure_rlm_enable_log_files
 from ..retrieval.recursive_summarizer import recursive_summarize_files, log_file_summaries_to_markdown
 from ..retrieval.phase_5_answer_generator import generate_final_answer, log_final_answer_to_markdown
 
@@ -206,6 +206,11 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     if cfg.rlm_enabled:
         logger.info("RLM branch selected")
         print("\n🔄 RLM MODE ACTIVATED (currently routes through default sequential for Phase 1)")
+        # Ensure logs/chunk_analysis/enable exists and initial .md files are created for RLM runs
+        try:
+            ensure_rlm_enable_log_files(query=goal)
+        except Exception as e:
+            logger.warning("Could not init RLM chunk log (enable): %s", e)
         # Phase 1: Both paths still call the existing flow (no behavioral change)
     else:
         logger.debug("Default sequential branch selected (RLM not enabled)")

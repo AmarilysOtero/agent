@@ -8,10 +8,19 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Output directory for chunk logs
-CHUNK_LOGS_DIR = Path("/app/logs/chunk_analysis")
-CHUNK_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
+def _chunk_logs_base_dir() -> Path:
+    """Base directory for chunk logs (project-local on Windows/non-Docker)."""
+    if os.name == "nt" or not Path("/.dockerenv").exists():
+        # __file__ = .../src/news_reporter/retrieval/chunk_logger.py -> repo root = parent x4
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+        return repo_root / "logs" / "chunk_analysis"
+    return Path("/app/logs/chunk_analysis")
+
+
+# Output directory for chunk logs (project-local on Windows so enable/disable exist under repo)
+CHUNK_LOGS_DIR = _chunk_logs_base_dir()
+CHUNK_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 CHUNK_LOGS_ENABLE_DIR = CHUNK_LOGS_DIR / "enable"
 CHUNK_LOGS_DISABLE_DIR = CHUNK_LOGS_DIR / "disable"
 CHUNK_LOGS_ENABLE_DIR.mkdir(parents=True, exist_ok=True)
@@ -24,12 +33,7 @@ AGGREGATE_RAW_FILE_NAME = "aggregate_final_answer_raw.md"
 
 def _resolve_chunk_logs_dir(output_dir: Optional[str] = None, rlm_enabled: bool = False) -> Path:
     """Resolve chunk logs directory with RLM enable/disable subfolder."""
-    # Always use local logs/chunk_analysis directory for Windows/non-Docker
-    if os.name == "nt" or not Path("/.dockerenv").exists():
-        base_dir = Path(__file__).parent.parent.parent / "logs" / "chunk_analysis"
-    else:
-        base_dir = Path("/app/logs/chunk_analysis")
-    # Add enable/disable subfolder
+    base_dir = Path(output_dir) if output_dir else _chunk_logs_base_dir()
     subfolder = "enable" if rlm_enabled else "disable"
     target_dir = base_dir / subfolder
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -58,6 +62,16 @@ def init_aggregate_raw_log(query: Optional[str] = None, output_dir: Optional[str
 
     logger.info(f"📝 Initialized aggregate raw log: {output_path}")
     return output_path
+
+
+def ensure_rlm_enable_log_files(query: Optional[str] = None) -> None:
+    """Ensure logs/chunk_analysis/enable exists with initial .md files (for RLM-enabled runs)."""
+    init_aggregate_raw_log(query=query, rlm_enabled=True)
+    if not CHUNKS_RLM_ENABLED_FILE.exists():
+        CHUNKS_RLM_ENABLED_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CHUNKS_RLM_ENABLED_FILE, "w", encoding="utf-8") as f:
+            f.write("# Chunks (RLM Enabled)\n\nChunk log (append).\n\n")
+        logger.info(f"📝 Initialized chunks log: {CHUNKS_RLM_ENABLED_FILE}")
 
 
 def append_aggregate_raw_chunk(

@@ -120,10 +120,12 @@ class WorkflowDocumentation:
     ) -> Documentation:
         """Auto-generate documentation for a workflow"""
         # Generate markdown documentation
+        # Exclude start node from count (start is just entry point, not executable)
+        node_count = len([n for n in workflow.nodes if n.type != 'start'])
         content = f"""# {workflow_id}
 
 ## Overview
-This workflow contains {len(workflow.nodes)} nodes and {len(workflow.edges)} edges.
+This workflow contains {node_count} executable nodes and {len(workflow.edges)} edges.
 
 ## Entry Point
 Entry node: {workflow.entry_node_id}

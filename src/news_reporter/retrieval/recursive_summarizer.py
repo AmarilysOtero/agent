@@ -31,6 +31,7 @@ from .chunk_logger import (
     init_aggregate_raw_log,
     append_aggregate_raw_chunk,
     log_aggregate_raw_final_set,
+    get_chunk_logs_base_dir,
 )
 
 # Phase 4 feature flag: iterative inspection programs vs per-chunk inspectors
@@ -1274,12 +1275,12 @@ async def recursive_summarize_files(
                         )
 
                         file_inspection_codes[chunk_id] = generated_code
+                        # When RLM enabled: recursive_text empty until selected, then full chunk; when disabled use preview only
                         file_inspection_payloads[chunk_id] = {
                             "code": generated_code,
                             "chunk_text": chunk_text,
                             "first_read_text": chunk_text[:500],
-                            # Chunk-scoped recursive text to avoid file-level repetition in logs.
-                            "recursive_text": chunk_text[:500],
+                            "recursive_text": "" if rlm_enabled else chunk_text[:500],
                             "keywords": chunk_keywords
                         }
 
@@ -1292,7 +1293,9 @@ async def recursive_summarize_files(
                         )
 
                         chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
-                        if is_relevant:
+                        if is_relevant and rlm_enabled:
+                            # RLM only: selected chunk → recursive read = complete chunk text that was read
+                            file_inspection_payloads[chunk_id]["recursive_text"] = chunk_text
                             relevant_chunks.append(chunk_text)
                             relevant_chunk_ids.append(chunk_id)
                             # If chunk_keywords exist, treat as keyword selection, else recursive
@@ -1491,16 +1494,8 @@ async def recursive_summarize_files(
     # Log inspection code for debugging and analysis
     summary_by_file_id = {summary.file_id: summary.summary_text for summary in summaries}
 
-    # FIX: Use environment variable for logs directory, fallback to local path
-    logs_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
-    # If running locally (Windows), adjust path
-    if not os.path.isabs(logs_dir) or logs_dir.startswith("/app"):
-        # Check if we're in a Docker container by looking for /.dockerenv
-        if not os.path.exists("/.dockerenv") and os.name == "nt":
-            # Windows local environment
-            logs_dir = os.path.join(os.getcwd(), "..", "..", "logs", "chunk_analysis")
-            if not os.path.exists(logs_dir):
-                logs_dir = "./logs/chunk_analysis"
+    # Use same base dir as chunk_logger so all RLM .md files land in one place
+    logs_dir = os.getenv("LOGS_DIR") or str(get_chunk_logs_base_dir())
 
     if inspection_code:
         try:
@@ -3003,16 +2998,15 @@ async def log_file_summaries_to_markdown(
     from pathlib import Path
     from datetime import datetime
 
-    # Handle output_dir with fallback logic
+    # Use same base dir as chunk_logger so all RLM .md files land in one place
     if output_dir is None:
-        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
-        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
-            output_dir = "./logs/chunk_analysis"
+        output_dir = str(get_chunk_logs_base_dir())
+    output_dir = Path(output_dir)
 
     try:
         # Determine output file with RLM enable/disable subfolder
         subfolder = "enable" if rlm_enabled else "disable"
-        output_path = Path(output_dir) / subfolder / "summaries_rlm_enabled.md"
+        output_path = output_dir / subfolder / "summaries_rlm_enabled.md"
 
         # Create directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3085,11 +3079,10 @@ async def log_inspection_code_to_markdown(
     from pathlib import Path
     from datetime import datetime
 
-    # Handle output_dir with fallback logic
+    # Use same base dir as chunk_logger so all RLM .md files land in one place
     if output_dir is None:
-        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
-        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
-            output_dir = "./logs/chunk_analysis"
+        output_dir = get_chunk_logs_base_dir()
+    output_dir = Path(output_dir)
 
     try:
         # Determine output file with RLM enable/disable subfolder
@@ -3248,16 +3241,15 @@ async def log_inspection_code_with_text_to_markdown(
     from pathlib import Path
     from datetime import datetime, timedelta
 
-    # Handle output_dir with fallback logic
+    # Use same base dir as chunk_logger so all RLM .md files land in one place
     if output_dir is None:
-        output_dir = os.getenv("LOGS_DIR", "/app/logs/chunk_analysis")
-        if not os.path.exists(output_dir) and not os.path.isabs(output_dir):
-            output_dir = "./logs/chunk_analysis"
+        output_dir = get_chunk_logs_base_dir()
+    output_dir = Path(output_dir)
 
     try:
         # Use RLM enable/disable subfolder
         subfolder = "enable" if rlm_enabled else "disable"
-        output_path = Path(output_dir) / subfolder / "inspection_code_chunk_rlm_enabled.md"
+        output_path = output_dir / subfolder / "inspection_code_chunk_rlm_enabled.md"
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         total_programs = sum(len(chunk_payloads) for chunk_payloads in inspection_rules.values())
@@ -3279,7 +3271,7 @@ async def log_inspection_code_with_text_to_markdown(
             "### Purpose\n",
             "- Generate chunk-specific relevance evaluation code",
             "- Preserve the exact chunk text and first read passed to the model",
-            "- Record the chunk-scoped recursive text used for Phase 4 (defaults to first read)\n",
+            "- Record the chunk-scoped recursive text (RLM only): full chunk when selected, empty when discarded\n",
             "### Usage\n",
             "These functions are executed by the recursive summarizer to evaluate each chunk individually.\n",
             "---\n",
@@ -3301,11 +3293,8 @@ async def log_inspection_code_with_text_to_markdown(
                 code = payload.get("code", "")
                 chunk_text = payload.get("chunk_text", "")
                 first_read_text = payload.get("first_read_text", "")
-                chunk_recursive_text = (
-                    payload.get("recursive_text")
-                    or first_read_text
-                    or recursive_text
-                )
+                # Recursive text = full chunk only when selected; empty when discarded (no fallback)
+                chunk_recursive_text = payload.get("recursive_text", "")
                 logger.info(f"[CHUNK] ID: {chunk_id} | Text: {chunk_text[:200]} | Keywords: {keywords}")
                 eval_time = base_eval_time + timedelta(milliseconds=120 * (chunk_idx + 1))
                 eval_time_str = eval_time.isoformat()

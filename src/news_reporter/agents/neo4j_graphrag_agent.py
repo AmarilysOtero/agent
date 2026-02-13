@@ -1,7 +1,7 @@
 """Neo4j GraphRAG Agent for Neo4j GraphRAG retrieval."""
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple, Union
 
 from .utils import (
     infer_header_from_chunk,
@@ -18,7 +18,12 @@ class Neo4jGraphRAGAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, query: str, high_recall_mode: bool = False) -> str:
+    async def run(
+        self,
+        query: str,
+        high_recall_mode: bool = False,
+        return_results: bool = False,
+    ) -> Union[str, Tuple[str, List[Dict[str, Any]]]]:
         logger.info(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
@@ -65,7 +70,7 @@ class Neo4jGraphRAGAgent:
         )
 
         if not results:
-            return "No results found in Neo4j GraphRAG."
+            return ("No results found in Neo4j GraphRAG.", []) if return_results else "No results found in Neo4j GraphRAG."
 
         # Filter results - mode-aware filtering based on query type
         filtered_results = filter_results_by_exact_match(
@@ -81,7 +86,7 @@ class Neo4jGraphRAGAgent:
 
         if not filtered_results:
             logger.warning(f"No relevant results found after filtering (had {len(results)} initial results)")
-            return "No relevant results found in Neo4j GraphRAG after filtering."
+            return ("No relevant results found in Neo4j GraphRAG after filtering.", []) if return_results else "No relevant results found in Neo4j GraphRAG after filtering."
 
         # Check if query requires exact numerical calculation or list query and try CSV query
         exact_answer = None
@@ -239,7 +244,10 @@ class Neo4jGraphRAGAgent:
             else:
                 findings.append(f"- {source_note} {source_info}: {text}")
 
-        return "\n".join(findings)
+        context_text = "\n".join(findings)
+        if return_results:
+            return context_text, filtered_results
+        return context_text
     
     def _detect_list_column(self, query: str, list_columns: List[str]) -> str:
         """Detect which column to list from query."""

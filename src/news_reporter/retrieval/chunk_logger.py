@@ -9,7 +9,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def _chunk_logs_base_dir() -> Path:
+def get_chunk_logs_base_dir() -> Path:
     """Base directory for chunk logs (project-local on Windows/non-Docker)."""
     if os.name == "nt" or not Path("/.dockerenv").exists():
         # __file__ = .../src/news_reporter/retrieval/chunk_logger.py -> repo root = parent x4
@@ -19,7 +19,7 @@ def _chunk_logs_base_dir() -> Path:
 
 
 # Output directory for chunk logs (project-local on Windows so enable/disable exist under repo)
-CHUNK_LOGS_DIR = _chunk_logs_base_dir()
+CHUNK_LOGS_DIR = get_chunk_logs_base_dir()
 CHUNK_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 CHUNK_LOGS_ENABLE_DIR = CHUNK_LOGS_DIR / "enable"
 CHUNK_LOGS_DISABLE_DIR = CHUNK_LOGS_DIR / "disable"
@@ -29,11 +29,16 @@ CHUNK_LOGS_DISABLE_DIR.mkdir(parents=True, exist_ok=True)
 CHUNKS_RLM_DISABLED_FILE = CHUNK_LOGS_DISABLE_DIR / "chunks_rlm_disabled.md"
 CHUNKS_RLM_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "chunks_rlm_enabled.md"
 AGGREGATE_RAW_FILE_NAME = "aggregate_final_answer_raw.md"
+# RLM enable log files also written by recursive_summarizer (we create placeholders if missing)
+SUMMARIES_RLM_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "summaries_rlm_enabled.md"
+INSPECTION_CODE_RLM_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "inspection_code_rlm_enabled.md"
+INSPECTION_CODE_CHUNK_RLM_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "inspection_code_chunk_rlm_enabled.md"
+INSPECTION_PROGRAMS_ITERATIVE_ENABLED_FILE = CHUNK_LOGS_ENABLE_DIR / "inspection_programs_iterative_enabled.md"
 
 
 def _resolve_chunk_logs_dir(output_dir: Optional[str] = None, rlm_enabled: bool = False) -> Path:
     """Resolve chunk logs directory with RLM enable/disable subfolder."""
-    base_dir = Path(output_dir) if output_dir else _chunk_logs_base_dir()
+    base_dir = Path(output_dir) if output_dir else get_chunk_logs_base_dir()
     subfolder = "enable" if rlm_enabled else "disable"
     target_dir = base_dir / subfolder
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -65,13 +70,61 @@ def init_aggregate_raw_log(query: Optional[str] = None, output_dir: Optional[str
 
 
 def ensure_rlm_enable_log_files(query: Optional[str] = None) -> None:
-    """Ensure logs/chunk_analysis/enable exists with initial .md files (for RLM-enabled runs)."""
+    """Ensure logs/chunk_analysis/enable exists with initial .md files (for RLM-enabled runs).
+
+    Creates placeholder content for all RLM enable logs so they exist even when the full
+    RLM pipeline (recursive_summarize_files) has not run. The recursive summarizer will
+    overwrite these with real content when it runs.
+    """
     init_aggregate_raw_log(query=query, rlm_enabled=True)
+    enable_dir = CHUNK_LOGS_ENABLE_DIR
+    enable_dir.mkdir(parents=True, exist_ok=True)
+
+    # chunks_rlm_enabled.md
     if not CHUNKS_RLM_ENABLED_FILE.exists():
-        CHUNKS_RLM_ENABLED_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(CHUNKS_RLM_ENABLED_FILE, "w", encoding="utf-8") as f:
             f.write("# Chunks (RLM Enabled)\n\nChunk log (append).\n\n")
         logger.info(f"📝 Initialized chunks log: {CHUNKS_RLM_ENABLED_FILE}")
+
+    # summaries_rlm_enabled.md (written by recursive_summarizer.log_file_summaries_to_markdown)
+    if not SUMMARIES_RLM_ENABLED_FILE.exists():
+        with open(SUMMARIES_RLM_ENABLED_FILE, "w", encoding="utf-8") as f:
+            f.write("# Phase 4: Recursive Summarization (RLM Enabled)\n\n")
+            f.write(f"**Execution Time:** {datetime.now().isoformat()}\n\n")
+            if query:
+                f.write(f"**Query:** {query}\n\n")
+            f.write("(Placeholder – full content written when RLM pipeline runs.)\n")
+        logger.info(f"📝 Initialized summaries log: {SUMMARIES_RLM_ENABLED_FILE}")
+
+    # inspection_code_rlm_enabled.md (per-chunk mode; written by log_inspection_code_to_markdown)
+    if not INSPECTION_CODE_RLM_ENABLED_FILE.exists():
+        with open(INSPECTION_CODE_RLM_ENABLED_FILE, "w", encoding="utf-8") as f:
+            f.write("# Phase 4: LLM-Generated Inspection Logic (RLM Enabled)\n\n")
+            f.write(f"**Execution Time:** {datetime.now().isoformat()}\n\n")
+            if query:
+                f.write(f"**Query:** {query}\n\n")
+            f.write("(Placeholder – full content written when RLM pipeline runs.)\n")
+        logger.info(f"📝 Initialized inspection code log: {INSPECTION_CODE_RLM_ENABLED_FILE}")
+
+    # inspection_code_chunk_rlm_enabled.md (written by log_inspection_code_with_text_to_markdown)
+    if not INSPECTION_CODE_CHUNK_RLM_ENABLED_FILE.exists():
+        with open(INSPECTION_CODE_CHUNK_RLM_ENABLED_FILE, "w", encoding="utf-8") as f:
+            f.write("# Phase 4: LLM-Generated Inspection Logic (RLM Enabled)\n\n")
+            f.write(f"**Execution Time:** {datetime.now().isoformat()}\n\n")
+            if query:
+                f.write(f"**Query:** {query}\n\n")
+            f.write("(Placeholder – full content written when RLM pipeline runs.)\n")
+        logger.info(f"📝 Initialized inspection code chunk log: {INSPECTION_CODE_CHUNK_RLM_ENABLED_FILE}")
+
+    # inspection_programs_iterative_enabled.md (iterative mode; written by log_inspection_code_to_markdown)
+    if not INSPECTION_PROGRAMS_ITERATIVE_ENABLED_FILE.exists():
+        with open(INSPECTION_PROGRAMS_ITERATIVE_ENABLED_FILE, "w", encoding="utf-8") as f:
+            f.write("# Phase 4: LLM-Generated Inspection Logic (RLM Enabled) – Iterative\n\n")
+            f.write(f"**Execution Time:** {datetime.now().isoformat()}\n\n")
+            if query:
+                f.write(f"**Query:** {query}\n\n")
+            f.write("(Placeholder – full content written when RLM pipeline runs in iterative mode.)\n")
+        logger.info(f"📝 Initialized inspection programs iterative log: {INSPECTION_PROGRAMS_ITERATIVE_ENABLED_FILE}")
 
 
 def append_aggregate_raw_chunk(

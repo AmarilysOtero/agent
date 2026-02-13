@@ -244,7 +244,8 @@ class Neo4jGraphRAGRetriever:
                         "parent_headers": chunk.get("metadata", {}).get("parent_headers") or chunk.get("parent_headers", []),
                         "chunk_index": chunk.get("index"),
                         "file_id": chunk.get("file_id"),
-                        "chunk_size": chunk.get("chunk_size")
+                        "chunk_size": chunk.get("chunk_size"),
+                        "keywords": chunk.get("metadata", {}).get("keywords") or chunk.get("keywords") or [],
                     }
                 }
                 results.append(chunk_result)
@@ -352,4 +353,47 @@ def graphrag_search(
     print(f"📊 [graphrag_search] Returning {len(limited_results)} results (limited from {len(results)})")
     
     return limited_results
+
+
+def expand_files_via_api(
+    file_ids: List[str],
+    neo4j_api_url: Optional[str] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Fetch all chunks for each file from the Neo4j backend (Phase 3 full-file expansion).
+
+    Used when RLM is enabled so the recursive summarizer receives every chunk per file
+    (e.g. 106 for a PDF) instead of only the top-k search results.
+
+    Args:
+        file_ids: List of file IDs (e.g. from search result file_id).
+        neo4j_api_url: Base URL for Neo4j backend (default from settings).
+
+    Returns:
+        expanded_files dict: { file_id: { "file_name": str, "chunks": [...], "entry_chunk_count": int } }
+        Empty dict on error or if file_ids is empty.
+    """
+    if not file_ids:
+        return {}
+    url = (neo4j_api_url or getattr(Settings.load(), "neo4j_api_url", None) or "").rstrip("/")
+    if not url:
+        logger.warning("expand_files_via_api: NEO4J_API_URL not set; skipping full-file expansion")
+        return {}
+    if os.getenv("DOCKER_ENV") and "localhost" in url:
+        url = url.replace("localhost", "host.docker.internal")
+    endpoint = f"{url}/api/graphrag/expand-files"
+    try:
+        resp = requests.post(endpoint, json={"file_ids": file_ids}, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        files = data.get("files") or {}
+        total = sum(len(f.get("chunks", [])) for f in files.values())
+        logger.info(f"expand_files_via_api: {len(file_ids)} files -> {total} total chunks")
+        return files
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"expand_files_via_api failed: {e}; using search results only")
+        return {}
+    except Exception as e:
+        logger.warning(f"expand_files_via_api error: {e}; using search results only")
+        return {}
 

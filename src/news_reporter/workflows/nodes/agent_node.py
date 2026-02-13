@@ -76,8 +76,10 @@ class AgentNode(BaseNode):
             value = self.state.get(state_path)
             input_data[input_key] = value
         
-        # If no structured inputs, infer input for automatic chaining
-        if not input_data:
+        # If no structured inputs OR all inputs are None/empty, infer input for automatic chaining
+        # Check if dict has values, not just if it exists (empty dict {} is truthy!)
+        has_actual_inputs = bool(input_data and any(v is not None for v in input_data.values()))
+        if not has_actual_inputs:
             # Check if we have a parent result (for chaining)
             parent_result = getattr(self, 'parent_result', None)
             
@@ -117,6 +119,10 @@ class AgentNode(BaseNode):
             config=self.runner.config,
             **params
         )
+        
+        # Log result for debugging
+        result_preview = str(result)[:200] + "..." if len(str(result)) > 200 else str(result)
+        logger.info(f"[{self.config.id}] Agent result: {result_preview}")
         
         # Map outputs to state (custom mappings)
         state_updates = {}

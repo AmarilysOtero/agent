@@ -229,46 +229,49 @@ def run_foundry_agent(agent_id: str, user_content: str, *, system_hint: str | No
         ) from e
     agents = client.agents
 
+
+    # 1. Create Thread
     try:
         create_thread = _resolve(agents, "create_thread", "threads.create")
-        thread = _with_retries(lambda: create_thread(logging_enable=False))
-        thread_id = _get_id(thread)
+        thread = _with_retries(lambda: create_thread())
+        thread_id = getattr(thread, "id", None) or (thread.get("id") if isinstance(thread, dict) else None)
+        
+        if not thread_id:
+            # Try getting it from the object if it wasn't a dict/attr
+            thread_id = _get_id(thread)
+            
+        if not thread_id:
+             raise RuntimeError(f"Could not extract valid thread_id from create_thread response: {thread}")
+             
     except Exception as e:
+        # Fallback error handling similar to original code
         error_msg = str(e)
-        # Check for authentication/authorization errors
         status_code = getattr(e, 'status_code', None)
         if status_code == 401 or status_code == 403 or "authentication" in error_msg.lower() or "unauthorized" in error_msg.lower():
             raise RuntimeError(
-                f"Access denied to Foundry (HTTP {status_code if status_code else 'N/A'}). "
-                "Please check your Azure credentials and permissions. "
-                "In Docker, ensure AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and AZURE_TENANT_ID are set correctly. "
-                "The service principal needs 'Cognitive Services User' or 'AI Developer' role on the Foundry project. "
-                f"Error: {error_msg}"
+                f"Access denied to Foundry. Please check your Azure credentials. Error: {error_msg}"
             ) from e
-        elif status_code == 404 or "not found" in error_msg.lower():
-            raise RuntimeError(
-                f"Foundry resource not found (HTTP {status_code if status_code else 'N/A'}). "
-                "Please verify your AZURE_AI_PROJECT_ENDPOINT and ensure you have access to the project. "
-                f"Error: {error_msg}"
-            ) from e
-        else:
-            raise RuntimeError(
-                f"Failed to create Foundry thread (HTTP {status_code if status_code else 'N/A'}): {error_msg}. "
-                "Please check your Foundry access and configuration."
-            ) from e
+        raise RuntimeError(f"Failed to create Foundry thread: {error_msg}") from e
 
+    # 2. Add Messages
     create_message = _resolve(agents, "create_message", "messages.create")
     if system_hint:
         try:
+            logging.info(f"[FOUNDRY] Sending system message: {system_hint[:200]}")
             create_message(thread_id=thread_id, role="system", content=system_hint, logging_enable=False)
         except Exception:
             pass
+            
+    logging.info(f"[FOUNDRY] Sending user message to agent {agent_id}: {user_content[:500]}")
     create_message(thread_id=thread_id, role="user", content=user_content, logging_enable=False)
 
+    # 3. Create and Monitor Run
     try:
+        # Try create_and_process_run first (newer SDKs)
         create_and_process_run = _resolve(agents, "create_and_process_run", "runs.create_and_process")
         _with_retries(lambda: _call_with_agent_kw(create_and_process_run, thread_id=thread_id, agent_id=agent_id, logging_enable=False))
-    except AttributeError:
+    except (AttributeError, RuntimeError):
+        # Fallback to create_run + poll
         create_run = _resolve(agents, "create_run", "runs.create")
         run = _with_retries(lambda: _call_with_agent_kw(create_run, thread_id=thread_id, agent_id=agent_id, logging_enable=False))
         run_id = _get_id(run)
@@ -296,11 +299,14 @@ def run_foundry_agent(agent_id: str, user_content: str, *, system_hint: str | No
         if role == "assistant":
             out = _extract_text(m)
             if out:
+                logging.info(f"[FOUNDRY] Received response from agent {agent_id}: {out[:500]}")
                 return out
     for m in reversed(data):
         out = _extract_text(m)
         if out:
+            logging.info(f"[FOUNDRY] Received response (fallback) from agent {agent_id}: {out[:500]}")
             return out
+    logging.warning(f"[FOUNDRY] No response text found, returning raw data from agent {agent_id}")
     return str(data[-1])
 
 def _poll_run(get_run: Callable[..., Any], *, thread_id: str, run_id: str, timeout_s: float = 20.0, interval_s: float = 0.6) -> str:

@@ -9,6 +9,7 @@ from .fanout_node import FanoutNode
 from .loop_node import LoopNode
 from .conditional_node import ConditionalNode
 from .merge_node import MergeNode
+from .start_node import StartNode
 
 # Node type registry
 NODE_TYPES: Dict[str, Type[BaseNode]] = {
@@ -17,6 +18,7 @@ NODE_TYPES: Dict[str, Type[BaseNode]] = {
     "loop": LoopNode,
     "conditional": ConditionalNode,
     "merge": MergeNode,
+    "start": StartNode,
 }
 
 
@@ -56,4 +58,5 @@ __all__ = [
     "MergeNode",
     "NODE_TYPES",
     "create_node",
+    "StartNode",
 ]

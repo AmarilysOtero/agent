@@ -1,10 +1,10 @@
+# Microsoft Foundry SDK
+azure-ai-projects>=1.0.0b10,<1.1.0
+azure-identity
 # Agent Framework (workflow + Azure integration)
-agent-framework==1.0.0b251007
-agent-framework-azure-ai==1.0.0b251007
-
-# Foundry SDK — must be >= 1.0.0b11 to satisfy agent-framework-azure-ai
-azure-ai-projects>=1.0.0b11,<1.1.0
-azure-identity>=1.17.1
+# NOTE: agent-framework and agent-framework-azure-ai are not available on PyPI.
+# You must install these packages manually in your environment.
+python-multipart
 
 python-dotenv>=1.0.1
 pydantic[email]>=2.8.2
@@ -18,10 +18,6 @@ pre-commit>=3.8.0
 #for upload and vectorized PDF
 fastapi
 uvicorn
-#python-dotenv
-#pydantic>=2,<3
-azure-ai-projects
-azure-identity
 azure-search-documents
 azure-storage-blob
 azure-cosmos

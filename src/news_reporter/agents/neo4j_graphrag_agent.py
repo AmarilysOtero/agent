@@ -8,6 +8,7 @@ from .utils import (
     extract_person_names_and_mode,
     filter_results_by_exact_match,
 )
+from ..tools.header_vocab import extract_attribute_keywords
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +49,16 @@ class Neo4jGraphRAGAgent:
         # Extract person names and determine if query is person-centric
         person_names, is_person_query = extract_person_names_and_mode(query)
         
-        # Only use keywords for person-centric queries
-        keywords = person_names if (is_person_query and person_names) else None
+        # Build keywords for search (RLM-style: person names + attribute keywords, same as AiSearchAgent)
+        keywords: List[str] = []
+        if is_person_query and person_names:
+            keywords.extend(person_names)
+        attribute_kws = extract_attribute_keywords(query)
+        if attribute_kws:
+            keywords.extend(attribute_kws)
+            logger.info(f"🔍 [Neo4jGraphRAGAgent] Added attribute keywords: {attribute_kws}")
+        keywords = list(dict.fromkeys(keywords)) if keywords else []
+        keywords = keywords if keywords else None  # API expects None when no keywords
         keyword_boost = 0.4 if keywords else 0.0
         
         top_k = 18 if high_recall_mode else 12

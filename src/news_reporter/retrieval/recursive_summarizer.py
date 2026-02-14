@@ -3186,18 +3186,26 @@ async def log_inspection_code_to_markdown(
 
             chunk_counter = 1
             for chunk_id, code in chunk_codes.items():
+                payload = file_payloads.get(chunk_id, {})
+                sel_status = payload.get("selection_status", "not_selected")
+                if sel_status == "keyword":
+                    status_label = "Keyword selected"
+                elif sel_status == "recursive":
+                    status_label = "Recursive"
+                else:
+                    status_label = "Not Selected"
                 chunk_timestamp = datetime.now().isoformat()
                 lines.extend([
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
                     f"\n**Analyzed At:** {chunk_timestamp}",
-                    f"\n**Query:** {query}\n",
+                    f"\n**Query:** {query}",
+                    f"\n**Status:** {status_label}\n",
                     "```python",
                     code,
                     "```\n",
                 ])
 
                 # Add First Read text if available from payloads
-                payload = file_payloads.get(chunk_id, {})
                 first_read = payload.get("first_read_text", "")
                 recursive_text = payload.get("recursive_text", "")
 

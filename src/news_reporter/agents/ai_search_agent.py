@@ -364,8 +364,14 @@ class AiSearchAgent:
         
         # When RLM is off but this is a person+attribute query, expand matched files so we include
         # sections like Skills that may not be in the initial top-k (e.g. "tell me Alexis Skills").
+        # Skip expansion when rlm_mode is "standard" (old flow: semantic+graph only).
         use_expanded_context = False
-        if not high_recall_mode and is_person_query and filtered_results:
+        try:
+            from ..config import Settings
+            rlm_mode = getattr(Settings.load(), "rlm_mode", "standard")
+        except Exception:
+            rlm_mode = "standard"
+        if not high_recall_mode and is_person_query and filtered_results and rlm_mode != "standard":
             file_ids = []
             for r in filtered_results:
                 fid = (

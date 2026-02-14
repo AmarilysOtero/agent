@@ -432,10 +432,17 @@ async def add_message(
     
     cfg = Settings.load()
     
-    # Get RLM enabled flag from request, default to config setting
-    rlm_enabled = message.get("rlm_enabled", cfg.rlm_enabled)
-    if rlm_enabled:
-        cfg.rlm_enabled = rlm_enabled
+    # RLM mode from request: one of "standard" | "disabled" | "enabled" (overrides config)
+    rlm_mode_msg = (message.get("rlm_mode") or "").strip().lower()
+    if rlm_mode_msg in ("standard", "disabled", "enabled"):
+        cfg.rlm_mode = rlm_mode_msg
+        cfg.rlm_enabled = rlm_mode_msg == "enabled"
+    else:
+        # Legacy: rlm_enabled boolean
+        if "rlm_enabled" in message:
+            cfg.rlm_enabled = bool(message.get("rlm_enabled"))
+            cfg.rlm_mode = "enabled" if cfg.rlm_enabled else "standard"
+    logger.info(f"   RLM mode: {cfg.rlm_mode} (enabled={cfg.rlm_enabled})")
     
     # Get sources from Neo4j if using Neo4j search
     sources = []

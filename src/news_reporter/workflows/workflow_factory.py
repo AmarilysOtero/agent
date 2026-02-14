@@ -302,6 +302,7 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         expanded_context = None
         expanded_files = {}
         file_summaries = []
+        accepted_chunks: List[str] = []
         final_answer = None
         response = None
 
@@ -359,6 +360,11 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                         )
                         final_answer = answer_result.answer_text if hasattr(answer_result, "answer_text") else str(answer_result)
                         expanded_context = final_answer
+                        # Flatten list of accepted chunk IDs from all file summaries (for API response)
+                        accepted_chunks = []
+                        for fs in file_summaries:
+                            cids = getattr(fs, "source_chunk_ids", None) or []
+                            accepted_chunks.extend(cids)
                         logger.info("🔍 Workflow: RLM pipeline produced final answer")
                     else:
                         logger.warning("🔍 Workflow: RLM pipeline returned no summaries; using search context")
@@ -461,13 +467,30 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             # RLM/Phase 5 generated answer - return directly without review
             logger.info("🔍 Workflow: RLM/Phase 5 answer (skipping review step)")
             print("🔍 Workflow: RLM/Phase 5 answer (skipping review step)")
-            return final_answer or response
+            answer_text = final_answer or response or ""
+            if accepted_chunks:
+                chunk_list = ", ".join(accepted_chunks) if len(accepted_chunks) <= 10 else (
+                    ", ".join(accepted_chunks[:10]) + f", ... and {len(accepted_chunks) - 10} more"
+                )
+                answer_text = answer_text.rstrip() + "\n\n**Accepted chunks:** " + chunk_list
+            return {"answer": answer_text, "accepted_chunks": accepted_chunks}
 
     if len(targets) > 1:
         results = await asyncio.gather(*[run_one(rid) for rid in targets])
         stitched = []
+        all_accepted_chunks: List[str] = []
         for rid, out in zip(targets, results):
-            stitched.append(f"### ReporterAgent={rid}\n{out}")
-        return "\n\n---\n\n".join(stitched)
+            text = out.get("answer", out) if isinstance(out, dict) else out
+            stitched.append(f"### ReporterAgent={rid}\n{text}")
+            if isinstance(out, dict) and out.get("accepted_chunks"):
+                all_accepted_chunks.extend(out["accepted_chunks"])
+        answer_text = "\n\n---\n\n".join(stitched)
+        if all_accepted_chunks:
+            chunk_list = ", ".join(all_accepted_chunks) if len(all_accepted_chunks) <= 10 else (
+                ", ".join(all_accepted_chunks[:10]) + f", ... and {len(all_accepted_chunks) - 10} more"
+            )
+            answer_text = answer_text.rstrip() + "\n\n**Accepted chunks:** " + chunk_list
+            return {"answer": answer_text, "accepted_chunks": all_accepted_chunks}
+        return answer_text
 
     return await run_one(targets[0])

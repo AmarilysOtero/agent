@@ -630,12 +630,20 @@ async def add_message(
             status_code=500,
         )
 
+    # Normalize workflow result: may be dict with "answer" and "accepted_chunks" (RLM) or plain string
+    if isinstance(assistant_response, dict) and "answer" in assistant_response:
+        response_text = assistant_response.get("answer", "")
+        accepted_chunks_list = assistant_response.get("accepted_chunks") or []
+    else:
+        response_text = assistant_response if isinstance(assistant_response, str) else str(assistant_response)
+        accepted_chunks_list = []
+
     # Insert assistant message with sources
     assistant_message = {
         "sessionId": session_id,
         "userId": user_id,
         "role": "assistant",
-        "content": assistant_response,
+        "content": response_text,
         "sources": sources if sources else None,
         "workflow_name": workflow_name,
         "createdAt": datetime.utcnow(),
@@ -653,11 +661,13 @@ async def add_message(
     )
 
     raw_response = {
-        "response": assistant_response,
+        "response": response_text,
         "sources": sources,
         "conversation_id": session_id,
         "workflow_name": workflow_name,
     }
+    if accepted_chunks_list:
+        raw_response["accepted_chunks"] = accepted_chunks_list
     # Add failed workflow information if applicable
     if workflow_failed:
         raw_response["workflow_failed"] = workflow_failed
@@ -668,7 +678,7 @@ async def add_message(
     # Log chat request completion
     logger.info("=" * 100)
     logger.info(f"✅ CHAT REQUEST COMPLETED - Session: {session_id}, Workflow: {workflow_name}")
-    logger.info(f"   Response length: {len(assistant_response)} chars, Sources: {len(sources)}")
+    logger.info(f"   Response length: {len(response_text)} chars, Sources: {len(sources)}")
     logger.info("=" * 100)
     
     return safe_response

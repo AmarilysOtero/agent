@@ -1,5 +1,6 @@
 """AI Search Agent for Neo4j GraphRAG retrieval."""
 
+import asyncio
 import logging
 from typing import List, Dict, Any, Optional, Tuple, Union
 
@@ -361,41 +362,98 @@ class AiSearchAgent:
                 )
                 logger.info(f"✅ Added exact answer to response: {exact_answer['total']:,} units")
         
-        # Add document chunks
-        for res in filtered_results:
-            text = res.get("text", "").replace("\n", " ")
-            file_name = res.get("file_name", "Unknown")
-            directory = res.get("directory_name", "")
-            file_path = res.get("file_path", "")
-            similarity = res.get("similarity", 0.0)
+        # When RLM is off but this is a person+attribute query, expand matched files so we include
+        # sections like Skills that may not be in the initial top-k (e.g. "tell me Alexis Skills").
+        use_expanded_context = False
+        if not high_recall_mode and is_person_query and filtered_results:
+            file_ids = []
+            for r in filtered_results:
+                fid = (
+                    r.get("file_id")
+                    or (r.get("metadata") or {}).get("file_id")
+                    or r.get("file_name")
+                )
+                if fid and str(fid).strip() not in ("", "unknown", "None") and "graph_connection" not in str(fid):
+                    file_ids.append(fid)
+            file_ids = list(dict.fromkeys(file_ids))
+            if file_ids:
+                try:
+                    from ..tools.neo4j_graphrag import expand_files_via_api
+                    expanded = await asyncio.to_thread(expand_files_via_api, file_ids)
+                    if expanded:
+                        expanded_file_ids = set(expanded.keys())
+                        max_chunks_total = 30
+                        max_chars_total = 45_000
+                        chunks_added = 0
+                        chars_added = 0
+                        for fid, file_data in expanded.items():
+                            if chunks_added >= max_chunks_total or chars_added >= max_chars_total:
+                                break
+                            file_name = file_data.get("file_name", fid)
+                            for ch in file_data.get("chunks", [])[:25]:
+                                if chunks_added >= max_chunks_total or chars_added >= max_chars_total:
+                                    break
+                                text = (ch.get("text") or "").replace("\n", " ")
+                                if not text:
+                                    continue
+                                source_note = "[PDF Document]" if (file_name or "").lower().endswith(".pdf") else "[Document]"
+                                source_info = file_name or fid
+                                snippet = text[:2000] + "..." if len(text) > 2000 else text
+                                findings.append(f"- {source_note} {source_info}: {snippet}")
+                                chunks_added += 1
+                                chars_added += len(text)
+                        # Include any filtered result not from an expanded file (e.g. graph_connection)
+                        for res in filtered_results:
+                            fid = res.get("file_id") or (res.get("metadata") or {}).get("file_id")
+                            if fid not in expanded_file_ids:
+                                text = res.get("text", "").replace("\n", " ")
+                                file_name = res.get("file_name", "Unknown")
+                                file_path = res.get("file_path", "")
+                                source_note = "[PDF Document]" if (file_path or "").lower().endswith(".pdf") else "[Document]"
+                                source_info = file_path or file_name
+                                snippet = text[:2000] + "..." if len(text) > 2000 else text
+                                findings.append(f"- {source_note} {source_info}: {snippet}")
+                        use_expanded_context = True
+                        logger.info(f"🔍 [AiSearchAgent] Person-query expansion: {len(file_ids)} files -> {chunks_added} chunks in context")
+                except Exception as e:
+                    logger.warning(f"Person-query expansion failed: {e}; using search results only", exc_info=True)
+        
+        # Add document chunks (skip when we already built context from expanded files)
+        if not use_expanded_context:
+            for res in filtered_results:
+                text = res.get("text", "").replace("\n", " ")
+                file_name = res.get("file_name", "Unknown")
+                directory = res.get("directory_name", "")
+                file_path = res.get("file_path", "")
+                similarity = res.get("similarity", 0.0)
             
-            # Add source type indicator
-            if file_path and file_path.lower().endswith('.csv'):
-                source_note = "[CSV Data]"
-            elif file_path and file_path.lower().endswith('.pdf'):
-                source_note = "[PDF Document]"
-            elif file_path and file_path.lower().endswith(('.doc', '.docx')):
-                source_note = "[Word Document]"
-            elif file_path and file_path.lower().endswith(('.xls', '.xlsx')):
-                source_note = "[Excel Document]"
-            else:
-                source_note = "[Document]"
+                # Add source type indicator
+                if file_path and file_path.lower().endswith('.csv'):
+                    source_note = "[CSV Data]"
+                elif file_path and file_path.lower().endswith('.pdf'):
+                    source_note = "[PDF Document]"
+                elif file_path and file_path.lower().endswith(('.doc', '.docx')):
+                    source_note = "[Word Document]"
+                elif file_path and file_path.lower().endswith(('.xls', '.xlsx')):
+                    source_note = "[Excel Document]"
+                else:
+                    source_note = "[Document]"
             
-            # Format source info
-            if file_path:
-                source_info = file_path
-            elif directory:
-                source_info = f"{directory}/{file_name}"
-            else:
-                source_info = file_name
+                # Format source info
+                if file_path:
+                    source_info = file_path
+                elif directory:
+                    source_info = f"{directory}/{file_name}"
+                else:
+                    source_info = file_name
             
-            # Log and add to findings
-            logger.info(f"📝 Adding chunk ({len(text)} chars) from {file_name}")
+                # Log and add to findings
+                logger.info(f"📝 Adding chunk ({len(text)} chars) from {file_name}")
             
-            if len(text) > 2000:
-                findings.append(f"- {source_note} {source_info}: {text[:2000]}...")
-            else:
-                findings.append(f"- {source_note} {source_info}: {text}")
+                if len(text) > 2000:
+                    findings.append(f"- {source_note} {source_info}: {text[:2000]}...")
+                else:
+                    findings.append(f"- {source_note} {source_info}: {text}")
 
         context_text = "\n".join(findings)
         if return_results:

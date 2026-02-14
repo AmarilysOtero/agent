@@ -431,7 +431,9 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                 print(f"Decision: {decision} | Reason: {reason}")
 
                 if decision == "accept":
-                    return revised or response
+                    # Return the assistant's response (the script that was accepted), not revised_script.
+                    # Foundry reviewer may put instructions into revised_script; we must not surface that.
+                    return response
 
                 # Ask assistant to improve using reviewer feedback
                 improve_context = (

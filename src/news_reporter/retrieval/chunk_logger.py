@@ -188,8 +188,11 @@ def log_aggregate_raw_final_set(
             chunk_id = chunk.get("chunk_id", "unknown")
             chunk_text = chunk.get("text", "")
             timestamp = datetime.now().isoformat()
+            sel_status = chunk.get("selection_status", "recursive")
+            status_label = "Keyword selected" if sel_status == "keyword" else "Recursive"
             f.write(f"#### Chunk: {chunk_id}\n\n")
-            f.write(f"**Analyzed At:** {timestamp}\n\n")
+            f.write(f"**Analyzed At:** {timestamp}\n")
+            f.write(f"**Status:** {status_label}\n\n")
             f.write("```text\n")
             f.write(f"{chunk_text}\n")
             f.write("```\n\n")

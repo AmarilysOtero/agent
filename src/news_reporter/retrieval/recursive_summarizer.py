@@ -1247,6 +1247,7 @@ async def recursive_summarize_files(
                 file_inspection_payloads = {}  # Store code + text metadata per chunk
                 relevant_chunks = []
                 relevant_chunk_ids = []
+                chunk_selection_status = {}  # chunk_id -> "keyword" | "recursive" for selected chunks (for aggregate log)
 
                 for idx, chunk in enumerate(chunks):
                     if isinstance(chunk, dict):
@@ -1284,33 +1285,61 @@ async def recursive_summarize_files(
                             "keywords": chunk_keywords
                         }
 
-                        # Step 2: Apply the generated code to evaluate this specific chunk
-                        logger.debug(f"  → Evaluating chunk {idx} with generated code")
-                        is_relevant = await _evaluate_chunk_with_code(
-                            chunk_text=chunk_text,
-                            inspection_code=generated_code,
-                            chunk_id=chunk_id
-                        )
-
                         chunk_short_id = chunk_id.split(':')[-1] if ':' in chunk_id else f"chunk_{idx}"
-                        if is_relevant and rlm_enabled:
-                            # RLM only: selected chunk → recursive read = complete chunk text that was read
-                            file_inspection_payloads[chunk_id]["recursive_text"] = chunk_text
-                            relevant_chunks.append(chunk_text)
-                            relevant_chunk_ids.append(chunk_id)
-                            # If chunk_keywords exist, treat as keyword selection, else recursive
-                            phase = "keyword_pre_filter" if chunk_keywords else "iterative_boolean_eval"
-                            append_aggregate_raw_chunk(
-                                chunk_id=chunk_id,
-                                file_id=file_id,
-                                file_name=file_name,
-                                chunk_text=chunk_text,
-                                phase=phase,
-                                rlm_enabled=rlm_enabled
+                        is_relevant = False
+                        selection_status = "not_selected"
+
+                        # Step 2a: Keyword-first path — run inspection code on keywords before first read
+                        if chunk_keywords and rlm_enabled:
+                            keyword_match = await _evaluate_keywords_with_inspection_code(
+                                chunk_keywords,
+                                generated_code,
+                                chunk_id
                             )
-                            logger.debug(f"    ✓ {chunk_short_id} passed inspection")
-                        else:
-                            logger.debug(f"    ✗ {chunk_short_id} failed inspection")
+                            if keyword_match:
+                                is_relevant = True
+                                selection_status = "keyword"
+                                file_inspection_payloads[chunk_id]["recursive_text"] = chunk_text
+                                file_inspection_payloads[chunk_id]["selection_status"] = "keyword"
+                                relevant_chunks.append(chunk_text)
+                                relevant_chunk_ids.append(chunk_id)
+                                chunk_selection_status[chunk_id] = "keyword"
+                                append_aggregate_raw_chunk(
+                                    chunk_id=chunk_id,
+                                    file_id=file_id,
+                                    file_name=file_name,
+                                    chunk_text=chunk_text,
+                                    phase="keyword_pre_filter",
+                                    rlm_enabled=rlm_enabled
+                                )
+                                logger.debug(f"    ✓ {chunk_short_id} passed keyword pre-filter (skipped first read)")
+
+                        # Step 2b: If not selected by keyword, run first read (code on full chunk text)
+                        if not is_relevant:
+                            logger.debug(f"  → Evaluating chunk {idx} with generated code (first read)")
+                            is_relevant = await _evaluate_chunk_with_code(
+                                chunk_text=chunk_text,
+                                inspection_code=generated_code,
+                                chunk_id=chunk_id
+                            )
+                            if is_relevant and rlm_enabled:
+                                selection_status = "recursive"
+                                file_inspection_payloads[chunk_id]["recursive_text"] = chunk_text
+                                relevant_chunks.append(chunk_text)
+                                relevant_chunk_ids.append(chunk_id)
+                                chunk_selection_status[chunk_id] = "recursive"
+                                append_aggregate_raw_chunk(
+                                    chunk_id=chunk_id,
+                                    file_id=file_id,
+                                    file_name=file_name,
+                                    chunk_text=chunk_text,
+                                    phase="iterative_boolean_eval",
+                                    rlm_enabled=rlm_enabled
+                                )
+                                logger.debug(f"    ✓ {chunk_short_id} passed inspection")
+                            else:
+                                logger.debug(f"    ✗ {chunk_short_id} failed inspection")
+                            file_inspection_payloads[chunk_id]["selection_status"] = selection_status
                 
                 # PRODUCTION NOTE: Per-chunk mode is expensive (N LLM calls for N chunks)
                 # For large chunk sets, iterative mode is more efficient
@@ -1397,10 +1426,10 @@ async def recursive_summarize_files(
                     chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
                     relevant_chunks = [chunk_id_to_text.get(cid, "") for cid in final_selected_chunk_ids if cid in chunk_id_to_text]
 
-            # Log final selected chunks before summarization
+            # Log final selected chunks before summarization (include selection_status for Status line in aggregate log)
             chunk_id_to_text = {c.get("chunk_id"): c.get("text", "").strip() for c in chunks if isinstance(c, dict)}
             selected_chunks_for_log = [
-                {"chunk_id": cid, "text": chunk_id_to_text.get(cid, "")}
+                {"chunk_id": cid, "text": chunk_id_to_text.get(cid, ""), "selection_status": chunk_selection_status.get(cid, "recursive")}
                 for cid in final_selected_chunk_ids
                 if chunk_id_to_text.get(cid, "")
             ]
@@ -3311,6 +3340,14 @@ async def log_inspection_code_with_text_to_markdown(
                     # Try to extract chunk IDs from summary_text if they are listed
                     import re
                     selected_chunk_ids = re.findall(r"chunk_id: ([^\s,\)\]\}]+)", summary_text)
+                # Status from payload: keyword -> Keyword selected, recursive -> Recursive, not_selected -> Not Selected
+                sel_status = payload.get("selection_status", "not_selected")
+                if sel_status == "keyword":
+                    status_label = "Keyword selected"
+                elif sel_status == "recursive":
+                    status_label = "Recursive"
+                else:
+                    status_label = "Not Selected"
                 if chunk_id and chunk_id in selected_chunk_ids:
                     if keywords:
                         selection_method = "keyword"
@@ -3322,7 +3359,8 @@ async def log_inspection_code_with_text_to_markdown(
                     f"### {file_counter}.{chunk_counter} Chunk: {chunk_id}",
                     f"\n**Evaluation Time:** {eval_time_str}",
                     f"\n**Query:** {query}",
-                    f"\n**Selection Method:** {selection_method}\n",
+                    f"\n**Selection Method:** {selection_method}",
+                    f"\n**Status:** {status_label}\n",
                     "```python",
                     code,
                     "```",

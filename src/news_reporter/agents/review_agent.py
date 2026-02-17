@@ -51,11 +51,14 @@ class ReviewAgent:
             if not isinstance(data, dict) or "decision" not in data:
                 raise ValueError("Invalid JSON shape from reviewer")
             decision = (data.get("decision") or "revise").lower()
+            decision = decision if decision in {"accept", "revise"} else "revise"
+            # On accept, leave revised_script empty so callers use the original response (agent may echo instructions).
+            revised_script = "" if decision == "accept" else data.get("revised_script", candidate_response)
             return {
-                "decision": decision if decision in {"accept", "revise"} else "revise",
+                "decision": decision,
                 "reason": data.get("reason", ""),
                 "suggested_changes": data.get("suggested_changes", ""),
-                "revised_script": data.get("revised_script", candidate_response),
+                "revised_script": revised_script or candidate_response,
             }
         except Exception as e:
             logger.error("Review parse error: %s", e)

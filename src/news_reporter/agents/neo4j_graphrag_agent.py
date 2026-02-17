@@ -1,13 +1,14 @@
 """Neo4j GraphRAG Agent for Neo4j GraphRAG retrieval."""
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple, Union
 
 from .utils import (
     infer_header_from_chunk,
     extract_person_names_and_mode,
     filter_results_by_exact_match,
 )
+from ..tools.header_vocab import extract_attribute_keywords
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,12 @@ class Neo4jGraphRAGAgent:
     def __init__(self, foundry_agent_id: str):
         self._id = foundry_agent_id
 
-    async def run(self, query: str, high_recall_mode: bool = False) -> str:
+    async def run(
+        self,
+        query: str,
+        high_recall_mode: bool = False,
+        return_results: bool = False,
+    ) -> Union[str, Tuple[str, List[Dict[str, Any]]]]:
         logger.info(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print(f"🤖 [AGENT INVOKED] Neo4jGraphRAGAgent (ID: {self._id})")
         print("Neo4jGraphRAGAgent: using Foundry agent:", self._id)  # keep print
@@ -43,8 +49,16 @@ class Neo4jGraphRAGAgent:
         # Extract person names and determine if query is person-centric
         person_names, is_person_query = extract_person_names_and_mode(query)
         
-        # Only use keywords for person-centric queries
-        keywords = person_names if (is_person_query and person_names) else None
+        # Build keywords for search (RLM-style: person names + attribute keywords, same as AiSearchAgent)
+        keywords: List[str] = []
+        if is_person_query and person_names:
+            keywords.extend(person_names)
+        attribute_kws = extract_attribute_keywords(query)
+        if attribute_kws:
+            keywords.extend(attribute_kws)
+            logger.info(f"🔍 [Neo4jGraphRAGAgent] Added attribute keywords: {attribute_kws}")
+        keywords = list(dict.fromkeys(keywords)) if keywords else []
+        keywords = keywords if keywords else None  # API expects None when no keywords
         keyword_boost = 0.4 if keywords else 0.0
         
         top_k = 18 if high_recall_mode else 12
@@ -65,7 +79,7 @@ class Neo4jGraphRAGAgent:
         )
 
         if not results:
-            return "No results found in Neo4j GraphRAG."
+            return ("No results found in Neo4j GraphRAG.", []) if return_results else "No results found in Neo4j GraphRAG."
 
         # Filter results - mode-aware filtering based on query type
         filtered_results = filter_results_by_exact_match(
@@ -81,7 +95,7 @@ class Neo4jGraphRAGAgent:
 
         if not filtered_results:
             logger.warning(f"No relevant results found after filtering (had {len(results)} initial results)")
-            return "No relevant results found in Neo4j GraphRAG after filtering."
+            return ("No relevant results found in Neo4j GraphRAG after filtering.", []) if return_results else "No relevant results found in Neo4j GraphRAG after filtering."
 
         # Check if query requires exact numerical calculation or list query and try CSV query
         exact_answer = None
@@ -239,7 +253,10 @@ class Neo4jGraphRAGAgent:
             else:
                 findings.append(f"- {source_note} {source_info}: {text}")
 
-        return "\n".join(findings)
+        context_text = "\n".join(findings)
+        if return_results:
+            return context_text, filtered_results
+        return context_text
     
     def _detect_list_column(self, query: str, list_columns: List[str]) -> str:
         """Detect which column to list from query."""

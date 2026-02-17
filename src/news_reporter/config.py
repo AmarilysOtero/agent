@@ -60,7 +60,9 @@ class Settings:
     workflow_json_path: str | None = None  # Optional path to JSON workflow file (used when no active workflow is set)
     
     # === RLM Configuration ===
-    rlm_enabled: bool = False  # Enable optional RLM answering flow (default: false)
+    # One of: "standard" (semantic+graph only, no file expansion), "disabled" (no RLM but expand files for person queries), "enabled" (full RLM pipeline).
+    rlm_mode: str = "standard"
+    rlm_enabled: bool = False  # True when rlm_mode == "enabled"
     
     # === Phase 5: Cross-File Merge + Final Answer + Citations ===
     rlm_citation_policy: str = "best_effort"  # "strict" or "best_effort"
@@ -120,9 +122,14 @@ class Settings:
         # Workflow JSON path (optional)
         workflow_json = os.getenv("WORKFLOW_JSON_PATH")
 
-        # RLM Configuration
-        rlm_enabled = os.getenv("RLM_ENABLED", "false").lower() in {"1", "true", "yes"}
-        
+        # RLM Configuration: standard | disabled | enabled (one selection only)
+        rlm_mode_raw = os.getenv("RLM_MODE", "").strip().lower()
+        if rlm_mode_raw not in ("standard", "disabled", "enabled"):
+            # Backward compat: RLM_ENABLED=true -> enabled, else standard
+            rlm_mode_raw = "enabled" if (os.getenv("RLM_ENABLED", "false").lower() in {"1", "true", "yes"}) else "standard"
+        rlm_mode = rlm_mode_raw
+        rlm_enabled = rlm_mode == "enabled"
+
         # Phase 5: Cross-File Merge + Final Answer + Citations
         rlm_citation_policy = os.getenv("RLM_CITATION_POLICY", "best_effort")
         rlm_max_files = int(os.getenv("RLM_MAX_FILES", "10"))
@@ -180,6 +187,7 @@ class Settings:
             neo4j_api_url=neo4j_url,
             auth_api_url=auth_url,
             workflow_json_path=workflow_json,
+            rlm_mode=rlm_mode,
             rlm_enabled=rlm_enabled,
             rlm_citation_policy=rlm_citation_policy,
             rlm_max_files=rlm_max_files,

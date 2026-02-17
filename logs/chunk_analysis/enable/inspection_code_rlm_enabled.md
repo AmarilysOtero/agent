@@ -1,10 +1,10 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-10T16:53:03.286111
+**Execution Time:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
-**Query Hash:** `9b4c2c0f` (use to verify artifacts match current query)
+**Query Hash:** `b47b05e8` (use to verify artifacts match current query)
 
 **Total Inspection Programs:** 106
 
@@ -36,9 +36,11 @@ These functions (evaluate_chunk_relevance(chunk_text: str) -> bool) are executed
 
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -54,13 +56,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-THE DEVELOPER'S GUIDE TO GraphRAG
-Alison Cossette Zach Blumenfeld Damaso Sanoja
-```
-
-#### Recursive Text
 
 ```text
 THE DEVELOPER'S GUIDE TO GraphRAG
@@ -73,9 +68,11 @@ Alison Cossette Zach Blumenfeld Damaso Sanoja
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -91,16 +88,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents
-| PART I: The Problem With Current RAG...............................................................................             |   4 |
-|---------------------------------------------------------------------------------------------------------------------------------|-----|
-| PART II: What Makes It GraphRAG-Structure, Logic, and Meaning........................                                           |   5 |
-| What Is RAG? .....................................................
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents
@@ -116,9 +103,11 @@ Table of Contents
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -134,17 +123,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents
-......                                 |   6 |
-| 3, Access to Structured and Unstructured Data ..............................                                                    |   7 |
-| How GraphRAG Works................................................................................................              |   7 |
-| Prepare a Knowledge Graph for GraphRAG.......................................................                                   |   7 |
-| Ground With Unstruc
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents
@@ -161,9 +139,11 @@ Table of Contents
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -179,17 +159,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents
-.................................             |  10 |
-| Key Features of Neo4j GraphRAG Package.......................................                                                   |  10 |
-| Neo4j Connection...........................................................................................                     |  10 |
-| Initialize the LLM and Embeddings.........................................................                                      |  11 |
-| Define Node 
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents
@@ -206,9 +175,11 @@ Table of Contents
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -224,17 +195,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents
-|  12 |
-| Ingest Structured Data................................................................................................          |  13 |
-| Getting Started With Data Importer.......................................................                                       |  13 |
-| Import Structured Data...............................................................................                           |  13 |
-| Mapping Your Data to Graph Structures.....................
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents
@@ -251,9 +211,11 @@ Table of Contents
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -269,16 +231,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents (continued)
-| PART IV: Implementing GraphRAG Retrieval Patterns ..................................................                            |   17 |
-|---------------------------------------------------------------------------------------------------------------------------------|------|
-| Import Libraries............................................................................................................... |   17 |
-| Load Environment Variables and Initialize Neo4j Dri
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents (continued)
@@ -294,9 +246,11 @@ Table of Contents (continued)
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -312,17 +266,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents (continued)
-|   20 |
-| VectorCypher Retriever in Practice........................................................................                      |   21 |
-| VectorCypher Retrieval: AWorking Example....................................................                                    |   22 |
-| Text2CypherRetriever..................................................................................................          |   23 |
-| Community Summary Pattern.................
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents (continued)
@@ -339,9 +282,11 @@ Table of Contents (continued)
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -357,13 +302,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Table of Contents (continued)
-'ve built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
-```
-
-#### Recursive Text
 
 ```text
 Table of Contents (continued)
@@ -376,9 +314,11 @@ Table of Contents (continued)
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -394,15 +334,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-PART I: The Problem With Current RAG
-Why chunk-based RAG hits a ceiling - and why developers need more context to answer well
-
-You've built a retrieval-augmented generation (RAG) system. You embedded the docs, connected the vector store, wrapped a prompt around the output, and deployed it. For a minute, it felt like you cracked the code. The model was grounded in your own data, giving answers that sounded smarter than base GPT.
-```
-
-#### Recursive Text
 
 ```text
 PART I: The Problem With Current RAG
@@ -417,9 +348,11 @@ You've built a retrieval-augmented generation (RAG) system. You embedded the doc
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -435,15 +368,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Then reality hit.
-The system works - but only under the most forgiving conditions. The moment you ask a question that spans documents, relies on implicit context, or touches anything complex or structured, the cracks start to show. Answers get vague. Sometimes they're just plain wrong. Or worse, the system confidently quotes the right chunk - but misses the point entirely.
-
-Your RAG system isn't broken. It's just blind.
-```
-
-#### Recursive Text
 
 ```text
 Then reality hit.
@@ -458,9 +382,11 @@ Your RAG system isn't broken. It's just blind.
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:10
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -476,17 +402,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-It has no map of your domain. No memory of what matters. It's like hiring a new developer and giving them a stack of index cards with code snippets from your repo. They can parrot back functions, maybe even modify them, but they don't understand the architecture. They don't know the 'why,' only the 'what.'
-
-That's the ceiling of traditional RAG. And that's what this book is here to fix.
-
-## Here's the core 
-```
-
-#### Recursive Text
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -503,9 +418,11 @@ That's the ceiling of traditional RAG. And that's what this book is here to fix.
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -521,17 +438,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-nd timelines. Chunk-based retrieval can't bridge that gap.
-
-Traditional RAG doesn't have shared context across documents. That's because it doesn't track relationships. It doesn't know which concepts are upstream, downstream, dependent, or mutually exclusive. It doesn't distinguish between definitions, instructions, timelines, policies, or decision logic.
-
-## The bottom line: Traditional RAG treats all chun
-```
-
-#### Recursive Text
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -548,9 +454,11 @@ Traditional RAG doesn't have shared context across documents. That's because it 
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -566,15 +474,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-ng. Consider this: If a customer reaches out to your support team, the employee will listen to the customer's concern, look up their account and tech stack, check previous service requests, etc. When answering the customer's question, the employee brings context. They may answer differently if the person is a new customer vs. a long-term customer.
-
-You want your RAG application to do what humans do naturall
-```
-
-#### Recursive Text
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -589,9 +488,11 @@ You want your RAG application to do what humans do naturall
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -607,13 +508,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-And that's the problem: Your RAG system has none of that. Sure, it has some document metadata available, but no user metadata, no business logic, no connected data - just isolated chunks in a vector store. But RAG can't use what it can't see. So until you give it structure - until you teach it relationships, timelines, ownership, and dependencies - it will keep retrieving the right words for the wrong reaso
-```
-
-#### Recursive Text
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -626,9 +520,11 @@ And that's the problem: Your RAG system has none of that. Sure, it has some docu
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:14
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -644,17 +540,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
-, and you know it's not enough, then this is the guide to take you further.
-
-## PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
-```
-
-#### Recursive Text
 
 ```text
 RAG retrieves semantically similar text, but it doesn't know how the pieces fit together.
@@ -671,9 +556,11 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -689,18 +576,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-You give it a query, it vectorizes that query, and fetches the top-k similar chunks. That's fine if the answer you need lives entirely within isolated chunks. But most real-world questions don't work that way.
-
-Let's say a user asks about a contract clause, but
-
-
-the meaning depends on a sales addendum from three weeks earlier. Or maybe they ask a support question that only makes sense in the context of their infrastruc
-```
-
-#### Recursive Text
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -718,9 +593,11 @@ the meaning depends on a sales addendum from three weeks earlier. Or maybe they 
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -736,17 +613,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enough.
-
-You already know what y
-```
-
-#### Recursive Text
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -763,9 +629,11 @@ You already know what y
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -781,20 +649,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
-
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
-
-These shouldn't feel like advanced use cases they're 
-```
-
-#### Recursive Text
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -814,9 +668,11 @@ These shouldn't feel like advanced use cases they're
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -832,20 +688,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Here's the core issue: RAG retrieves based on similarity, not understanding.
-playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-And we're going to do it 
-```
-
-#### Recursive Text
 
 ```text
 Here's the core issue: RAG retrieves based on similarity, not understanding.
@@ -865,9 +707,11 @@ And we're going to do it
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -883,15 +727,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-Even more problematic is that the system has no mental model for your business. It cannot understand what a 'customer' is in your world. Or how a support ticket relates to a contract. Or what a system diagram implies about downstream integrations. The mental model that represents the structure behind your content is absent in RAG.
-
-Without it, RAG can't reason. It can only retrieve, and that isn't enou
-```
-
-#### Recursive Text
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
@@ -906,9 +741,11 @@ Without it, RAG can't reason. It can only retrieve, and that isn't enou
 
 ### 1.21 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -924,20 +761,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-might want the RAG system to:
-
--  Answer a support question and understand the user's tech stack, contract level, and product version.
--  Explain a contract term - and know what the sales path looked like, who signed off, and which systems were impacted.
-
-- Interpret a customer review and place it in context with purchase history, usage data, and net promoter score (NPS).
-
-These shouldn't feel like adv
-```
-
-#### Recursive Text
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
@@ -957,9 +780,11 @@ These shouldn't feel like adv
 
 ### 1.22 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -975,20 +800,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
-self playbook. We're going to walk you through:
-
--  Ingesting documents and turning them into a knowledge graph
--  Structuring real-world context from messy PDFs, CSVs, and APIs
-- Building retrievers that combine vector search and graph traversal
--  Using text-to-query generation to run dynamic Cypher queries (a query language for graphs) and pull precise information and calculations from your data
-
-An
-```
-
-#### Recursive Text
 
 ```text
 The bottom line: Traditional RAG treats all chunks as equal, flat, unstructured blobs of text.
@@ -1008,9 +819,11 @@ An
 
 ### 1.23 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:22
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1026,13 +839,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
-To understand GraphRAG, let's explore its foundational components - RAG and knowledge graphs - and why they work so well together.
-```
-
-#### Recursive Text
 
 ```text
 PART II: What Makes It GraphRAG - Structure, Logic, and Meaning
@@ -1045,9 +851,11 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ### 1.24 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.555947
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1063,16 +871,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-What Is RAG?
-Let's start with the well-known problems of large language models (LLMs), which power chatbots
-
-
-such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the LLM, it generates a response based on its training data. Due to the probabilistic nature of response generation, LLMs often produce responses that lack accuracy and nuance and don't draw on knowledge specific to your business. In addition, the LLM in question may have limited explainability, which limits its a
-```
-
-#### Recursive Text
 
 ```text
 What Is RAG?
@@ -1088,9 +886,11 @@ such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the L
 
 ### 1.25 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1106,24 +906,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-What Is RAG?
-al responses.
--  Recommendation systems can incorporate real-time data for more personalized suggestions.
--  Search APIs can deliver more nuanced and context-aware results.
-
-RAG consists of three key components:
-
--  An LLM that serves as the generator
--  A knowledge base or database that stores the information to be retrieved
--  A retrieval mechanism to find relevant information from the knowledge base, based on the input query
-
-
-Figure 1. Querying a knowledge graph with an LLM
-```
-
-#### Recursive Text
 
 ```text
 What Is RAG?
@@ -1147,9 +929,11 @@ Figure 1. Querying a knowledge graph with an LLM
 
 ### 1.26 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1165,13 +949,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The quality of a RAG response depends heavily on the database type the information is retrieved from.
-If you use a vector store (as in traditional RAG), the process goes like this: The user query is turned into a vector, which is then used to retrieve semantically similar text chunks from a vector database. While retrieval based on semantic similarity can work across multiple documents, it often falls short when questions require understanding implicit context or relationships that span those do
-```
-
-#### Recursive Text
 
 ```text
 The quality of a RAG response depends heavily on the database type the information is retrieved from.
@@ -1184,9 +961,11 @@ If you use a vector store (as in traditional RAG), the process goes like this: T
 
 ### 1.27 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:26
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1202,15 +981,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-What Is GraphRAG?
-In GraphRAG, the knowledge base used for retrieval is a knowledge graph. A knowledge graph organizes facts as connected entities and relationships, which helps the system understand how pieces of information relate to each other.
-
-The knowledge graph becomes a mental map of your domain, providing the LLM with information about dependencies, sequences, hierarchies, and meaning. This makes GraphRAG especially effective at answering complex, multi-step questions that require reaso
-```
-
-#### Recursive Text
 
 ```text
 What Is GraphRAG?
@@ -1225,9 +995,11 @@ The knowledge graph becomes a mental map of your domain, providing the LLM with 
 
 ### 1.28 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1243,26 +1015,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-What Is GraphRAG?
-er isn't working. | [.234, .789, .123……] |
-
-But that's all the RAG system would surface.
-
-A GraphRAG system, on the other hand, would show not only this service ticket text but also the
-
-
-
-customer's purchase history, known issues with that product version, related documentation, and prior support conversations.
-
-Figure 2. Order issue flow
-
-
-A knowledge graph holds all related information together across both structured and unstructured data. A RAG system built on a knowledge g
-```
-
-#### Recursive Text
 
 ```text
 What Is GraphRAG?
@@ -1288,9 +1040,11 @@ A knowledge graph holds all related information together across both structured 
 
 ### 1.29 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1306,13 +1060,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-1.  Context-Aware Responses
-Unlike traditional RAG, which retrieves isolated chunks of text based on similarity, GraphRAG retrieves facts in context. Since the knowledge graph explicitly encodes relationships, GraphRAG returns relevant information, as well as related information. This structured retrieval ensures that application outputs are comprehensive, reducing hallucinations and leading to more accurate, reliable outputs and improving real-world applicability.
-```
-
-#### Recursive Text
 
 ```text
 1.  Context-Aware Responses
@@ -1325,9 +1072,11 @@ Unlike traditional RAG, which retrieves isolated chunks of text based on similar
 
 ### 1.30 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1343,13 +1092,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-2.  Traceability and Explainability
-LLMs and even standard RAG approaches operate as black boxes, making it difficult to know why and how a certain answer was generated. GraphRAG increases transparency by structuring retrieval paths through the knowledge graph. The knowledge graph will show the sources and relationships that contributed to a response. This makes it easier to audit results, build trust, and meet compliance needs.
-```
-
-#### Recursive Text
 
 ```text
 2.  Traceability and Explainability
@@ -1362,9 +1104,11 @@ LLMs and even standard RAG approaches operate as black boxes, making it difficul
 
 ### 1.31 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1380,13 +1124,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-3.  Access to Structured and Unstructured Data
-GraphRAG overcomes a key limitation of vector-only RAG by integrating both structured and unstructured data. It integrates information like whole databases, ontologies, documents, and real-time streams into a single knowledge graph. Richer data means superior AI responses.
-```
-
-#### Recursive Text
 
 ```text
 3.  Access to Structured and Unstructured Data
@@ -1399,9 +1136,11 @@ GraphRAG overcomes a key limitation of vector-only RAG by integrating both struc
 
 ### 1.32 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:31
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1417,15 +1156,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-How GraphRAG Works
-GraphRAG works by using a knowledge graph to retrieve and connect relevant information. It starts with a search - vector, full-text, spatial, or others to find entry points in the graph, then follows related nodes and relationships to gather more context. The system considers the user's task and filters and ranks the results before passing them to the generation phase.
-
-Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a knowledge graph affects the way 
-```
-
-#### Recursive Text
 
 ```text
 How GraphRAG Works
@@ -1440,9 +1170,11 @@ Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a know
 
 ### 1.33 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1458,14 +1190,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Preparing a knowledge graph for GraphRAG
--  Documents and unstructured text ingestion
--  Structured data source import
-```
-
-#### Recursive Text
 
 ```text
 Preparing a knowledge graph for GraphRAG
@@ -1479,9 +1203,11 @@ Preparing a knowledge graph for GraphRAG
 
 ### 1.34 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:33
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1497,16 +1223,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Implementing GraphRAG retrieval patterns
-Figure 3. Implementing GraphRAG retrieval patterns flow
-
-
-The rest of this book walks you through these two critical steps.
-```
-
-#### Recursive Text
 
 ```text
 Implementing GraphRAG retrieval patterns
@@ -1522,9 +1238,11 @@ The rest of this book walks you through these two critical steps.
 
 ### 1.35 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1540,15 +1258,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Prepare a Knowledge Graph for GraphRAG
-Effective retrieval in GraphRAG starts with a wellstructured knowledge graph. The data needs to be structured to model the business domain as it relates to the documents. That means having a clear data model that defines both the content you're working with and how it is connected.
-
-There are two aspects to consider when you're modeling a knowledge graph for AI workflows:
-```
-
-#### Recursive Text
 
 ```text
 Prepare a Knowledge Graph for GraphRAG
@@ -1563,9 +1272,11 @@ There are two aspects to consider when you're modeling a knowledge graph for AI 
 
 ### 1.36 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1581,15 +1292,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The relationships between documents - or how your content is organized and related:
--  How chunks connect to source documents
-- How sections of a book or catalog are structured
--  How content is grouped or nested
-```
-
-#### Recursive Text
 
 ```text
 The relationships between documents - or how your content is organized and related:
@@ -1604,9 +1306,11 @@ The relationships between documents - or how your content is organized and relat
 
 ### 1.37 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1622,17 +1326,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Business entities and logic:
--  The core entities (i.e., Customers, Products, Companies)
-- How these entities relate to each other
--  The structure and relationships that already exist in your current databases, schemas, or business logic
-
-These two layers - the document structure and the business domain - work together to give GraphRAG its power. GraphRAG is retrieving documents in the context of your business. Consider a customer review in context of their purchase history or a user's question
-```
-
-#### Recursive Text
 
 ```text
 Business entities and logic:
@@ -1649,9 +1342,11 @@ These two layers - the document structure and the business domain - work togethe
 
 ### 1.38 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1667,15 +1362,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Ground With Unstructured and Structured Data
-If you've worked with RAG systems, you're already familiar with vector databases and unstructured content - PDFs, contracts, reports. But the most important  context for your data rarely lives in a single format. In fact, most of the time you'll want to use more than just unstructured data. Structured data like CRM exports, product catalogs, and relational databases often contains crucial grounding information for the answers your users need.
-
-To buil
-```
-
-#### Recursive Text
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1690,9 +1376,11 @@ To buil
 
 ### 1.39 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1708,22 +1396,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Ground With Unstructured and Structured Data
-ontext usually lives. Think financial disclosures, legal contracts, emails, and support tickets. These contain implicit business logic, risk factors, and decision-making signals that don't show up in structured rows and columns.
-
-But here's the catch: Structure isn't binary. It's a continuum.
-
-
-Figure 4. Structured and unstructured data continuum
-
-
-
-At one end, you've got relational databases and clean CSV, where entities and relationships are explici
-```
-
-#### Recursive Text
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1745,9 +1417,11 @@ At one end, you've got relational databases and clean CSV, where entities and re
 
 ### 1.40 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1763,18 +1437,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Ground With Unstructured and Structured Data
-ta Importer (Neo4j Aura Platform) for structured data
--  Knowledge Graph Builder Pipeline (Neo4j GraphRAG Python Package) for extracting implicit relationships from natural language
-
-If you find that your dataset has more complex data structures, you can consider adding tools to your workflow. This is an ever-evolving field, and many are working on building tools for these scenarios. A few to consider:
-
-| Took                                          
-```
-
-#### Recursive Text
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1792,9 +1454,11 @@ If you find that your dataset has more complex data structures, you can consider
 
 ### 1.41 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1810,16 +1474,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Ground With Unstructured and Structured Data
-Guide             |
-| Boundary's Annotation Modeling Language (BAML) | Declarative language for extracting structured data from unstructured sources, demonstrated with Neo4j           | BAML to Neo4j Tutorial by Jason Koo |
-| pdfplumber                                     | Parses tables and text from PDF files, ideal for extracting structured data from documents                       | GitHub Repository                   |
-| LangChain                
-```
-
-#### Recursive Text
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1835,9 +1489,11 @@ Guide             |
 
 ### 1.42 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1853,15 +1509,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Ground With Unstructured and Structured Data
-Neo4j's Data Importer to load structured datasets - the kind of CSVs or database connectors most companies already have - further enriching the graph with known entities and relationships.
-
-Finally, you'll test retrieval strategies, from vector search to graph-enhanced queries, to dynamic Cypher generation with Text2Cypher. The same process can be applied to your own PDFs, internal databases, and business domain to build a semantic layer over enterpri
-```
-
-#### Recursive Text
 
 ```text
 Ground With Unstructured and Structured Data
@@ -1876,9 +1523,11 @@ Finally, you'll test retrieval strategies, from vector search to graph-enhanced 
 
 ### 1.43 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1894,15 +1543,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Create a Neo4j Database
-Begin by choosing a Neo4j database solution that fits your needs. Options include a free instance of AuraDB or a free trial of AuraDB Professional. Neo4j is also available on all the major cloud partner marketplaces. When you navigate to https://console. neo4j.io and log in, you'll see the following screen, inviting you to create your first instance.
-
-Tip: Download your AuraDB credentials (URI, username, password) immediately after creating the instance. They will not be 
-```
-
-#### Recursive Text
 
 ```text
 Create a Neo4j Database
@@ -1917,9 +1557,11 @@ Tip: Download your AuraDB credentials (URI, username, password) immediately afte
 
 ### 1.44 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1935,21 +1577,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Create a Neo4j Database
-Figure 6. New instance tiers
-
-
-If you're just getting started, you'll do well with AuraDB Free or AuraDB Professional trial.
-
-
-Be sure to download the credentials when you set up the database because they won't be available later on.
-
-Figure 7. Credential download and continue screen
-```
-
-#### Recursive Text
 
 ```text
 Create a Neo4j Database
@@ -1970,9 +1597,11 @@ Figure 7. Credential download and continue screen
 
 ### 1.45 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -1988,15 +1617,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Ingest Unstructured Data
-As you begin to build your knowledge graph, you can use the Neo4j GraphRAG Python library. This package offers specialized functionalities that streamline and enhance the process of building a knowledge graph from unstructured data, such as PDFs. Capabilities include document chunking, embedding generation, and knowledge graph construction.
-
-Figure 8. Document flow
-```
-
-#### Recursive Text
 
 ```text
 Ingest Unstructured Data
@@ -2011,9 +1631,11 @@ Figure 8. Document flow
 
 ### 1.46 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2029,16 +1651,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Key Features of Neo4j GraphRAG Package
--  Knowledge Graph Construction Pipeline: Automates the extraction of entities and relationships from unstructured text and structures them into a Neo4j graph.
--  Vector Indexing and Retrieval: Facilitates the creation of vector indices for efficient semantic search within the graph.
--  Integration with LLMs: Seamlessly integrates with LLMs for tasks like entity extraction and relation identification.
--  Document Chunking and Storage: The package uses the S
-```
-
-#### Recursive Text
 
 ```text
 Key Features of Neo4j GraphRAG Package
@@ -2054,9 +1666,11 @@ Key Features of Neo4j GraphRAG Package
 
 ### 1.47 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:46
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2072,19 +1686,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Key Features of Neo4j GraphRAG Package
-ic search in Neo4j.
-- ERExtractionTemplate: Supplies prompt templates for entity-relation extraction.
-
-
-
-
-The LLM does the thinking by extracting meaningful concepts from text. The embedder turns the text into vectors, which lets your system perform semantic search later.
-```
-
-#### Recursive Text
 
 ```text
 Key Features of Neo4j GraphRAG Package
@@ -2103,9 +1704,11 @@ The LLM does the thinking by extracting meaningful concepts from text. The embed
 
 ### 1.48 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2121,22 +1724,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Neo4j Connection
-You'll use GraphDatabase from the Neo4j Python driver to connect to Neo4j Graph Database.
-
-
-
-Note that the required credentials can be found in the .txt file you downloaded when you created the instance.
-
-Figure 9. Credentials from .txt file
-
-
-- NEO4J\_URI: The database URL (e.g., 'neo4j+s://ef123456.database.neo4j. io' ) · auth=(NEO4J\_USER, NEO4J\_PASSWORD) : Credentials to authenticate
-```
-
-#### Recursive Text
 
 ```text
 Neo4j Connection
@@ -2158,9 +1745,11 @@ Figure 9. Credentials from .txt file
 
 ### 1.49 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:48
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2176,14 +1765,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Initialize the LLM and Embeddings
-- llm: Uses GPT-4o to extract entities, relationships, and summarize text.
--  embedder: Generates vector embeddings to enable semantic search and contextual retrieval.
-```
-
-#### Recursive Text
 
 ```text
 Initialize the LLM and Embeddings
@@ -2197,9 +1778,11 @@ Initialize the LLM and Embeddings
 
 ### 1.50 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2215,14 +1798,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Define Node Labels and Relationship Types
-```
-entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Product', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'FinancialMetric', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'RiskFactor', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'StockType', 'properties': [{'name': 'name', 'type': 'STRING'}]}, {'label': 'Transaction', 'properties': [{'name': 'name',
-```
-
-#### Recursive Text
 
 ```text
 Define Node Labels and Relationship Types
@@ -2236,9 +1811,11 @@ entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STR
 
 ### 1.51 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2254,13 +1831,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Define Node Labels and Relationship Types
-key moment in the knowledge graph construction process. This is when you determine the data model. These lists control what the SimpleKGBuilder will look for in the text and how it will organize that information in your graph. To understand how you might want to construct these lists, let's take a look at some general ideas.
-```
-
-#### Recursive Text
 
 ```text
 Define Node Labels and Relationship Types
@@ -2273,9 +1843,11 @@ key moment in the knowledge graph construction process. This is when you determi
 
 ### 1.52 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:51
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2291,15 +1863,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Entities = Nouns
-What are the real-world concepts you're trying to capture?
-
-Company, Executive, RiskFactor, Product whatever matters to your domain.
-```
-
-#### Recursive Text
 
 ```text
 Entities = Nouns
@@ -2314,9 +1877,11 @@ Company, Executive, RiskFactor, Product whatever matters to your domain.
 
 ### 1.53 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2332,17 +1897,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Relationships = Verbs or Connectors
-How do those concepts relate?
-
-Perhaps a Company  FACES\_RISK  RiskFactor, or Company  ISSUED\_STOCK  StockType.
-
-If you aren't sure which entities and relationships to include in your first project, ask yourself: What information would help my chunk provide a better answer? Alternatively, what information connects various chunks? Ultimately, you want to think through the application's use case and start with the entities and relationships that will move t
-```
-
-#### Recursive Text
 
 ```text
 Relationships = Verbs or Connectors
@@ -2359,9 +1913,11 @@ If you aren't sure which entities and relationships to include in your first pro
 
 ### 1.54 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2377,15 +1933,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Initialize and Run the Pipeline
-The SimpleKGPipeline sets up a structured pipeline for extracting and storing knowledge from unstructured text into a graph database. It starts with the driver , which is the Neo4j connection used to write data into the graph. The llm parameter specifies the language model that will interpret and extract meaningful entities and relationships from the input text. The embedder is the embedding
-
-model used to vectorize text, which supports similarity-based retrieval 
-```
-
-#### Recursive Text
 
 ```text
 Initialize and Run the Pipeline
@@ -2400,9 +1947,11 @@ model used to vectorize text, which supports similarity-based retrieval
 
 ### 1.55 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.556946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2418,19 +1967,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Process the PDF Document
-Running the pipeline involves I/O-heavy operations:
-
--  Calling the LLM to extract structured meaning from text
--  Generating embeddings via an external API
--  Writing data into Neo4j
-
-All of these are network-bound and would block the main thread in a normal synchronous setup. That's why the pipeline is designed to be asynchronous -  so these operations can run concurrently and efficiently. To execute it, you need to use Python's async / await syntax : The await keyword
-```
-
-#### Recursive Text
 
 ```text
 Process the PDF Document
@@ -2449,9 +1985,11 @@ All of these are network-bound and would block the main thread in a normal synch
 
 ### 1.56 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.557946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2467,22 +2005,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Process the PDF Document
-nside an async context.
-
-for pdf\_file in pdf\_files:
-
-asyncio.run(run\_pipeline\_on\_file(pdf\_file, pipeline))
-
-As you can see in the image below, the document and chunk nodes have been created and written to the database. Note that there is now a property on the node called embedding , which represents the vector
-
-
-of the chunk text. This is how your retriever finds the relevant chunk in your application: by comparing the embedding of the query and the embeddings in y
-```
-
-#### Recursive Text
 
 ```text
 Process the PDF Document
@@ -2504,9 +2026,11 @@ of the chunk text. This is how your retriever finds the relevant chunk in your a
 
 ### 1.57 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.557946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2522,15 +2046,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Create the Vector Index
-A vector index is a type of database index that enables fast similarity search over high-dimensional vectors, such as embeddings from models like OpenAI's. Unlike traditional indexes that look for exact matches, vector indexes retrieve items most similar to a query vector using metrics like cosine similarity or Euclidean distance.
-
-In the context of Neo4j and RAG, here's what you need to know:
-```
-
-#### Recursive Text
 
 ```text
 Create the Vector Index
@@ -2545,9 +2060,11 @@ In the context of Neo4j and RAG, here's what you need to know:
 
 ### 1.58 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:57
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2563,13 +2080,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-This capability is essential for semantic search, question answering, and other AI-powered applications where meaning and context matter more than exact keywords.
-By using a vector index, Neo4j enables scalable, realtime retrieval of relevant knowledge from large and complex graphs.
-```
-
-#### Recursive Text
 
 ```text
 This capability is essential for semantic search, question answering, and other AI-powered applications where meaning and context matter more than exact keywords.
@@ -2582,9 +2092,11 @@ By using a vector index, Neo4j enables scalable, realtime retrieval of relevant 
 
 ### 1.59 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58
 
-**Analyzed At:** 2026-02-10T16:53:03.286111
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2600,13 +2112,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Getting Started With Data Importer
-Neo4j Data Importer provides a streamlined process for bringing structured data into your graph database. Here's how to use this powerful tool. The Neo4j Aura console includes a dedicated Data Importer feature that allows you to transform tabular data into graph structures without writing code. This tool works well in quickly populating your knowledge graph with data from existing datasets.
-```
-
-#### Recursive Text
 
 ```text
 Getting Started With Data Importer
@@ -2619,9 +2124,11 @@ Neo4j Data Importer provides a streamlined process for bringing structured data 
 
 ### 1.60 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2637,13 +2144,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Create a new graph model.
-3.  A graph data model has been provided for your convenience. Note: Due to pathway differences between operating systems, please choose either Mac or Windows data models.
-```
-
-#### Recursive Text
 
 ```text
 Create a new graph model.
@@ -2656,9 +2156,11 @@ Create a new graph model.
 
 ### 1.61 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2674,23 +2176,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Once you've loaded the provided data model, click Browse and navigate to the data folder in your repository, selecting both the Asset\_ Manager\_Holdings.csv file and the Company\_ Filings.csv files.
-Figure 11. Neo4j Aura Data Importer
-
-
-Figure 12.  New graph model screen
-
-
-Figure 13.  Selecting model starting point screen
-
-
-
-Figure 14.  Browse to .csv files screen
-```
-
-#### Recursive Text
 
 ```text
 Once you've loaded the provided data model, click Browse and navigate to the data folder in your repository, selecting both the Asset\_ Manager\_Holdings.csv file and the Company\_ Filings.csv files.
@@ -2713,9 +2198,11 @@ Figure 14.  Browse to .csv files screen
 
 ### 1.62 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2731,13 +2218,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Once the files are connected, you'll see that the data model has check marks for each entity and relationship. Click Run Import in the upper right-hand corner.
-Figure 15. Run import screen
-```
-
-#### Recursive Text
 
 ```text
 Once the files are connected, you'll see that the data model has check marks for each entity and relationship. Click Run Import in the upper right-hand corner.
@@ -2750,9 +2230,11 @@ Figure 15. Run import screen
 
 ### 1.63 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2768,15 +2250,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Mapping Your Data to Graph Structures
-To get you started, we've given you a full, completed data model for this exercise. When working with your own data, you'll create these data model maps yourself.
-
-If you'd like to work with your own dataset, here's how to get started.The Aura console provides a unified experience where you can manage your database instances, connect to diverse data sources, import structured data, model graphs visually, query your data with Cypher, explore your graph, and m
-```
-
-#### Recursive Text
 
 ```text
 Mapping Your Data to Graph Structures
@@ -2791,9 +2264,11 @@ If you'd like to work with your own dataset, here's how to get started.The Aura 
 
 ### 1.64 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2809,18 +2284,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Mapping Your Data to Graph Structures
-es.
-
-Figure 17.  Node parameters options screen
-
-
-Label refers to the type of node. Table points to the data source where the information is sourced (the tables you uploaded will appear on the left). Properties refer to the values you want associated with that node. Let's start with the Company\_Filings.csv.
-```
-
-#### Recursive Text
 
 ```text
 Mapping Your Data to Graph Structures
@@ -2838,9 +2301,11 @@ Label refers to the type of node. Table points to the data source where the info
 
 ### 1.65 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:64
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2856,28 +2321,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Company Node
-Label:
-
-Company
-
-Table:
-
-Company\_Filings.csv
-
-Properties: name,  ticker
-
-ID(key): name
-
-You'll also need to identify the unique ID property for that node, akin to the primary key, which in this case is the name of the company. This is done by clicking the key icon next to the property name.
-
-
-Figure 18.  Company node screen
-```
-
-#### Recursive Text
 
 ```text
 Company Node
@@ -2905,9 +2348,11 @@ Figure 18.  Company node screen
 
 ### 1.66 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -2923,36 +2368,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Document Node
-Label:
-
-Document
-
-Table:
-
-Company\_Filings.csv
-
-Properties:
-
-path (this must match exactly -   read below)
-
-ID(key):
-
-path
-
-CRITICAL STEP: Rename Your Path Column to path
-
-The kg\_builder has already created Document nodes using a path property. To correctly link companies to their documents, your imported data must use the exact same property name: path .
-
-Figure 19.  Path property screen
-
-
-⚠ If you skip this renaming step, the relationship will NOT connect and your graph will be 
-```
-
-#### Recursive Text
 
 ```text
 Document Node
@@ -2988,9 +2403,11 @@ Figure 19.  Path property screen
 
 ### 1.67 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:66
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3006,25 +2423,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Asset Manager Node
-Label:
-
-AssetManager
-
-Table: Asset\_Manager\_Holdings.csv
-
-Properties: managerName
-
-ID(key):
-
-managerName
-
-Figure 20.  AssetManager node screen
-```
-
-#### Recursive Text
 
 ```text
 Asset Manager Node
@@ -3049,9 +2447,11 @@ Figure 20.  AssetManager node screen
 
 ### 1.68 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:67
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3067,18 +2467,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Mapping Relationships
-Relationships are created with the following criteria:
-
-- Relationship Label: Describes the type of connection between the entities. It is common practice in knowledge graphs for the relationships to be in ALL\_CAPS with no spaces.
--  Table: Has identifiers for each node type contained in it. It is the way we connect the two nodes.
--  Node ID Mapping: Maps the columns in the relevant table to the IDs of the pertinent nodes.
-- Properties: Adds information to a relationship o
-```
-
-#### Recursive Text
 
 ```text
 Mapping Relationships
@@ -3096,9 +2484,11 @@ Relationships are created with the following criteria:
 
 ### 1.69 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3114,17 +2504,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Mapping Relationships
-35993 |
-| ALLIANCEBERNSTEINL.P. | MCDONALDS CORP | MCD      |  1201960 |
-| ALLIANCEBERNSTEINL.P. | MICROSOFTCORP  | MSFT     | 46541943 |
-
-In a knowledge graph, we want to map the domain knowledge of structured data, which in this case is the Asset Managers' ownership of stock in a given company. If entities are nouns, then relationships are verbs. So let's create the relationship OWNS that goes from Asset Manager to Company.
-```
-
-#### Recursive Text
 
 ```text
 Mapping Relationships
@@ -3141,9 +2520,11 @@ In a knowledge graph, we want to map the domain knowledge of structured data, wh
 
 ### 1.70 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:69
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3159,17 +2540,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Hover over the outline until it turns gray:
-Figure 21. AssetManager blue outline
-
-
-
-Figure 22. AssetManager gray outline
-```
-
-#### Recursive Text
 
 ```text
 Hover over the outline until it turns gray:
@@ -3186,9 +2556,11 @@ Figure 22. AssetManager gray outline
 
 ### 1.71 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:70
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3204,16 +2576,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Drag the outline of the AssetManager node to cover the Company node. When you release, you'll see a new relationship arrow between them:
-Figure 23. Drag and release for new relationship
-
-
-Clicking on this arrow allows you to edit the parameters of the relationship.
-```
-
-#### Recursive Text
 
 ```text
 Drag the outline of the AssetManager node to cover the Company node. When you release, you'll see a new relationship arrow between them:
@@ -3229,9 +2591,11 @@ Clicking on this arrow allows you to edit the parameters of the relationship.
 
 ### 1.72 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3247,54 +2611,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-OWNS Relationship
-Relationship Type:
-
-OWNS
-
-Table:
-
-Asset\_Manager\_Holdings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-AssetManager
-
-ID: managerName
-
-ID column:
-
-managerName
-
-To:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-Properties:
-
-shares
-
-Figure 24. OWNS relationship
-
-
-The property shares represents the number of shares of the Company owned by the Asset Manager and for this book is an optional inclusion. Additional columns such as value or sharevalue are optional, as well. When working wi
-```
-
-#### Recursive Text
 
 ```text
 OWNS Relationship
@@ -3348,9 +2664,11 @@ The property shares represents the number of shares of the Company owned by the 
 
 ### 1.73 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3366,52 +2684,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-FILED Relationship
-Note that the relationship between Company and Document is the linchpin that connects the structured and the unstructured data in this GraphRAG application.
-
-Relationship Type:
-
-FILED
-
-Table:
-
-Company\_Filings.csv
-
-Node ID Mapping
-
-From:
-
-Node:
-
-Company
-
-ID: name
-
-ID column:
-
-companyName
-
-To:
-
-Node:
-
-Document
-
-ID: path
-
-ID column:
-
-path\_Windows or path\_Mac\_ix
-
-Figure 25. FILED relationship
-
-
-As you see in the diagram above, each entity and relationship will have a green che
-```
-
-#### Recursive Text
 
 ```text
 FILED Relationship
@@ -3463,9 +2735,11 @@ As you see in the diagram above, each entity and relationship will have a green 
 
 ### 1.74 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:73
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3481,19 +2755,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-FILED Relationship
-ta modeling, see The Developer's Guide: How to Build a Knowledge Graph.
-
-## PART IV: Implementing GraphRAG Retrieval Patterns
-
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-#### Recursive Text
 
 ```text
 FILED Relationship
@@ -3512,9 +2773,11 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ### 1.75 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:74
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3530,15 +2793,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-PART IV: Implementing GraphRAG Retrieval Patterns
-GraphRAG retrieval patterns are practical mechanisms that define how the LLM in your GraphRAG solution accesses the context and connections in your knowledge graph.
-
-Let's examine some of the most common GraphRAG patterns and how to use them.
-```
-
-#### Recursive Text
 
 ```text
 PART IV: Implementing GraphRAG Retrieval Patterns
@@ -3553,9 +2807,11 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ### 1.76 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3591,7 +2847,15 @@ This notebook imports the core libraries required for building and querying RAG 
 - neo4j.GraphDatabase: The official Python driver for connecting to and querying a Neo4j database.
 - neo4j\_graphrag.llm.OpenAILLM : Integrates OpenAI language models for generating and processing natural language queries.
 - neo4j\_graphrag.embeddings. OpenAIEmbeddings : Provides access to OpenAI's embedding models for generating vector representations of text.
-- N
+- Neo4j\_graphrag.retrievers : Different retriever classes for semantic and hybrid search over graph data using vector similarity and Cypher queries:
+- VectorRetriever
+- VectorCypherRetriever
+- Text2CypherRetriever
+- neo4j\_graphrag.generation.GraphRAG : The main class for orchestrating RAG workflows over a Neo4j knowledge graph.
+- neo4j\_graphrag.schema.get\_schema : Utility to introspect and retrieve the schema of your Neo4j database.
+- dotenv.load\_dotenv : Loads environment variables (such as credentials and API keys) from an .env file for secure configuration.
+
+These imports enable advanced semantic search, retrieval, and GenAI capabilities directly on your Neo4j knowledge graph.
 ```
 
 #### Keywords
@@ -3600,9 +2864,11 @@ This notebook imports the core libraries required for building and querying RAG 
 
 ### 1.77 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3618,17 +2884,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Load Environment Variables and Initialize Neo4j Driver
-Here, you load sensitive configuration values (such as database credentials and API keys) from environment variables, ensuring that secrets aren't hardcoded in your notebook. The steps include:
-
-- load\_dotenv() : Loads environment variables from an .env file into your Python environment.
-- os.getenv() : Fetches the Neo4j connection URI, username, and password, as well as your OpenAI API key.
-- GraphDatabase.driver() : Initializes the Neo4j 
-```
-
-#### Recursive Text
 
 ```text
 Load Environment Variables and Initialize Neo4j Driver
@@ -3645,9 +2900,11 @@ Here, you load sensitive configuration values (such as database credentials and 
 
 ### 1.78 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3663,17 +2920,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Initialize the LLM and Embedder
-Just as you selected a specific LLM and embedding model when processing your PDFs, you should do the same when generating embeddings for your text data. It's important to keep track of the language model and embedding tools that you use during this process.
-
-For the retrievers to work correctly, the embedding model used during retrieval must match the one used to generate the dataset's embeddings. This ensures accurate and meaningful search results.
-
-llm = OPENAIL
-```
-
-#### Recursive Text
 
 ```text
 Initialize the LLM and Embedder
@@ -3690,9 +2936,11 @@ llm = OPENAIL
 
 ### 1.79 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3708,18 +2956,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The Basic Retriever Pattern
-The basic retriever uses vector embeddings to find nodes that are semantically similar based on content. This retriever is useful only for handling specific information requests about topics contained in just one or a few chunks. It's a starting point for more complex graph-based retrievals, and it's easy to implement if you're familiar with RAG but new to GraphRAG.
-
-
-There are two components in the process:
-
--  Chunks as nodes: The pattern uses the already chunked da
-```
-
-#### Recursive Text
 
 ```text
 The Basic Retriever Pattern
@@ -3737,9 +2973,11 @@ There are two components in the process:
 
 ### 1.80 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3755,16 +2993,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The Basic Retriever Pattern
-uestion) against the indexed text embeddings of the chunks. Vector similarity searches work well for simple queries with a narrow focus, such as: 'What are the risks around cryptocurrency?'
-
-
-Be sure to review your retrieval results before generating any text output. This step helps you confirm that your retriever is functioning as intended and returning relevant data from your knowledge graph. For example, in the query above, a sample of the retrieved content is disp
-```
-
-#### Recursive Text
 
 ```text
 The Basic Retriever Pattern
@@ -3780,9 +3008,11 @@ Be sure to review your retrieval results before generating any text output. This
 
 ### 1.81 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:80
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3798,18 +3028,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The Basic Retriever Pattern
-4 |
-| 0.908264 | agencyofferings could subject us to additional regulations, licensing r… | 6064a2f775a8:1723 |
-| 0.903259 | cyberextortion, distributed denial- of-service attacks, ransomware, spe… | 6064a2f775a8:1718 |
-| 0.898422 | While wemaintain insurance policies intended to help offset the\ nfina…  | 6064a2f775a8:1720 |
-| 0.896942 | financing, and branded credit card products; branded debit card and\ ns… | 6064a2f775a8:1731 |
-| 0.89476  | our customers unimpaire
-```
-
-#### Recursive Text
 
 ```text
 The Basic Retriever Pattern
@@ -3827,9 +3045,11 @@ The Basic Retriever Pattern
 
 ### 1.82 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3845,19 +3065,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The Basic Retriever Pattern
-the results, or at least check the number of returned items. If there's an error in your retriever and you proceed directly to natural language generation, your application may produce a generic LLM response that isn't grounded in your data. This validation step ensures your outputs remain accurate and reflect the content of your underlying dataset.
-
-To get the natural language output, use the following code:
-
-
-
-The basic retriever will cause the LLM to generate a res
-```
-
-#### Recursive Text
 
 ```text
 The Basic Retriever Pattern
@@ -3876,9 +3083,11 @@ The basic retriever will cause the LLM to generate a res
 
 ### 1.83 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:82
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3894,14 +3103,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The Basic Retriever Pattern
-gh a third-party custodian are susceptible to various risks, such as inappropriate access, theft, or destruction. Inadequate insurance coverage by custodians and their potential inability to maintain effective controls can expose customers to losses. In the event of a custodian's bankruptcy, the treatment of custodial holdings in proceedings remains uncertain, which could delay or prevent the return of assets.
-3. Third-Party Partner Risks: Dependence on third-party cu
-```
-
-#### Recursive Text
 
 ```text
 The Basic Retriever Pattern
@@ -3915,9 +3116,11 @@ gh a third-party custodian are susceptible to various risks, such as inappropria
 
 ### 1.84 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:83
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3933,19 +3136,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-The Basic Retriever Pattern
-, it did not answer deeper, more actionable questions, such as:
-
--  Which specific companies are exposed to these risks?
--  What other risks may be occurring concurrently?
--  Which asset managers are associated with the affected companies?  (e.g., multi-hop relationships from risk to company to asset manager)
-
-In other words, the approach demonstrated here retrieves relevant text fragments. However, it doesn't use the graph's structure to connect the risks to companie
-```
-
-#### Recursive Text
 
 ```text
 The Basic Retriever Pattern
@@ -3964,9 +3154,11 @@ In other words, the approach demonstrated here retrieves relevant text fragments
 
 ### 1.85 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -3996,7 +3188,12 @@ The Graph-Enhanced Vector Search Pattern, also known as augmented vector search,
 The Graph-Enhanced Vector Search Pattern
 The basic retriever pattern typically relies on textbased embeddings, capturing only the semantic meaning of content. While this method is effective in identifying similar chunks, it leaves the LLM in the dark as to how those items interact in the real world.
 
-The Graph-Enhanced Vector Search Pattern, also known as augmented vector search, overcomes this limitation by drawing on the graph structure (i.e., using not just what items are but also how they co
+The Graph-Enhanced Vector Search Pattern, also known as augmented vector search, overcomes this limitation by drawing on the graph structure (i.e., using not just what items are but also how they connect). By embedding node positions and relationships within a graph, this approach generates contextually relevant nodes, integrating both:
+
+-  Unstructured data: Product descriptions, customer reviews, and other text content via semantic similarity
+-  Structured data: Purchase patterns, category relationships, and transaction records via explicit instructions
+
+The VectorCypherRetriever uses the full graph capabilities of Neo4j by combining vector-based similarity searches with graph traversal techniques. The retriever completes the following actions:
 ```
 
 #### Keywords
@@ -4005,9 +3202,11 @@ The Graph-Enhanced Vector Search Pattern, also known as augmented vector search,
 
 ### 1.86 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4047,7 +3246,14 @@ To set up this particular query, you need to tell the graph where and how to tra
 The following code creates a retriever to answer this query:
 
 
-Let's start by looking at the parts of the graph that help to answer this query. We start by identifying the Chunk that is semantically sim
+Let's start by looking at the parts of the graph that help to answer this query. We start by identifying the Chunk that is semantically similar to the cryptocurrency query. Then we need to traverse the graph to identify the Document the Chunk comes from, the Company that FILED the Document and collect the other RiskFactors for that Company . Once this information is retrieved, it's converted to Cypher and set as the retrieval query.
+
+
+Figure 27.  VectorCypherRetriever example 1
+
+
+
+Next, let's add this new retrieval query to the VectorCypherRetriever parameters:
 ```
 
 #### Keywords
@@ -4056,9 +3262,11 @@ Let's start by looking at the parts of the graph that help to answer this query.
 
 ### 1.87 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4094,7 +3302,7 @@ VectorCypherRetriever parameters:
 - Embedder : The embedding model used to generate/query vector representations
 - Retrieval\_query : The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
 
-This setup enables you to start with a semantic search (e.g., for 'cryptocurrency risk') and automatically traverse y
+This setup enables you to start with a semantic search (e.g., for 'cryptocurrency risk') and automatically traverse your knowledge graph to reveal which companies are involved and what other risks they face. The resulting responses are both semantically relevant and graph-aware.
 ```
 
 #### Keywords
@@ -4103,9 +3311,11 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 
 ### 1.88 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4121,17 +3331,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-VectorCypher Retriever in Practice
-The power of the Graph-Enhanced Vector Search Pattern lies in its flexibility. While the example above focuses on linking companies to risk factors in financial filings, the approach can be applied to any domain or vertical by customizing the graph schema and Cypher queries.
-
-How might this look for other industries?
-
-- Healthcare: Retrieve patient records, diagnoses, and treatment plans by combining semantic search of clinical notes with graph traversal across
-```
-
-#### Recursive Text
 
 ```text
 VectorCypher Retriever in Practice
@@ -4148,9 +3347,11 @@ How might this look for other industries?
 
 ### 1.89 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4186,7 +3387,12 @@ eports (text) with the graph relationships between vulnerabilities, affected ass
 
 Let's summarize the major tasks from  this example so you can apply it to your domain:
 
--  Adapt the Pattern Model Your Domain: Define the node
+-  Adapt the Pattern Model Your Domain: Define the node types, relationships, and key properties relevant to your vertical (e.g., Patient, Diagnosis, Product, Supplier, Case, Asset, etc.).
+- Index the Right Data: Create vector indexes on the appropriate text or document nodes for semantic retrieval.
+-  Craft Domain-Specific Cypher Queries: Write Cypher queries that traverse from the retrieved nodes to related entities and/or relationships that matter in your context.
+-  Integrate With VectorCypherRetriever: Use the VectorCypherRetriever with your custom query to combine semantic and structural search.
+
+The result: You can ask complex, context-aware questions about entities in your own industry. The GraphRAG retriever will surface relevant information that connects context across
 ```
 
 #### Keywords
@@ -4195,9 +3401,11 @@ Let's summarize the major tasks from  this example so you can apply it to your d
 
 ### 1.90 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4247,7 +3455,13 @@ With this in mind, let's look at another VectorCypherRetriever example.
 
 Which Asset Managers are most affected by reseller concerns?
 
-Let's again s
+Let's again start with the Chunks semantically similar to 'reseller concerns,' and then traverse through the Document to the Company through OWNS to identify the AssetManagers relevant to the query. We'll also include the property shares from the relationship OWNS and order by largest holdings.
+
+
+Figure 28. VectorCypherRetriever example 2
+
+
+Next, add this new retrieval query to the VectorCypherRetriever parameters:
 ```
 
 #### Keywords
@@ -4256,9 +3470,11 @@ Let's again s
 
 ### 1.91 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4300,7 +3516,7 @@ Let's again start with the Chunks semantically similar to 'reseller concerns,' a
 Figure 28. VectorCypherRetriever example 2
 
 
-Next, add this new retrieval query to the VectorCyphe
+Next, add this new retrieval query to the VectorCypherRetriever parameters:
 ```
 
 #### Keywords
@@ -4309,9 +3525,11 @@ Next, add this new retrieval query to the VectorCyphe
 
 ### 1.92 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Keyword selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4353,7 +3571,8 @@ VectorCypherRetriever parameters:
 - Retrieval\_query: The Cypher query (defined above) that tells Neo4j how to traverse the graph from the semantically matched nodes
 
 ```
-result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in result.items: print(item.content[:
+result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in result.items: print(item.content[:100])
+```
 ```
 
 #### Keywords
@@ -4362,9 +3581,11 @@ result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in 
 
 ### 1.93 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:92
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4380,18 +3601,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Let's look at the results:
-- &lt;Record company='APPLE INC' AssetManager='BlackRock Inc.' shares=1031407553&gt;
-- &lt;Record company='APPLE INC' AssetManager='Berkshire Hathaway Inc' shares=915560382&gt;
-- &lt;Record company='AMAZON' AssetManager='BlackRock Inc.' shares=613380364&gt;
-- &lt;Record company='APPLE INC' AssetManager='STATE STREET CORP' shares=569291690&gt;
-- &lt;Record company='MICROSOFT CORP' AssetManager='BlackRock Inc.' shares=533634606&gt;
-- &lt;Record company='AMAZON' AssetMana
-```
-
-#### Recursive Text
 
 ```text
 Let's look at the results:
@@ -4409,9 +3618,11 @@ Let's look at the results:
 
 ### 1.94 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:93
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4427,13 +3638,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-WELLS FARGO &amp; COMPANY/MN
-This is where GraphRAG really shines. You may be wondering how to construct the retrieval query that traverses the graph. In this example, you can see that the retrieval\_query is a string of Cypher code, the language of graph querying. Now let's look at one last retriever pattern found in the Neo4j library: the Text2CypherRetriever .
-```
-
-#### Recursive Text
 
 ```text
 WELLS FARGO &amp; COMPANY/MN
@@ -4446,9 +3650,11 @@ This is where GraphRAG really shines. You may be wondering how to construct the 
 
 ### 1.95 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:94
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4464,19 +3670,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Text2CypherRetriever
-You can use Text2CypherRetriever to seamlessly generate Cypher queries from natural language questions. Instead of manually crafting each Cypher statement, the retriever uses an LLM to translate your plain-English queries into Cypher based on its understanding of your Neo4j schema.
-
-The process begins with a natural language question, such as:
-
-'What are the names of companies owned by BlackRock Inc.?'
-
-The retriever then uses the schema, described as a string outlining the 
-```
-
-#### Recursive Text
 
 ```text
 Text2CypherRetriever
@@ -4495,9 +3688,11 @@ The retriever then uses the schema, described as a string outlining the
 
 ### 1.96 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4513,18 +3708,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Text2CypherRetriever
-ompany {id: STRING, name: STRING, chunk_ index: INTEGER, ticker: STRING} Product {id: STRING, name: STRING, chunk_ index: INTEGER} . . . Relationship properties: OWNS {position_status: STRING, Value: FLOAT, shares: INTEGER, share_value: FLOAT} The relationships: .... (:Executive)-[:FROM_CHUNK]->(:Chunk) (:StockType)-[:FROM_CHUNK]->(:Chunk) (:AssetManager)-[:OWNS]->(:Company)
-```
-
-
-
-Now that you've defined the schema, you have everything you need to set the Text2CypherRetriev
-```
-
-#### Recursive Text
 
 ```text
 Text2CypherRetriever
@@ -4542,9 +3725,11 @@ Now that you've defined the schema, you have everything you need to set the Text
 
 ### 1.97 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4560,20 +3745,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Text2CypherRetriever
-ery directly to the driver to get the results:
-
-```
-result = driver.execute_query(cypher_query.metadata['cypher']) for record in result.records: print(record) <Record companyName='APPLE INC'> <Record companyName='MICROSOFT CORP'> <Record companyName='INTEL CORP'> <Record companyName='AMAZON'> <Record companyName='PG&E CORP'> <Record companyName='NVIDIA CORPORATION'>
-```
-
-
-While the Text2Cypher functionality in the Neo4j GraphRAG library offers a powerful way to translate nat
-```
-
-#### Recursive Text
 
 ```text
 Text2CypherRetriever
@@ -4593,9 +3764,11 @@ While the Text2Cypher functionality in the Neo4j GraphRAG library offers a power
 
 ### 1.98 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4611,16 +3784,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Text2CypherRetriever
-y optimization remains an important factor. While LLMs are capable of generating complex Cypher queries, they may not always produce the most efficient ones. Without human intervention or performance tuning, these queries might not be optimized for speed or resource consumption, which could potentially slow application performance.
-
-
-Finally, high-stakes applications - such as those requiring strict reproducibility, financial computations, or regulatory compliance - may requ
-```
-
-#### Recursive Text
 
 ```text
 Text2CypherRetriever
@@ -4636,9 +3799,11 @@ Finally, high-stakes applications - such as those requiring strict reproducibili
 
 ### 1.99 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:98
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4654,15 +3819,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Text2CypherRetriever
-ll help you integrate Text2Cypher effectively while ensuring that it is used in scenarios where its strengths outweigh its potential drawbacks.
-
-Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications and contribute to development projects.
-```
-
-#### Recursive Text
 
 ```text
 Text2CypherRetriever
@@ -4677,9 +3833,11 @@ Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications 
 
 ### 1.100 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4695,15 +3853,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Community Summary Pattern
-You may have heard the term GraphRAG and thought of the pattern popularized by Microsoft, where the text is used to summarize community or other knowledge (i.e., forum posts). This type of retriever is often called the Community Summary Pattern.
-
-While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A, Neo4j's approach focuses on domain-specific schema control and composable query generation. This focus expands GraphRAG from summarization into st
-```
-
-#### Recursive Text
 
 ```text
 Community Summary Pattern
@@ -4718,9 +3867,11 @@ While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A,
 
 ### 1.101 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4736,15 +3887,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Concluding Thoughts and Next Steps
-Integrating a knowledge graph with RAG gives GenAI systems structured context and relationships, improving the relevance and quality of generated results.
-
-This guide has equipped you with the foundational skills needed to implement GraphRAG. You learned how to use Neo4j's cloud-based graph database service, Neo4j Aura, to prepare a knowledge graph for GraphRAG, Data Importer, and the GraphRAG Python library to create a knowledge graph from unstructured data. Y
-```
-
-#### Recursive Text
 
 ```text
 Concluding Thoughts and Next Steps
@@ -4759,9 +3901,11 @@ This guide has equipped you with the foundational skills needed to implement Gra
 
 ### 1.102 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:101
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4777,15 +3921,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Concluding Thoughts and Next Steps
-embeddings and graph neural networks, promises to enhance the semantic understanding and reasoning capabilities of GraphRAG systems.
--  Integrating GraphRAG with agentic systems and other multi-tool, multi-step RAG chains can result in more autonomous and intelligent systems capable of handling complex, multifaceted tasks with greater efficiency and accuracy.
--  Incorporating semantic layers in GraphRAG systems can provide even more nuanced understanding and co
-```
-
-#### Recursive Text
 
 ```text
 Concluding Thoughts and Next Steps
@@ -4800,9 +3935,11 @@ embeddings and graph neural networks, promises to enhance the semantic understan
 
 ### 1.103 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4818,22 +3955,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Explore GenAI With Neo4j
-Neo4j uncovers hidden relationships and patterns across billions of data connections deeply, easily, and quickly, making graph databases an ideal choice for building your first GraphRAG application.
-
-Learn More
-
-
-
-Build on what you learned in this guide:
-
--  The Neo4j for GenAI use case page offers guides, tutorials, and best practices about GraphRAG implementation.
--  The GraphRAG site contains explanations of GraphRAG principles and step-bystep guides for various imple
-```
-
-#### Recursive Text
 
 ```text
 Explore GenAI With Neo4j
@@ -4855,9 +3976,11 @@ Build on what you learned in this guide:
 
 ### 1.104 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4873,15 +3996,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Technical Resources in Workflow Order
-| Stage                            | Resource                                            | WhyIt's Useful                                                                                    |
-|----------------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| 1. Data Modeling                 | Designing a Graph Data Model for GenAI (Neo
-```
-
-#### Recursive Text
 
 ```text
 Technical Resources in Workflow Order
@@ -4896,9 +4010,11 @@ Technical Resources in Workflow Order
 
 ### 1.105 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4914,15 +4030,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Technical Resources in Workflow Order
-Data Importer Tool                            | Visual UI for mapping CSVs and relational data to graph nodes and relationships.                  |
-| 5. Data Ingestion (Unstructured) | Neo4j GraphRAG Python Library                       | Convert PDFs and text to a knowledge graph using LLM-powered entity + relationship extraction.    |
-| 6. Data Ingestion (Unstructured) | KGBuilder Tutorial-SEC Filings Example              | Walkthrough for turning dense fi
-```
-
-#### Recursive Text
 
 ```text
 Technical Resources in Workflow Order
@@ -4937,9 +4044,11 @@ Data Importer Tool                            | Visual UI for mapping CSVs and r
 
 ### 1.106 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:105
 
-**Analyzed At:** 2026-02-10T16:53:03.287109
+**Analyzed At:** 2026-02-17T09:47:12.558946
 
-**Query:** What is VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
+
+**Status:** Not Selected
 
 ```python
 def evaluate_chunk_relevance(chunk_text: str) -> bool:
@@ -4955,15 +4064,6 @@ def evaluate_chunk_relevance(chunk_text: str) -> bool:
 ```
 
 #### First Read
-
-```text
-Technical Resources in Workflow Order
-| Augment vector search with traversal logic to im- prove contextual accuracy.                      |
-| 10. Test2Cypher Automation       | Text2Cypher Documentation & Examples                | Translate user queries into Cypher automatically using LLMs-ideal for dynamic GraphRAG.           |
-| 11. Agentic &Multi-Step Use      | GraphRAG + NeoConverse + Agents                     | Build multi-tool agents that query graphs autono- mously across task chains.  
-```
-
-#### Recursive Text
 
 ```text
 Technical Resources in Workflow Order

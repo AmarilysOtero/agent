@@ -10,7 +10,8 @@ from ..agents.agents import TriageAgent, AiSearchAgent, Neo4jGraphRAGAgent, Assi
 from .graph_executor import GraphExecutor
 from .graph_loader import load_graph_definition
 from ..retrieval.file_expansion import expand_to_full_files, filter_chunks_by_relevance, log_expanded_chunks
-from ..retrieval.chunk_logger import log_chunks_to_markdown
+from ..tools.neo4j_graphrag import expand_files_via_api
+from ..retrieval.chunk_logger import log_chunks_to_markdown, ensure_rlm_enable_log_files
 from ..retrieval.recursive_summarizer import recursive_summarize_files, log_file_summaries_to_markdown
 from ..retrieval.phase_5_answer_generator import generate_final_answer, log_final_answer_to_markdown
 
@@ -22,6 +23,48 @@ except ImportError:
         return None
 
 logger = logging.getLogger(__name__)
+
+
+def _search_results_to_expanded_files(
+    search_results: List[Dict[str, Any]],
+    query: str | None = None,
+) -> Dict[str, Dict[str, Any]]:
+    """Build expanded_files dict from search agent results for RLM pipeline.
+
+    Groups chunks by file_id (or file_name) so recursive_summarize_files can run.
+    Each chunk provides chunk_id, text, and metadata. Keywords are taken only from
+    the chunk (metadata.keywords or top-level keywords); no hardcoded extraction.
+    """
+    expanded: Dict[str, Dict[str, Any]] = {}
+    for r in search_results:
+        chunk_id = r.get("chunk_id") or r.get("id") or ""
+        text = r.get("text", "")
+        file_id = (
+            r.get("file_id")
+            or (r.get("metadata") or {}).get("file_id")
+            or r.get("file_name")
+            or "unknown"
+        )
+        file_name = r.get("file_name", str(file_id))
+        meta = dict(r.get("metadata") or {})
+        # Keywords only from chunk: metadata.keywords or top-level keywords (no hardcoded fallback)
+        if "keywords" not in meta and r.get("keywords") is not None:
+            meta["keywords"] = r["keywords"] if isinstance(r["keywords"], list) else []
+        if file_id not in expanded:
+            expanded[file_id] = {
+                "chunks": [],
+                "file_name": file_name,
+                "entry_chunk_count": 0,
+            }
+        expanded[file_id]["chunks"].append({
+            "chunk_id": chunk_id,
+            "text": text,
+            "metadata": meta,
+        })
+    for fd in expanded.values():
+        fd["entry_chunk_count"] = len(fd["chunks"])
+    return expanded
+
 
 async def run_graph_workflow(
     cfg: Settings, 
@@ -206,6 +249,11 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
     if cfg.rlm_enabled:
         logger.info("RLM branch selected")
         print("\n🔄 RLM MODE ACTIVATED (currently routes through default sequential for Phase 1)")
+        # Ensure logs/chunk_analysis/enable exists and initial .md files are created for RLM runs
+        try:
+            ensure_rlm_enable_log_files(query=goal)
+        except Exception as e:
+            logger.warning("Could not init RLM chunk log (enable): %s", e)
         # Phase 1: Both paths still call the existing flow (no behavioral change)
     else:
         logger.debug("Default sequential branch selected (RLM not enabled)")
@@ -254,15 +302,25 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
         expanded_context = None
         expanded_files = {}
         file_summaries = []
+        accepted_chunks: List[str] = []
         final_answer = None
         response = None
 
         # --- Retrieve context from the selected search agent ---
+        raw_results: List[Dict[str, Any]] = []
         try:
             logger.info(f"🔍 Workflow: Calling search agent {search_agent.__class__.__name__} (ID: {getattr(search_agent, 'agent_id', 'N/A')})")
             print(f"🔍 Workflow: Calling search agent {search_agent.__class__.__name__} (ID: {getattr(search_agent, 'agent_id', 'N/A')})")
             if isinstance(search_agent, SQLAgent):
                 context = await search_agent.run(goal, database_id=search_database_id)
+            elif cfg.rlm_enabled and (
+                isinstance(search_agent, AiSearchAgent) or isinstance(search_agent, Neo4jGraphRAGAgent)
+            ):
+                out = await search_agent.run(goal, high_recall_mode=True, return_results=True)
+                if isinstance(out, tuple):
+                    context, raw_results = out[0], (out[1] if len(out) > 1 else [])
+                else:
+                    context = out
             else:
                 context = await search_agent.run(goal)
             logger.info(f"🔍 Workflow: Search agent returned context of length {len(context) if context else 0}")
@@ -271,8 +329,50 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
             logger.error(f"Search agent failed: {e}", exc_info=True)
             context = None
 
-        # ...existing code for chunk logging, expansion, summarization, etc...
-        # ...existing code for final_answer...
+        # --- RLM pipeline: recursive summarization + Phase 5 when RLM enabled and we have structured results ---
+        if cfg.rlm_enabled and raw_results:
+            try:
+                expanded_files = _search_results_to_expanded_files(raw_results, goal)
+                # When RLM is enabled, expand to all chunks per file (Phase 3) so the chunk log includes every chunk (e.g. 106 for a PDF).
+                if expanded_files:
+                    file_ids = list(expanded_files.keys())
+                    expanded_full = await asyncio.to_thread(expand_files_via_api, file_ids)
+                    if expanded_full:
+                        total_before = sum(len(f["chunks"]) for f in expanded_files.values())
+                        total_after = sum(len(f["chunks"]) for f in expanded_full.values())
+                        if total_after >= total_before:
+                            expanded_files = expanded_full
+                            logger.info(f"🔍 Workflow: Expanded to full files: {total_before} -> {total_after} chunks")
+                            print(f"🔍 Workflow: Expanded to full files: {total_before} -> {total_after} chunks")
+                if expanded_files:
+                    logger.info(f"🔍 Workflow: Running RLM pipeline for {len(expanded_files)} files")
+                    print("🔍 Workflow: Running RLM pipeline (recursive summarization + final answer)")
+                    file_summaries = await recursive_summarize_files(
+                        expanded_files, goal, rlm_enabled=True
+                    )
+                    if file_summaries:
+                        answer_result = await generate_final_answer(
+                            file_summaries,
+                            goal,
+                            citation_policy=getattr(cfg, "rlm_citation_policy", "best_effort"),
+                            max_files=getattr(cfg, "rlm_max_files", 10),
+                            max_chunks=getattr(cfg, "rlm_max_chunks", 50),
+                        )
+                        final_answer = answer_result.answer_text if hasattr(answer_result, "answer_text") else str(answer_result)
+                        expanded_context = final_answer
+                        # Flatten list of accepted chunk IDs from all file summaries (for API response)
+                        accepted_chunks = []
+                        for fs in file_summaries:
+                            cids = getattr(fs, "source_chunk_ids", None) or []
+                            accepted_chunks.extend(cids)
+                        logger.info("🔍 Workflow: RLM pipeline produced final answer")
+                    else:
+                        logger.warning("🔍 Workflow: RLM pipeline returned no summaries; using search context")
+                else:
+                    logger.warning("🔍 Workflow: No expanded files from search results; using search context")
+            except Exception as e:
+                logger.warning("🔍 Workflow: RLM pipeline failed, falling back to search context: %s", e, exc_info=True)
+
         # If expanded_context is still None, use context or empty string
         if expanded_context is None:
             expanded_context = context if context is not None else ""
@@ -331,7 +431,9 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
                 print(f"Decision: {decision} | Reason: {reason}")
 
                 if decision == "accept":
-                    return revised or response
+                    # Return the assistant's response (the script that was accepted), not revised_script.
+                    # Foundry reviewer may put instructions into revised_script; we must not surface that.
+                    return response
 
                 # Ask assistant to improve using reviewer feedback
                 improve_context = (
@@ -364,16 +466,33 @@ async def run_sequential_goal(cfg: Settings, goal: str) -> str:
 
             return f"[After {max_iters} review passes]\n{response}"
         else:
-            # Phase 5 generated answer - return directly without review
-            logger.info(f"🔍 Workflow: Phase 5 answer (skipping review step)")
-            print(f"🔍 Workflow: Phase 5 answer (skipping review step)")
-            return response
+            # RLM/Phase 5 generated answer - return directly without review
+            logger.info("🔍 Workflow: RLM/Phase 5 answer (skipping review step)")
+            print("🔍 Workflow: RLM/Phase 5 answer (skipping review step)")
+            answer_text = final_answer or response or ""
+            if accepted_chunks:
+                chunk_list = ", ".join(accepted_chunks) if len(accepted_chunks) <= 10 else (
+                    ", ".join(accepted_chunks[:10]) + f", ... and {len(accepted_chunks) - 10} more"
+                )
+                answer_text = answer_text.rstrip() + "\n\n**Accepted chunks:** " + chunk_list
+            return {"answer": answer_text, "accepted_chunks": accepted_chunks}
 
     if len(targets) > 1:
         results = await asyncio.gather(*[run_one(rid) for rid in targets])
         stitched = []
+        all_accepted_chunks: List[str] = []
         for rid, out in zip(targets, results):
-            stitched.append(f"### ReporterAgent={rid}\n{out}")
-        return "\n\n---\n\n".join(stitched)
+            text = out.get("answer", out) if isinstance(out, dict) else out
+            stitched.append(f"### ReporterAgent={rid}\n{text}")
+            if isinstance(out, dict) and out.get("accepted_chunks"):
+                all_accepted_chunks.extend(out["accepted_chunks"])
+        answer_text = "\n\n---\n\n".join(stitched)
+        if all_accepted_chunks:
+            chunk_list = ", ".join(all_accepted_chunks) if len(all_accepted_chunks) <= 10 else (
+                ", ".join(all_accepted_chunks[:10]) + f", ... and {len(all_accepted_chunks) - 10} more"
+            )
+            answer_text = answer_text.rstrip() + "\n\n**Accepted chunks:** " + chunk_list
+            return {"answer": answer_text, "accepted_chunks": all_accepted_chunks}
+        return answer_text
 
     return await run_one(targets[0])

@@ -4,8 +4,8 @@ This file captures raw chunks before LLM summarization.
 
 ---
 
-## Execution: 2026-02-13T22:16:00.375378
-**Query**: What is                             VectorCypherRetriever
+## Execution: 2026-02-17T09:47:09.364051
+**Query**: What is             VectorCypherRetriever
 
 ---
 
@@ -15,7 +15,7 @@ This file captures raw chunks before LLM summarization.
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.744827
+**Captured:** 2026-02-17T09:47:10.387734
 **Selection Method:** keyword
 
 ```text
@@ -40,7 +40,7 @@ These imports enable advanced semantic search, retrieval, and GenAI capabilities
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.777342
+**Captured:** 2026-02-17T09:47:10.480418
 **Selection Method:** keyword
 
 ```text
@@ -59,7 +59,7 @@ The VectorCypherRetriever uses the full graph capabilities of Neo4j by combining
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.783345
+**Captured:** 2026-02-17T09:47:10.491410
 **Selection Method:** keyword
 
 ```text
@@ -85,7 +85,7 @@ Next, let's add this new retrieval query to the VectorCypherRetriever parameters
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.788345
+**Captured:** 2026-02-17T09:47:10.502415
 **Selection Method:** keyword
 
 ```text
@@ -102,7 +102,7 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.796345
+**Captured:** 2026-02-17T09:47:10.519943
 **Selection Method:** keyword
 
 ```text
@@ -124,7 +124,7 @@ The result: You can ask complex, context-aware questions about entities in your 
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.801344
+**Captured:** 2026-02-17T09:47:10.528939
 **Selection Method:** keyword
 
 ```text
@@ -154,7 +154,7 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.806343
+**Captured:** 2026-02-17T09:47:10.540279
 **Selection Method:** keyword
 
 ```text
@@ -174,7 +174,7 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 **File ID:** 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf
 **File Name:** Developers-Guide-GraphRAG.pdf
 **Phase:** keyword_pre_filter
-**Captured:** 2026-02-13T22:16:00.811343
+**Captured:** 2026-02-17T09:47:10.546942
 **Selection Method:** keyword
 
 ```text
@@ -197,7 +197,7 @@ result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in 
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -220,7 +220,7 @@ These imports enable advanced semantic search, retrieval, and GenAI capabilities
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -237,7 +237,7 @@ The VectorCypherRetriever uses the full graph capabilities of Neo4j by combining
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -261,7 +261,7 @@ Next, let's add this new retrieval query to the VectorCypherRetriever parameters
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -276,7 +276,7 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -296,7 +296,7 @@ The result: You can ask complex, context-aware questions about entities in your 
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -324,7 +324,7 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
 
-**Analyzed At:** 2026-02-13T22:16:00.871873
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text
@@ -342,7 +342,7 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 
 #### Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
 
-**Analyzed At:** 2026-02-13T22:16:00.872871
+**Analyzed At:** 2026-02-17T09:47:10.664279
 **Status:** Keyword selected
 
 ```text

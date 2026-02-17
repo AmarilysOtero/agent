@@ -1,10 +1,10 @@
 # Phase 4: LLM-Generated Inspection Logic (RLM Enabled)
 
-**Execution Time:** 2026-02-13T22:16:02.788663
+**Execution Time:** 2026-02-17T09:47:12.564946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
-**Query Hash:** `25e97a37` (use to verify artifacts match current query)
+**Query Hash:** `b47b05e8` (use to verify artifacts match current query)
 
 **Total Inspection Programs:** 106
 
@@ -35,9 +35,9 @@ These functions are executed by the recursive summarizer to evaluate each chunk 
 
 ### 1.1 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:0
 
-**Evaluation Time:** 2026-02-13T22:16:02.908663
+**Evaluation Time:** 2026-02-17T09:47:12.684946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -74,9 +74,9 @@ Alison Cossette Zach Blumenfeld Damaso Sanoja
 
 ### 1.2 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:1
 
-**Evaluation Time:** 2026-02-13T22:16:03.028663
+**Evaluation Time:** 2026-02-17T09:47:12.804946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -124,9 +124,9 @@ Table of Contents
 
 ### 1.3 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:2
 
-**Evaluation Time:** 2026-02-13T22:16:03.148663
+**Evaluation Time:** 2026-02-17T09:47:12.924946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -176,9 +176,9 @@ Table of Contents
 
 ### 1.4 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:3
 
-**Evaluation Time:** 2026-02-13T22:16:03.268663
+**Evaluation Time:** 2026-02-17T09:47:13.044946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -228,9 +228,9 @@ Table of Contents
 
 ### 1.5 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:4
 
-**Evaluation Time:** 2026-02-13T22:16:03.388663
+**Evaluation Time:** 2026-02-17T09:47:13.164946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -276,9 +276,9 @@ Table of Contents
 
 ### 1.6 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:5
 
-**Evaluation Time:** 2026-02-13T22:16:03.508663
+**Evaluation Time:** 2026-02-17T09:47:13.284946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -326,9 +326,9 @@ Table of Contents (continued)
 
 ### 1.7 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:6
 
-**Evaluation Time:** 2026-02-13T22:16:03.628663
+**Evaluation Time:** 2026-02-17T09:47:13.404946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -384,9 +384,9 @@ Table of Contents (continued)
 
 ### 1.8 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:7
 
-**Evaluation Time:** 2026-02-13T22:16:03.748663
+**Evaluation Time:** 2026-02-17T09:47:13.524946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -423,9 +423,9 @@ Table of Contents (continued)
 
 ### 1.9 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:8
 
-**Evaluation Time:** 2026-02-13T22:16:03.868663
+**Evaluation Time:** 2026-02-17T09:47:13.644946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -466,9 +466,9 @@ You've built a retrieval-augmented generation (RAG) system. You embedded the doc
 
 ### 1.10 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:9
 
-**Evaluation Time:** 2026-02-13T22:16:03.988663
+**Evaluation Time:** 2026-02-17T09:47:13.764946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -509,9 +509,9 @@ Your RAG system isn't broken. It's just blind.
 
 ### 1.11 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:10
 
-**Evaluation Time:** 2026-02-13T22:16:04.108663
+**Evaluation Time:** 2026-02-17T09:47:13.884946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -565,9 +565,9 @@ That's the ceiling of traditional RAG. And that's what this book is here to fix.
 
 ### 1.12 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:11
 
-**Evaluation Time:** 2026-02-13T22:16:04.228663
+**Evaluation Time:** 2026-02-17T09:47:14.004946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -618,9 +618,9 @@ Traditional RAG doesn't have shared context across documents. That's because it 
 
 ### 1.13 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:12
 
-**Evaluation Time:** 2026-02-13T22:16:04.348663
+**Evaluation Time:** 2026-02-17T09:47:14.124946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -668,9 +668,9 @@ You want your RAG application to do what humans do naturall
 
 ### 1.14 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:13
 
-**Evaluation Time:** 2026-02-13T22:16:04.468663
+**Evaluation Time:** 2026-02-17T09:47:14.244946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -720,9 +720,9 @@ And that's the problem: Your RAG system has none of that. Sure, it has some docu
 
 ### 1.15 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:14
 
-**Evaluation Time:** 2026-02-13T22:16:04.588663
+**Evaluation Time:** 2026-02-17T09:47:14.364946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -767,9 +767,9 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ### 1.16 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:15
 
-**Evaluation Time:** 2026-02-13T22:16:04.708663
+**Evaluation Time:** 2026-02-17T09:47:14.484946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -822,9 +822,9 @@ the meaning depends on a sales addendum from three weeks earlier. Or maybe they 
 
 ### 1.17 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:16
 
-**Evaluation Time:** 2026-02-13T22:16:04.828663
+**Evaluation Time:** 2026-02-17T09:47:14.604946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -874,9 +874,9 @@ You already know what y
 
 ### 1.18 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:17
 
-**Evaluation Time:** 2026-02-13T22:16:04.948663
+**Evaluation Time:** 2026-02-17T09:47:14.724946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -933,9 +933,9 @@ These shouldn't feel like advanced use cases they're
 
 ### 1.19 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:18
 
-**Evaluation Time:** 2026-02-13T22:16:05.068663
+**Evaluation Time:** 2026-02-17T09:47:14.844946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -990,9 +990,9 @@ And we're going to do it
 
 ### 1.20 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:19
 
-**Evaluation Time:** 2026-02-13T22:16:05.188663
+**Evaluation Time:** 2026-02-17T09:47:14.964946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1040,9 +1040,9 @@ Without it, RAG can't reason. It can only retrieve, and that isn't enou
 
 ### 1.21 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:20
 
-**Evaluation Time:** 2026-02-13T22:16:05.308663
+**Evaluation Time:** 2026-02-17T09:47:15.084946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1099,9 +1099,9 @@ These shouldn't feel like adv
 
 ### 1.22 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:21
 
-**Evaluation Time:** 2026-02-13T22:16:05.428663
+**Evaluation Time:** 2026-02-17T09:47:15.204946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1156,9 +1156,9 @@ An
 
 ### 1.23 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:22
 
-**Evaluation Time:** 2026-02-13T22:16:05.548663
+**Evaluation Time:** 2026-02-17T09:47:15.324946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1195,9 +1195,9 @@ To understand GraphRAG, let's explore its foundational components - RAG and know
 
 ### 1.24 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:23
 
-**Evaluation Time:** 2026-02-13T22:16:05.668663
+**Evaluation Time:** 2026-02-17T09:47:15.444946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1248,9 +1248,9 @@ such as ChatGPT, Gemini, and Claude. When a user's prompt goes directly to the L
 
 ### 1.25 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:24
 
-**Evaluation Time:** 2026-02-13T22:16:05.788663
+**Evaluation Time:** 2026-02-17T09:47:15.564946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1309,9 +1309,9 @@ Figure 1. Querying a knowledge graph with an LLM
 
 ### 1.26 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:25
 
-**Evaluation Time:** 2026-02-13T22:16:05.908663
+**Evaluation Time:** 2026-02-17T09:47:15.684946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1350,9 +1350,9 @@ If you use a vector store (as in traditional RAG), the process goes like this: T
 
 ### 1.27 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:26
 
-**Evaluation Time:** 2026-02-13T22:16:06.028663
+**Evaluation Time:** 2026-02-17T09:47:15.804946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1407,9 +1407,9 @@ The knowledge graph becomes a mental map of your domain, providing the LLM with 
 
 ### 1.28 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:27
 
-**Evaluation Time:** 2026-02-13T22:16:06.148663
+**Evaluation Time:** 2026-02-17T09:47:15.924946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1474,9 +1474,9 @@ A knowledge graph holds all related information together across both structured 
 
 ### 1.29 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:28
 
-**Evaluation Time:** 2026-02-13T22:16:06.268663
+**Evaluation Time:** 2026-02-17T09:47:16.044946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1513,9 +1513,9 @@ Unlike traditional RAG, which retrieves isolated chunks of text based on similar
 
 ### 1.30 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:29
 
-**Evaluation Time:** 2026-02-13T22:16:06.388663
+**Evaluation Time:** 2026-02-17T09:47:16.164946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1552,9 +1552,9 @@ LLMs and even standard RAG approaches operate as black boxes, making it difficul
 
 ### 1.31 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:30
 
-**Evaluation Time:** 2026-02-13T22:16:06.508663
+**Evaluation Time:** 2026-02-17T09:47:16.284946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1591,9 +1591,9 @@ GraphRAG overcomes a key limitation of vector-only RAG by integrating both struc
 
 ### 1.32 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:31
 
-**Evaluation Time:** 2026-02-13T22:16:06.628663
+**Evaluation Time:** 2026-02-17T09:47:16.404946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1634,9 +1634,9 @@ Think of GraphRAG as a RAG architecture built on a knowledge graph. Using a know
 
 ### 1.33 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:32
 
-**Evaluation Time:** 2026-02-13T22:16:06.748663
+**Evaluation Time:** 2026-02-17T09:47:16.524946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1675,9 +1675,9 @@ Preparing a knowledge graph for GraphRAG
 
 ### 1.34 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:33
 
-**Evaluation Time:** 2026-02-13T22:16:06.868663
+**Evaluation Time:** 2026-02-17T09:47:16.644946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1720,9 +1720,9 @@ The rest of this book walks you through these two critical steps.
 
 ### 1.35 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:34
 
-**Evaluation Time:** 2026-02-13T22:16:06.988663
+**Evaluation Time:** 2026-02-17T09:47:16.764946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1763,9 +1763,9 @@ There are two aspects to consider when you're modeling a knowledge graph for AI 
 
 ### 1.36 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:35
 
-**Evaluation Time:** 2026-02-13T22:16:07.108663
+**Evaluation Time:** 2026-02-17T09:47:16.884946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1806,9 +1806,9 @@ The relationships between documents - or how your content is organized and relat
 
 ### 1.37 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:36
 
-**Evaluation Time:** 2026-02-13T22:16:07.228663
+**Evaluation Time:** 2026-02-17T09:47:17.004946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1855,9 +1855,9 @@ These two layers - the document structure and the business domain - work togethe
 
 ### 1.38 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:37
 
-**Evaluation Time:** 2026-02-13T22:16:07.348663
+**Evaluation Time:** 2026-02-17T09:47:17.124946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1900,9 +1900,9 @@ To buil
 
 ### 1.39 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:38
 
-**Evaluation Time:** 2026-02-13T22:16:07.468663
+**Evaluation Time:** 2026-02-17T09:47:17.244946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -1964,9 +1964,9 @@ At one end, you've got relational databases and clean CSV, where entities and re
 
 ### 1.40 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:39
 
-**Evaluation Time:** 2026-02-13T22:16:07.588663
+**Evaluation Time:** 2026-02-17T09:47:17.364946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2016,9 +2016,9 @@ If you find that your dataset has more complex data structures, you can consider
 
 ### 1.41 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:40
 
-**Evaluation Time:** 2026-02-13T22:16:07.708663
+**Evaluation Time:** 2026-02-17T09:47:17.484946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2068,9 +2068,9 @@ Guide             |
 
 ### 1.42 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:41
 
-**Evaluation Time:** 2026-02-13T22:16:07.828663
+**Evaluation Time:** 2026-02-17T09:47:17.604946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2113,9 +2113,9 @@ Finally, you'll test retrieval strategies, from vector search to graph-enhanced 
 
 ### 1.43 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:42
 
-**Evaluation Time:** 2026-02-13T22:16:07.948663
+**Evaluation Time:** 2026-02-17T09:47:17.724946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2175,9 +2175,9 @@ Tip: Download your AuraDB credentials (URI, username, password) immediately afte
 
 ### 1.44 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:43
 
-**Evaluation Time:** 2026-02-13T22:16:08.068663
+**Evaluation Time:** 2026-02-17T09:47:17.844946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2230,9 +2230,9 @@ Figure 7. Credential download and continue screen
 
 ### 1.45 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:44
 
-**Evaluation Time:** 2026-02-13T22:16:08.188663
+**Evaluation Time:** 2026-02-17T09:47:17.964946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2273,9 +2273,9 @@ Figure 8. Document flow
 
 ### 1.46 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:45
 
-**Evaluation Time:** 2026-02-13T22:16:08.308663
+**Evaluation Time:** 2026-02-17T09:47:18.084946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2329,9 +2329,9 @@ Key Features of Neo4j GraphRAG Package
 
 ### 1.47 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:46
 
-**Evaluation Time:** 2026-02-13T22:16:08.428663
+**Evaluation Time:** 2026-02-17T09:47:18.204946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2380,9 +2380,9 @@ The LLM does the thinking by extracting meaningful concepts from text. The embed
 
 ### 1.48 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:47
 
-**Evaluation Time:** 2026-02-13T22:16:08.548663
+**Evaluation Time:** 2026-02-17T09:47:18.324946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2437,9 +2437,9 @@ Figure 9. Credentials from .txt file
 
 ### 1.49 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:48
 
-**Evaluation Time:** 2026-02-13T22:16:08.668663
+**Evaluation Time:** 2026-02-17T09:47:18.444946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2478,9 +2478,9 @@ Initialize the LLM and Embeddings
 
 ### 1.50 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:49
 
-**Evaluation Time:** 2026-02-13T22:16:08.788663
+**Evaluation Time:** 2026-02-17T09:47:18.564946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2523,9 +2523,9 @@ entities = [ {'label': 'Executive', 'properties': [{'name': 'name', 'type': 'STR
 
 ### 1.51 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:50
 
-**Evaluation Time:** 2026-02-13T22:16:08.908663
+**Evaluation Time:** 2026-02-17T09:47:18.684946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2562,9 +2562,9 @@ key moment in the knowledge graph construction process. This is when you determi
 
 ### 1.52 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:51
 
-**Evaluation Time:** 2026-02-13T22:16:09.028663
+**Evaluation Time:** 2026-02-17T09:47:18.804946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2605,9 +2605,9 @@ Company, Executive, RiskFactor, Product whatever matters to your domain.
 
 ### 1.53 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:52
 
-**Evaluation Time:** 2026-02-13T22:16:09.148663
+**Evaluation Time:** 2026-02-17T09:47:18.924946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2652,9 +2652,9 @@ If you aren't sure which entities and relationships to include in your first pro
 
 ### 1.54 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:53
 
-**Evaluation Time:** 2026-02-13T22:16:09.268663
+**Evaluation Time:** 2026-02-17T09:47:19.044946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2697,9 +2697,9 @@ model used to vectorize text, which supports similarity-based retrieval
 
 ### 1.55 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:54
 
-**Evaluation Time:** 2026-02-13T22:16:09.388663
+**Evaluation Time:** 2026-02-17T09:47:19.164946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2762,9 +2762,9 @@ All of these are network-bound and would block the main thread in a normal synch
 
 ### 1.56 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:55
 
-**Evaluation Time:** 2026-02-13T22:16:09.508663
+**Evaluation Time:** 2026-02-17T09:47:19.284946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2821,9 +2821,9 @@ of the chunk text. This is how your retriever finds the relevant chunk in your a
 
 ### 1.57 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:56
 
-**Evaluation Time:** 2026-02-13T22:16:09.628663
+**Evaluation Time:** 2026-02-17T09:47:19.404946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2864,9 +2864,9 @@ In the context of Neo4j and RAG, here's what you need to know:
 
 ### 1.58 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:57
 
-**Evaluation Time:** 2026-02-13T22:16:09.748663
+**Evaluation Time:** 2026-02-17T09:47:19.524946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2903,9 +2903,9 @@ By using a vector index, Neo4j enables scalable, realtime retrieval of relevant 
 
 ### 1.59 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:58
 
-**Evaluation Time:** 2026-02-13T22:16:09.868663
+**Evaluation Time:** 2026-02-17T09:47:19.644946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2942,9 +2942,9 @@ Neo4j Data Importer provides a streamlined process for bringing structured data 
 
 ### 1.60 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:59
 
-**Evaluation Time:** 2026-02-13T22:16:09.988663
+**Evaluation Time:** 2026-02-17T09:47:19.764946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -2981,9 +2981,9 @@ Create a new graph model.
 
 ### 1.61 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:60
 
-**Evaluation Time:** 2026-02-13T22:16:10.108663
+**Evaluation Time:** 2026-02-17T09:47:19.884946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3040,9 +3040,9 @@ Figure 14.  Browse to .csv files screen
 
 ### 1.62 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:61
 
-**Evaluation Time:** 2026-02-13T22:16:10.228663
+**Evaluation Time:** 2026-02-17T09:47:20.004946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3079,9 +3079,9 @@ Figure 15. Run import screen
 
 ### 1.63 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:62
 
-**Evaluation Time:** 2026-02-13T22:16:10.348663
+**Evaluation Time:** 2026-02-17T09:47:20.124946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3139,9 +3139,9 @@ If you'd like to work with your own dataset, here's how to get started.The Aura 
 
 ### 1.64 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:63
 
-**Evaluation Time:** 2026-02-13T22:16:10.468663
+**Evaluation Time:** 2026-02-17T09:47:20.244946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3188,9 +3188,9 @@ Label refers to the type of node. Table points to the data source where the info
 
 ### 1.65 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:64
 
-**Evaluation Time:** 2026-02-13T22:16:10.588663
+**Evaluation Time:** 2026-02-17T09:47:20.364946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3257,9 +3257,9 @@ Figure 18.  Company node screen
 
 ### 1.66 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:65
 
-**Evaluation Time:** 2026-02-13T22:16:10.708663
+**Evaluation Time:** 2026-02-17T09:47:20.484946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3352,9 +3352,9 @@ Figure 19.  Path property screen
 
 ### 1.67 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:66
 
-**Evaluation Time:** 2026-02-13T22:16:10.828663
+**Evaluation Time:** 2026-02-17T09:47:20.604946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3415,9 +3415,9 @@ Figure 20.  AssetManager node screen
 
 ### 1.68 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:67
 
-**Evaluation Time:** 2026-02-13T22:16:10.948663
+**Evaluation Time:** 2026-02-17T09:47:20.724946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3477,9 +3477,9 @@ Relationships are created with the following criteria:
 
 ### 1.69 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:68
 
-**Evaluation Time:** 2026-02-13T22:16:11.068663
+**Evaluation Time:** 2026-02-17T09:47:20.844946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3524,9 +3524,9 @@ In a knowledge graph, we want to map the domain knowledge of structured data, wh
 
 ### 1.70 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:69
 
-**Evaluation Time:** 2026-02-13T22:16:11.188663
+**Evaluation Time:** 2026-02-17T09:47:20.964946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3571,9 +3571,9 @@ Figure 22. AssetManager gray outline
 
 ### 1.71 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:70
 
-**Evaluation Time:** 2026-02-13T22:16:11.308663
+**Evaluation Time:** 2026-02-17T09:47:21.084946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3616,9 +3616,9 @@ Clicking on this arrow allows you to edit the parameters of the relationship.
 
 ### 1.72 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:71
 
-**Evaluation Time:** 2026-02-13T22:16:11.428663
+**Evaluation Time:** 2026-02-17T09:47:21.204946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3737,9 +3737,9 @@ The property shares represents the number of shares of the Company owned by the 
 
 ### 1.73 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:72
 
-**Evaluation Time:** 2026-02-13T22:16:11.548663
+**Evaluation Time:** 2026-02-17T09:47:21.324946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3868,9 +3868,9 @@ As you see in the diagram above, each entity and relationship will have a green 
 
 ### 1.74 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:73
 
-**Evaluation Time:** 2026-02-13T22:16:11.668663
+**Evaluation Time:** 2026-02-17T09:47:21.444946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3919,9 +3919,9 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ### 1.75 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:74
 
-**Evaluation Time:** 2026-02-13T22:16:11.788663
+**Evaluation Time:** 2026-02-17T09:47:21.564946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -3962,9 +3962,9 @@ Let's examine some of the most common GraphRAG patterns and how to use them.
 
 ### 1.76 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:75
 
-**Evaluation Time:** 2026-02-13T22:16:11.908663
+**Evaluation Time:** 2026-02-17T09:47:21.684946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4033,9 +4033,9 @@ These imports enable advanced semantic search, retrieval, and GenAI capabilities
 
 ### 1.77 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:76
 
-**Evaluation Time:** 2026-02-13T22:16:12.028663
+**Evaluation Time:** 2026-02-17T09:47:21.804946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4082,9 +4082,9 @@ Here, you load sensitive configuration values (such as database credentials and 
 
 ### 1.78 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:77
 
-**Evaluation Time:** 2026-02-13T22:16:12.148663
+**Evaluation Time:** 2026-02-17T09:47:21.924946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4129,9 +4129,9 @@ llm = OPENAIL
 
 ### 1.79 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:78
 
-**Evaluation Time:** 2026-02-13T22:16:12.268663
+**Evaluation Time:** 2026-02-17T09:47:22.044946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4186,9 +4186,9 @@ There are two components in the process:
 
 ### 1.80 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:79
 
-**Evaluation Time:** 2026-02-13T22:16:12.388663
+**Evaluation Time:** 2026-02-17T09:47:22.164946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4243,9 +4243,9 @@ Be sure to review your retrieval results before generating any text output. This
 
 ### 1.81 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:80
 
-**Evaluation Time:** 2026-02-13T22:16:12.508663
+**Evaluation Time:** 2026-02-17T09:47:22.284946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4298,9 +4298,9 @@ The Basic Retriever Pattern
 
 ### 1.82 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:81
 
-**Evaluation Time:** 2026-02-13T22:16:12.628663
+**Evaluation Time:** 2026-02-17T09:47:22.404946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4354,9 +4354,9 @@ The basic retriever will cause the LLM to generate a res
 
 ### 1.83 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:82
 
-**Evaluation Time:** 2026-02-13T22:16:12.748663
+**Evaluation Time:** 2026-02-17T09:47:22.524946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4405,9 +4405,9 @@ gh a third-party custodian are susceptible to various risks, such as inappropria
 
 ### 1.84 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:83
 
-**Evaluation Time:** 2026-02-13T22:16:12.868663
+**Evaluation Time:** 2026-02-17T09:47:22.644946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4458,9 +4458,9 @@ In other words, the approach demonstrated here retrieves relevant text fragments
 
 ### 1.85 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:84
 
-**Evaluation Time:** 2026-02-13T22:16:12.988663
+**Evaluation Time:** 2026-02-17T09:47:22.764946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4514,9 +4514,9 @@ The VectorCypherRetriever uses the full graph capabilities of Neo4j by combining
 
 ### 1.86 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:85
 
-**Evaluation Time:** 2026-02-13T22:16:13.108663
+**Evaluation Time:** 2026-02-17T09:47:22.884946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4589,9 +4589,9 @@ Next, let's add this new retrieval query to the VectorCypherRetriever parameters
 
 ### 1.87 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:86
 
-**Evaluation Time:** 2026-02-13T22:16:13.228663
+**Evaluation Time:** 2026-02-17T09:47:23.004946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4644,9 +4644,9 @@ This setup enables you to start with a semantic search (e.g., for 'cryptocurrenc
 
 ### 1.88 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:87
 
-**Evaluation Time:** 2026-02-13T22:16:13.348663
+**Evaluation Time:** 2026-02-17T09:47:23.124946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4698,9 +4698,9 @@ How might this look for other industries?
 
 ### 1.89 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:88
 
-**Evaluation Time:** 2026-02-13T22:16:13.468663
+**Evaluation Time:** 2026-02-17T09:47:23.244946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4763,9 +4763,9 @@ The result: You can ask complex, context-aware questions about entities in your 
 
 ### 1.90 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:89
 
-**Evaluation Time:** 2026-02-13T22:16:13.588663
+**Evaluation Time:** 2026-02-17T09:47:23.364946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4851,9 +4851,9 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 
 ### 1.91 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:90
 
-**Evaluation Time:** 2026-02-13T22:16:13.708663
+**Evaluation Time:** 2026-02-17T09:47:23.484946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4915,9 +4915,9 @@ Next, add this new retrieval query to the VectorCypherRetriever parameters:
 
 ### 1.92 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:91
 
-**Evaluation Time:** 2026-02-13T22:16:13.828663
+**Evaluation Time:** 2026-02-17T09:47:23.604946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -4981,9 +4981,9 @@ result = vector_cypher_retriever.search(query_text=query, top_k=10) for item in 
 
 ### 1.93 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:92
 
-**Evaluation Time:** 2026-02-13T22:16:13.948663
+**Evaluation Time:** 2026-02-17T09:47:23.724946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5041,9 +5041,9 @@ Let's look at the results:
 
 ### 1.94 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:93
 
-**Evaluation Time:** 2026-02-13T22:16:14.068663
+**Evaluation Time:** 2026-02-17T09:47:23.844946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5080,9 +5080,9 @@ This is where GraphRAG really shines. You may be wondering how to construct the 
 
 ### 1.95 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:94
 
-**Evaluation Time:** 2026-02-13T22:16:14.188663
+**Evaluation Time:** 2026-02-17T09:47:23.964946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5134,9 +5134,9 @@ The retriever then uses the schema, described as a string outlining the
 
 ### 1.96 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:95
 
-**Evaluation Time:** 2026-02-13T22:16:14.308663
+**Evaluation Time:** 2026-02-17T09:47:24.084946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5195,9 +5195,9 @@ Now that you've defined the schema, you have everything you need to set the Text
 
 ### 1.97 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:96
 
-**Evaluation Time:** 2026-02-13T22:16:14.428663
+**Evaluation Time:** 2026-02-17T09:47:24.204946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5252,9 +5252,9 @@ While the Text2Cypher functionality in the Neo4j GraphRAG library offers a power
 
 ### 1.98 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:97
 
-**Evaluation Time:** 2026-02-13T22:16:14.548663
+**Evaluation Time:** 2026-02-17T09:47:24.324946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5305,9 +5305,9 @@ Finally, high-stakes applications - such as those requiring strict reproducibili
 
 ### 1.99 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:98
 
-**Evaluation Time:** 2026-02-13T22:16:14.668663
+**Evaluation Time:** 2026-02-17T09:47:24.444946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5348,9 +5348,9 @@ Check out the Text2Cypher Crowdsourcing App to explore Text2Cypher applications 
 
 ### 1.100 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:99
 
-**Evaluation Time:** 2026-02-13T22:16:14.788663
+**Evaluation Time:** 2026-02-17T09:47:24.564946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5391,9 +5391,9 @@ While a Microsoft-style GraphRAG emphasizes summarization and community Q&amp;A,
 
 ### 1.101 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:100
 
-**Evaluation Time:** 2026-02-13T22:16:14.908663
+**Evaluation Time:** 2026-02-17T09:47:24.684946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5441,9 +5441,9 @@ This guide has equipped you with the foundational skills needed to implement Gra
 
 ### 1.102 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:101
 
-**Evaluation Time:** 2026-02-13T22:16:15.028663
+**Evaluation Time:** 2026-02-17T09:47:24.804946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5484,9 +5484,9 @@ embeddings and graph neural networks, promises to enhance the semantic understan
 
 ### 1.103 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:102
 
-**Evaluation Time:** 2026-02-13T22:16:15.148663
+**Evaluation Time:** 2026-02-17T09:47:24.924946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5542,9 +5542,9 @@ Build on what you learned in this guide:
 
 ### 1.104 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:103
 
-**Evaluation Time:** 2026-02-13T22:16:15.268663
+**Evaluation Time:** 2026-02-17T09:47:25.044946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5589,9 +5589,9 @@ Technical Resources in Workflow Order
 
 ### 1.105 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:104
 
-**Evaluation Time:** 2026-02-13T22:16:15.388663
+**Evaluation Time:** 2026-02-17T09:47:25.164946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 
@@ -5636,9 +5636,9 @@ Data Importer Tool                            | Visual UI for mapping CSVs and r
 
 ### 1.106 Chunk: 8dcd8cd1-62c4-4607-b0bc-ffce165cbf0b:C:\Alexis\DXC\AI\RAG\Developers-Guide-GraphRAG.pdf:chunk:105
 
-**Evaluation Time:** 2026-02-13T22:16:15.508663
+**Evaluation Time:** 2026-02-17T09:47:25.284946
 
-**Query:** What is                             VectorCypherRetriever
+**Query:** What is             VectorCypherRetriever
 
 **Selection Method:** discarded
 

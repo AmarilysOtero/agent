@@ -91,14 +91,37 @@ class WorkflowGovernance:
             severity=PolicySeverity.ERROR
         )
         
-        # Performance policy - max nodes
+        # Performance policy - max nodes (excluding start)
         self.add_policy(
             policy_id="max_nodes",
             name="Maximum Nodes",
             type=PolicyType.PERFORMANCE,
-            description="Workflows should not exceed 100 nodes",
-            rule=lambda g: len(g.nodes) <= 100,
+            description="Workflows should not exceed 100 executable nodes",
+            rule=lambda g: len([n for n in g.nodes if n.type != 'start']) <= 100,
             severity=PolicySeverity.WARNING
+        )
+        
+        # Start node policy - exactly one required
+        self.add_policy(
+            policy_id="require_start_node",
+            name="Require Start Node",
+            type=PolicyType.COMPLIANCE,
+            description="Workflows must have exactly one start node",
+            rule=lambda g: len([n for n in g.nodes if n.type == 'start']) == 1,
+            severity=PolicySeverity.ERROR
+        )
+        
+        # Start node must be entry point
+        self.add_policy(
+            policy_id="start_node_is_entry",
+            name="Start Node Is Entry Point",
+            type=PolicyType.COMPLIANCE,
+            description="The start node must be the entry_node_id",
+            rule=lambda g: (
+                len([n for n in g.nodes if n.type == 'start']) == 0 or  # No start node yet
+                any(n.id == g.entry_node_id and n.type == 'start' for n in g.nodes)
+            ),
+            severity=PolicySeverity.ERROR
         )
     
     def add_policy(

@@ -62,7 +62,8 @@ class WorkflowAI:
     ) -> AIPrediction:
         """Predict execution time for a workflow"""
         # Simplified prediction based on node count and historical data
-        node_count = len(workflow.nodes)
+        # Exclude start node from count (start is just entry point, not executable)
+        node_count = len([n for n in workflow.nodes if n.type != 'start'])
         base_time = node_count * 2.0  # 2 seconds per node (simplified)
         
         # Adjust based on historical data if available
@@ -100,7 +101,8 @@ class WorkflowAI:
     ) -> AIPrediction:
         """Predict cost for a workflow execution"""
         # Simplified cost prediction
-        node_count = len(workflow.nodes)
+        # Exclude start node from count (start is just entry point, not executable)
+        node_count = len([n for n in workflow.nodes if n.type != 'start'])
         base_cost = node_count * 0.01  # $0.01 per node (simplified)
         
         if historical_metrics:
@@ -138,7 +140,8 @@ class WorkflowAI:
         recommendations = []
         
         # Check for optimization opportunities
-        node_count = len(workflow.nodes)
+        # Exclude start node from count (start is just entry point, not executable)
+        node_count = len([n for n in workflow.nodes if n.type != 'start'])
         if node_count > 20:
             recommendations.append(AIRecommendation(
                 recommendation_id=f"rec_{self._recommendation_counter}",
@@ -217,7 +220,8 @@ class WorkflowAI:
     
     def _calculate_complexity(self, workflow: GraphDefinition) -> float:
         """Calculate workflow complexity score"""
-        node_count = len(workflow.nodes)
+        # Exclude start node from complexity calculation
+        node_count = len([n for n in workflow.nodes if n.type != 'start'])
         edge_count = len(workflow.edges)
         
         # Simple complexity metric
